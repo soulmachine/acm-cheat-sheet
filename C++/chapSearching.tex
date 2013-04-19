@@ -1,0 +1,31 @@
+\chapter{查找}
+
+\section{折半查找} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{Codex}[label=binary_search.c]
+/** 数组元素的类型 */
+typedef int elem_t;
+/**
+  * @brief 有序顺序表的折半查找算法.
+  *
+  * @param[in] a 存放数据元素的数组，已排好序
+  * @param[in] n 数组的元素个数
+  * @param[in] x 要查找的元素
+  * @return 查找成功则返回元素所在下标，否则返回-1
+  */
+int binary_search(const elem_t a[], const int n, const elem_t x)
+{
+    int left = 0, right = n -1, mid;
+    while(left <= right) {
+        mid = (left + right) / 2;
+        if(x > a[mid]) {
+            left = mid + 1;
+        } else if(x < a[mid]) {
+            right = mid - 1;
+        } else {
+            return mid;
+        }
+    }
+    return -1;
+}
+\end{Codex}

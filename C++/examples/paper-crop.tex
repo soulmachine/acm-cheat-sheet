@@ -1,0 +1,19 @@
+\documentclass[10pt,nofonts,fancyhdr,UTF8]{ctexbook}
+\usepackage[centering,paperwidth=180mm,paperheight=230mm,%
+body={370pt,530pt},marginparsep=10pt,marginpar=50pt,%
+showframe]{geometry}
+\usepackage[a4,center,frame,color=blue]{crop}
+
+\begin{document}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[RE]{Chapter name}
+\fancyhead[LO]{Section name}
+\fancyhead[LE,RO]{\thepage}
+\fancyfoot[LE,LO]{\small Book Title}
+
+Hello.\footnote{this is a footnote.}
+\newpage
+{.}
+\end{document}
+
