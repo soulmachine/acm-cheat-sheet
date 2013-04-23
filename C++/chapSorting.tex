@@ -13,8 +13,7 @@ typedef int elem_t;
   * @param[in] end 结束位置，最后一个元素后一个位置
   * @return 基准元素的新位置
   */
-static int partition(elem_t a[], const int start, const int end)
-{
+static int partition(elem_t a[], const int start, const int end) {
     int i = start;
     int j = end - 1;
     const elem_t pivot = a[i];
@@ -36,8 +35,7 @@ static int partition(elem_t a[], const int start, const int end)
   * @param[in] end 结束位置，最后一个元素后一个位置
   * @return 无
   */
-void quick_sort(elem_t a[], const int start, const int end)
-{
+void quick_sort(elem_t a[], const int start, const int end) {
     if(start < end - 1) { /* 至少两个元素*/
         const int pivot_pos = partition(a, start, end);
         quick_sort(a, start, pivot_pos);

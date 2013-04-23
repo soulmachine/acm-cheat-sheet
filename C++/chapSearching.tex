@@ -13,8 +13,7 @@ typedef int elem_t;
   * @param[in] x 要查找的元素
   * @return 查找成功则返回元素所在下标，否则返回-1
   */
-int binary_search(const elem_t a[], const int n, const elem_t x)
-{
+int binary_search(const elem_t a[], const int n, const elem_t x) {
     int left = 0, right = n -1, mid;
     while(left <= right) {
         mid = left + (right - left) / 2;
