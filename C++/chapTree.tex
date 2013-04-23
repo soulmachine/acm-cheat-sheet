@@ -198,3 +198,186 @@ void build(const int n, const char * pre, const char *in, char *post) {
 	post[n - 1] = pre[0];
 }
 \end{Codex}
+
+\section{堆} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{堆的C语言实现}
+C++可以直接使用\fn{std::priority_queue}。
+
+\begin{Codex}[label=heap.c]
+/** @file heap.c
+ * @brief 堆，默认为小根堆，即堆顶为最小.
+ * @author soulmachine@gmail.com
+ * @date 2010-8-1
+ * @version 1.0
+ */
+#include <stdlib.h>  /* for malloc() */
+#include <string.h>  /* for memcpy() */
+
+#ifndef __cplusplus 
+typedef char bool;
+#define false 0
+#define true 1
+#endif
+
+typedef int heap_elem_t; // 元素的类型
+
+/**
+ * @struct
+ * @brief 堆的结构体
+ */
+typedef struct heap_t {
+    int     size;   /** 实际元素个数 */
+    int     capacity; /** 容量，以元素为单位 */
+    heap_elem_t  *elems;   /** 堆的数组 */
+    int (*cmp)(const heap_elem_t*, const heap_elem_t*);   /** 元素的比较函数 */
+}heap_t;
+
+/** 
+ * @brief 堆的初始化.
+ * @param[out] h 堆对象的指针
+ * @param[out] capacity 初始容量
+ * @param[in] cmp cmp 比较函数，小于返回-1，等于返回0
+ * 大于返回1，反过来则是大根堆
+ * @return 成功返回0，失败返回错误码
+ */
+static int heap_init(heap_t *h, const int capacity, 
+              int (*cmp)(const heap_elem_t*, const heap_elem_t*)) {
+    h->size = 0;
+    h->capacity = capacity;
+    h->elems = (heap_elem_t*)malloc(capacity * sizeof(heap_elem_t));
+    h->cmp = cmp;
+    
+    return 0;
+}
+
+/** 
+ * @brief 释放堆.
+ * @param[inout] h 堆对象的指针
+ * @return 成功返回0，失败返回错误码
+ */
+static int heap_uninit(heap_t *h) {
+    h->size = 0;
+    h->capacity = 0;
+    free(h->elems);
+    h->elems = NULL;
+    h->cmp = NULL;
+
+    return 0;
+}
+
+
+/** 
+ * @brief 判断堆是否为空.
+ * @param[in] h 堆对象的指针
+ * @return 是空，返回true，否则返回false
+ */
+static bool heap_empty(const heap_t *h) {
+    if(h != NULL) {
+        return h->size == 0;
+    } else {
+        return false;
+    }
+}
+
+/** 
+ * @brief 获取元素个数.
+ * @param[in] s 堆对象的指针
+ * @return 元素个数
+ */
+static int heap_size(const heap_t *h) {
+    return h->size;
+}
+
+/*
+ * @brief 小根堆的自上向下筛选算法.
+ * @param[in] h 堆对象的指针
+ * @param[in] start 开始结点
+ * @return 无
+ */
+static void heap_sift_down(const heap_t *h, const int start) {
+    int i = start;
+    int j;
+    const heap_elem_t tmp = h->elems[start];
+       
+    for(j = 2 * i + 1; j < h->size; j = 2 * j + 1) {
+        if(j < (h->size - 1) && 
+            // h->elems[j] > h->elems[j + 1]
+            h->cmp(&(h->elems[j]), &(h->elems[j + 1])) > 0) {
+                j++; /* j 指向两子女中小者*/
+        }
+        // tmp <= h->data[j]
+        if(h->cmp(&tmp, &(h->elems[j])) <= 0) {
+            break;
+        } else {
+            h->elems[i] = h->elems[j];
+            i = j;
+        }
+    }
+    h->elems[i] = tmp;
+}
+ 
+/* 
+ * @brief 小根堆的自下向上筛选算法.
+ * @param[in] h 堆对象的指针
+ * @param[in] start 开始结点
+ * @return 无
+ */
+static void heap_sift_up(const heap_t *h, const int start) {
+    int j = start;
+    int i= (j - 1) / 2;
+    const heap_elem_t tmp = h->elems[start];
+ 
+    while(j > 0) {
+        // h->data[i] <= tmp
+        if(h->cmp(&(h->elems[i]), &tmp) <= 0) {
+            break;
+        } else {
+            h->elems[j] = h->elems[i];
+            j = i;
+            i = (i - 1) / 2;
+        }
+    }
+    h->elems[j] = tmp;
+}
+
+/** 
+ * @brief 添加一个元素.
+ * @param[in] h 堆对象的指针
+ * @param[in] x 要添加的元素
+ * @return 无
+ */
+static void heap_push(heap_t *h, const heap_elem_t x) {
+    if(h->size == h->capacity) { /*已满，重新分配内存*/
+        heap_elem_t* tmp = 
+            (heap_elem_t*)realloc(h->elems, h->capacity * 2 * sizeof(heap_elem_t));
+        h->elems = tmp;
+        h->capacity *= 2;
+    }
+ 
+    h->elems[h->size] = x;
+    h->size++;
+
+    heap_sift_up(h, h->size - 1);
+}
+
+/** 
+ * @brief 弹出堆顶元素.
+ * @param[in] h 堆对象的指针
+ * @return 无
+ */
+static void heap_pop(heap_t *h) {
+    h->elems[0] = h->elems[h->size - 1];
+    h->size --;
+    heap_sift_down(h, 0);
+}
+
+/** 
+ * @brief 获取堆顶元素.
+ * @param[in] h 堆对象的指针
+ * @return 堆顶元素
+ */
+static heap_elem_t heap_top(const heap_t *h) {
+    return h->elems[0];
+}
+\end{Codex}
