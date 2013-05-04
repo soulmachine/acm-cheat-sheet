@@ -41,8 +41,8 @@
 
 #define QUEENS 8 // 皇后的个数，也是棋盘的长和宽
 
-static int total = 0;	// 可行解的总数
-static int C[QUEENS];	// C[i]表示第i行皇后所在的列编号
+int total = 0;	// 可行解的总数
+int C[QUEENS];	// C[i]表示第i行皇后所在的列编号
 
 /** 
  * @brief 输出所有可行的棋局，按列打印.
@@ -91,7 +91,7 @@ void output1() {
  * @param[in] row 当前行
  * @return 能则返回1，不能则返回0
  */
-static int check(const int row, const int column) {
+int check(const int row, const int column) {
     int ok = 1;
     int i;
     for(i = 0; i < row; ++i) {
@@ -112,7 +112,7 @@ static int check(const int row, const int column) {
  * @param[in] row 搜索当前行，该再哪一列上放一个皇后
  * @return 无
  */
-static void search(const int row) {
+void search(const int row) {
     if(row == QUEENS) {  // 递归边界，只要走到了这里，意味着找到了一个可行解
         ++total;
         output();
@@ -130,11 +130,11 @@ static void search(const int row) {
 
 // 表示已经放置的皇后
 // 占据了哪些列
-static int columns[QUEENS];
+int columns[QUEENS];
 // 占据了哪些主对角线
-static int principal_diagonals[2 * QUEENS];
+int principal_diagonals[2 * QUEENS];
 // 占据了哪些副对角线
-static int counter_diagonals[2 * QUEENS];
+int counter_diagonals[2 * QUEENS];
 
 /** 
  * @brief 检查当前位置(row, column)能否放置皇后.
@@ -142,7 +142,7 @@ static int counter_diagonals[2 * QUEENS];
  * @param[in] row, 当前行
  * @return 能则返回1，不能则返回0
  */
-static int check2(const int row, const int column) {
+int check2(const int row, const int column) {
     return columns[column] == 0 && principal_diagonals[row + column] == 0 
         && counter_diagonals[row - column + QUEENS] == 0;
 }
@@ -153,7 +153,7 @@ static int check2(const int row, const int column) {
  * @param[in] row 搜索当前行，该再哪一列上放一个皇后
  * @return 无
  */
-static void search2(const int row) {
+void search2(const int row) {
     if(row == QUEENS) {  // 递归边界，只要走到了这里，意味着找到了一个可行解
         ++total;
         output();

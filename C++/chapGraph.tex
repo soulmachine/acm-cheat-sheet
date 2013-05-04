@@ -1,19 +1,19 @@
 \chapter{图}
 在ACM竞赛中，图一般使用邻接矩阵表示，代码框架如下；
 
-\begin{Codex}[label=graph.cpp ]
+\begin{Codex}[label=graph.c]
 #define MAXN 100  // 顶点最大个数
 
-static int n; // 顶点个数
-static int G[MAXN][MAXN]; // 邻接矩阵
-static int visited_edges[MAXN][MAXN]; // 边的访问历史记录
-static int visited_vertices[MAXN]; // 顶点的访问历史记录
+int n; // 顶点个数
+int G[MAXN][MAXN]; // 邻接矩阵
+int visited_edges[MAXN][MAXN]; // 边的访问历史记录
+int visited_vertices[MAXN]; // 顶点的访问历史记录
 \end{Codex}
 
 \section{深度优先搜索} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 图的深度优先搜索的代码框架如下：
 
-\begin{Codex}[label=graph.cpp]
+\begin{Codex}[label=graph.c]
 /**
  * @brief 图的深度优先搜索代码框架，搜索边.
  * @param[in] u 出发顶点
@@ -24,7 +24,7 @@ static int visited_vertices[MAXN]; // 顶点的访问历史记录
  * @remark 在使用的时候，为了降低递归的内存占用量，可以把
  * n, G, visited 抽出来作为全局变量
  */
-static void dfs(const int u, 
+void dfs(const int u, 
                 const int n, const int G[][MAXN], int visited[][MAXN]) {
     int v;
     for(v = 0;  v < n; v++) if(G[u][v] && !visited[u][v]) {
@@ -46,7 +46,7 @@ static void dfs(const int u,
  * @remark 在使用的时候，为了降低递归的内存占用量，可以把
  * n, G, visited 抽出来作为全局变量
  */
-static void dfs(const int u, 
+void dfs(const int u, 
                 const int n, const int G[][MAXN], int visited[MAXN]) {  
     int v;
     visited[u] = 1;
@@ -59,6 +59,8 @@ static void dfs(const int u,
 \end{Codex}
 
 \subsection{黑白图像}
+
+\subsubsection{描述}
 输入一个n*n的黑白图像（1表示黑丝，0表示白色），任务是统计其中八连块的个数。
 如果两个黑格子有公共边或者公共定点，就说它们属于同一个八连块。如图~\ref{fig:blackwhiteImage}所示的
 黑白图像中有3个八连块。
@@ -68,17 +70,18 @@ static void dfs(const int u,
 \figcaption{拥有3个八连块的黑白图}\label{fig:blackwhiteImage}
 \end{center}
 
+\subsubsection{代码}
 \begin{Codex}[label=blackwhite_image.c]
 #include <stdio.h>
 #include <string.h>
 
 #define MAXN 16
 
-static int n;
+int n;
 // 黑白图，1 表示黑色，0表示白色，加一圈0，用于判断出界
-static int G[MAXN + 1][MAXN + 1];
+int G[MAXN + 1][MAXN + 1];
 // 记录格子(x,y)是否已经被访问过
-static int visitied[MAXN][MAXN];
+int visitied[MAXN][MAXN];
 
 void dfs(const int x, const int y) {
     // 曾经访问过这个格子，或者当前格子是白色
@@ -108,7 +111,7 @@ Sample Input
 Sample Output
 3
 */
-int main(int argc, char* argv[]) {
+int main() {
     int i, j;
     char s[MAXN]; // 矩阵的一行
     int count = 0; // 八连块的个数
@@ -151,20 +154,8 @@ int main(int argc, char* argv[]) {
 \myenddot
 
 \subsection{欧拉回路}
-如果能从图的某一顶点出发，每条边恰好经过一次，这样的路线称为\textbf{欧拉道路}(Eulerian Path)。
-如果每条边恰好经过一次，且能回到起点，这样的路线称为\textbf{欧拉回路}(Eulerian Circuit)。
 
-对于无向图G，当且仅当G是连通的，且最多有两个奇点，则存在欧拉道路。
-如果有两个奇点，则必须从其中一个奇点出发，到另一个奇点终止。
-
-如果没有奇点，则一定存在一条欧拉回路。
-
-对于有向图G，当且仅当G是连通的，且每个点的入度等于出度，则存在欧拉回路。
-
-如果有两个顶点的入度与出度不相等，且一个顶点的入度比出度小1，另一个顶点的入度比出度大1，此时，
-存在一条欧拉道路，以前一个顶点为起点，以后一个顶点为终点
-
-\subsubsection{The Necklace} 
+\subsubsection{描述}
 本题是 UVA 10054 - The Necklace。
 
 My little sister had a beautiful necklace made of colorful beads. Two successive beads in the 
@@ -181,16 +172,14 @@ whether she was able to collect all of them. Now, she has come to me for help. S
 
 Please help me write a program to solve the problem.
 
-\textbf{Input}
-
+\subsubsection{Input}
 The input contains T test cases. The first line of the input contains the integer T.
 
 The first line of each test case contains an integer $N(5 \leq N \leq 1000)$ giving the number of beads 
 my sister was able to collect. Each of the next N lines contains two integers describing 
 the colors of a bead. Colors are represented by integers ranging from 1 to 50.
 
-\textbf{Output}
-
+\subsubsection{Output}
 For each test case in the input first output the test case number as shown in the sample output. Then 
 if you apprehend that some beads may be lost just print the sentence ``some beads may be lost" on a 
 line by itself. Otherwise, print N lines with a single bead description on each line. Each bead 
@@ -201,34 +190,51 @@ on line N must be equal to the first integer on line 1. Since there are many sol
 
 Print a blank line between two successive test cases.
 
-\textbf{Sample Input} \\
-2 \\
-5 \\
-1 2 \\
-2 3 \\
-3 4 \\
-4 5 \\
-5 6 \\
-5 \\
-2 1 \\
-2 2 \\
-3 4 \\
-3 1 \\
-2 4 \\
+\subsubsection{Sample Input}
+\begin{Code}
+2
+5
+1 2
+2 3
+3 4
+4 5
+5 6
+5
+2 1
+2 2
+3 4
+3 1
+2 4
+\end{Code}
 
-\textbf{Sample Output} \\
-Case \#1 \\
-some beads may be lost \\
-\\
-Case \#2 \\
-2 1 \\
-1 3 \\
-3 4 \\
-4 2 \\
-2 2 \\
+\subsubsection{Sample Output}
+\begin{Code}
+Case \#1
+some beads may be lost
+
+Case \#2
+2 1
+1 3
+3 4
+4 2
+2 2
+\end{Code}
 
 \subsubsection{分析}
 这题就是欧拉回路+打印路径。
+
+如果能从图的某一顶点出发，每条边恰好经过一次，这样的路线称为\textbf{欧拉道路}(Eulerian Path)。
+如果每条边恰好经过一次，且能回到起点，这样的路线称为\textbf{欧拉回路}(Eulerian Circuit)。
+
+对于无向图G，当且仅当G是连通的，且最多有两个奇点，则存在欧拉道路。
+如果有两个奇点，则必须从其中一个奇点出发，到另一个奇点终止。
+
+如果没有奇点，则一定存在一条欧拉回路。
+
+对于有向图G，当且仅当G是连通的，且每个点的入度等于出度，则存在欧拉回路。
+
+如果有两个顶点的入度与出度不相等，且一个顶点的入度比出度小1，另一个顶点的入度比出度大1，此时，
+存在一条欧拉道路，以前一个顶点为起点，以后一个顶点为终点
 
 \subsubsection{代码}
 \begin{Codex}[label=eulerian_circuit.c]
@@ -237,12 +243,12 @@ Case \#2 \\
 
 #define MAXN 51  // 顶点最大个数
 
-static int G[MAXN][MAXN];
-static int visited_vertices[MAXN]; 
-static int visited_edges[MAXN][MAXN];
-static int count[MAXN]; // 顶点的度
+int G[MAXN][MAXN];
+int visited_vertices[MAXN]; 
+int visited_edges[MAXN][MAXN];
+int count[MAXN]; // 顶点的度
 
-static void dfs(const int u) {  
+void dfs(const int u) {  
     int v;
     visited_vertices[u] = 1;
     for(v = 0;  v < MAXN; v++) if(G[u][v] && !visited_vertices[v]) {
@@ -255,7 +261,7 @@ static void dfs(const int u) {
  * @param[in] u 起点
  * @return 无
  */
-static void euler(const int u){
+void euler(const int u){
     int v;
     for(v = 0; v < MAXN; ++v) if(G[u][v]){
         --G[u][v]; --G[v][u]; // 这个技巧，即有visited的功能，又允许重复边
@@ -344,6 +350,8 @@ int main() {
 我们通常说的BFS，默认指的是单向BFS，此外还有双向BFS。
 
 \subsection{走迷宫}
+
+\subsubsection{描述}
 一个迷宫由$n$行$m$列的单元格组成，每个单元格要么是空地（用0表示），要
 么是障碍物（用1表示）。你的任务是找到一条从入口到出口的最短移动序列，
 其中UDLR分别表示上下左右四个方向。任何时候都不能再障碍物格子中，也不
@@ -368,23 +376,23 @@ int main() {
 #define MAXN 100
 
 // 迷宫的行数，列数
-static int n, m;
+int n, m;
 // 迷宫，0表示空地，1表示障碍物
-static int G[MAXN][MAXN];
+int G[MAXN][MAXN];
 // 标记格子是否已访问过
-static int visited[MAXN][MAXN];
+int visited[MAXN][MAXN];
 // 每个格子的前驱
-static int father[MAXN][MAXN];
+int father[MAXN][MAXN];
 // 前趋到该格子的前进方向
-static int last_direction[MAXN][MAXN];
+int last_direction[MAXN][MAXN];
 
 // 四个方向
-static const char name[4] = {'U','R','D','L'};
-static const int dx[4] = {-1, 0, 1, 0}; // 行
-static const int dy[4] = {0, 1, 0, -1}; // 列
+const char name[4] = {'U','R','D','L'};
+const int dx[4] = {-1, 0, 1, 0}; // 行
+const int dy[4] = {0, 1, 0, -1}; // 列
 
 // 队列
-static int q[MAXN * MAXN];
+int q[MAXN * MAXN];
 
 /*
  * @brief 广搜
@@ -393,7 +401,7 @@ static int q[MAXN * MAXN];
  * @param[in] y 入口的y坐标
  * @return 无
  */
-static void bfs(int x, int y) {
+void bfs(int x, int y) {
     int front = 0, rear = 0;
     int u = x * m + y;
     int d; // 方向
@@ -430,7 +438,7 @@ static void bfs(int x, int y) {
  * @param[in] y 目标点的y坐标
  * @return 无
  */
-static void print_path_r(const int x, const int y) {
+void print_path_r(const int x, const int y) {
     const int fx = father[x][y] / m;
     const int fy = father[x][y] % m;
     if (fx != x || fy != y) {
@@ -439,7 +447,7 @@ static void print_path_r(const int x, const int y) {
     }
 }
 
-static int direction[MAXN * MAXN];
+int direction[MAXN * MAXN];
 /*
  * @brief 显式栈实现路径输出
  *
@@ -447,7 +455,7 @@ static int direction[MAXN * MAXN];
  * @param[in] y 目标点的y坐标
  * @return 无
  */
-static void print_path(int x, int y) {
+void print_path(int x, int y) {
     int c = 0;
     while(1) {
         const int fx = father[x][y] / m;
@@ -509,6 +517,8 @@ int main(void) {
 
 \subsection{八数码问题}
 \label{subsec:eightDigits}
+
+\subsubsection{描述}
 编号为1$\sim$8的8个正方形滑块摆成3行3列，有一个格子空着，如图~\ref{fig:eightDigits}所示。
 
 \begin{center}
@@ -517,31 +527,37 @@ int main(void) {
 \end{center}
 
 每次可以把与空格相邻的滑块（有公共边才算相邻）移到空格中，而它原
-来的位置就成了新的空格。目标局面固定如下（用$x$表示空格）：\\
-1 2 3 \\
-4 5 6 \\
+来的位置就成了新的空格。目标局面固定如下（用$x$表示空格）：
+\begin{Code}
+1 2 3
+4 5 6
 7 8 x
+\end{Code}
 
 给定初始局面，计算出最短的移动路径。
 
-\textbf{输入}
-
-用一行表示一个局面，例如下面的这个局面： \\
- 1  2  3 \\
- x  4  6 \\
- 7  5  8 \\
+\subsubsection{输入}
+用一行表示一个局面，例如下面的这个局面：
+\begin{Code}
+ 1  2  3
+ x  4  6
+ 7  5  8
+\end{Code}
 可以表示为 1 2 3 x 4 6 7 5 8。 
 
-\textbf{输出}
-
+\subsubsection{输出}
 如果有解答，输出一个由四个字母'r','l','u','d'组成的移动路径。
 如果没有，输出"unsolvable"。 
 
-\textbf{样例输入} \\
+\subsubsection{样例输入}
+\begin{Code}
 2  3  4  1  5  x  7  6  8
+\end{Code}
 
-\textbf{样例输出} \\
+\subsubsection{样例输出}
+\begin{Code}
 ullddrurdllurdruldr
+\end{Code}
 
 \subsubsection{分析}
 计算“最短”，很自然的想到BFS。
@@ -564,8 +580,9 @@ ullddrurdllurdruldr
 
 \subsubsection{代码}
 \begin{Codex}[label=eight_digits_bfs.c]
-#include<stdio.h>
-#include<string.h>
+#include <stdio.h>
+#include <string.h>
+#include <assert.h>
 
 #define DIGITS 9 // 棋盘中数字的个数，也是变进制数需要的位数
 #define     MATRIX_EDGE 3       // 棋盘边长
@@ -573,63 +590,59 @@ ullddrurdllurdruldr
 // 3x3的棋盘，状态最多有 9!种
 #define     MAX         362880
 
-typedef int State[DIGITS]; // 单个状态
+typedef int state_t[DIGITS]; // 单个状态
 
-static State q[MAX]; // 队列，也是哈希表
-static int front, rear;
-static int dist[MAX - 1]; // 由初始状态到本状态的最短步数
-static int father[MAX - 1]; // 父状态，初始状态无父状态
-static char move[MAX - 1]; // 父状态到本状态的移动方向
+state_t q[MAX]; // 队列，也是哈希表
+int front, rear;
+int distance[MAX - 1]; // 由初始状态到本状态的最短步数
+int father[MAX - 1]; // 父状态，初始状态无父状态
+char move[MAX - 1]; // 父状态到本状态的移动方向
 
 // 目标状态
-static const int goal[] = {1, 2, 3, 4, 5, 6, 7, 8, 0};
-static const int space_number = 0; // 空格对应着数字 0
+const int goal[] = {1, 2, 3, 4, 5, 6, 7, 8, 0};
+const int space_number = 0; // 空格对应着数字 0
 
 // 上下左右四个方向
-static const int dx[] = {-1, 1, 0, 0};
-static const int dy[] = {0, 0, -1, 1};
-static const char dc[] = { 'u', 'd', 'l', 'r' };
+const int dx[] = {-1, 1, 0, 0};
+const int dy[] = {0, 0, -1, 1};
+const char dc[] = { 'u', 'd', 'l', 'r' };
 
 /**
  * @brief 初始化哈希表.
  * @return 无
  */
-static void init_lookup_table(); // 版本 1
+void init_lookup_table(); // 版本 1
 
 /**
  * @brief 插入到 visited表中.
  * @param[in] index 状态在队列中的位置
  * @return 成功返回1，失败返回0
  */
-static int try_to_insert(const int index);
+int try_to_insert(const int index);
 
-static void init_lookup_table_hash(); // 版本2
-static int try_to_insert_hash(const int index);
+void init_lookup_table_hash(); // 版本2
+int try_to_insert_hash(const int index);
 
-static void init_lookup_table_stl(); // 版本3
-static int try_to_insert_stl(const int index);
+void init_lookup_table_stl(); // 版本3
+int try_to_insert_stl(const int index);
 
 /**
  * @brief 单向BFS.
  * @return 返回目标状态在队列q中的下标 ，失败则返回0
  */
-static int bfs() {
+int bfs() {
     // 三个版本随意切换
-    init_lookup_table(); // 初始化一个节点查找表
+    init_lookup_table();
     // init_lookup_table_hash();
     // init_lookup_table_stl(); // 这个版本会 Time Limit Exceeded
-    
-    father[0] = 0; // 初始状态无父状态
-    dist[0] = 0;
-    move[0] = -1;
 
     while (front < rear) {
         int x, y, z, d;
-        const State* const s = &(q[front]);
-        if (memcmp(goal, (*s),sizeof((*s))) == 0) {
+        const state_t*s = &(q[front]);
+        if (memcmp(goal, *s,sizeof(state_t)) == 0) {
             return front;  // 找到目标状态，成功返回
         }
-        for (z = 0; z < 9; z++)  if ((*s)[z] == space_number) {
+        for (z = 0; z < DIGITS; z++)  if ((*s)[z] == space_number) {
             break;  // 找 0 的位置
         }
         
@@ -641,9 +654,10 @@ static int bfs() {
 
             if (newx >= 0 && newx < MATRIX_EDGE && newy >= 0 &&
                 newy < MATRIX_EDGE) { // 没有越界
-                State * const t = &(q[rear]);
+                state_t *t = &(q[rear]);
                 memcpy(t, s, sizeof((*s)));
-                (*t)[newz] = (*s)[z];
+                assert((*s)[z] == space_number);
+                (*t)[newz] = space_number;
                 (*t)[z] = (*s)[newz];
 
                 // 三个版本随意切换
@@ -652,7 +666,7 @@ static int bfs() {
                 // if (try_to_insert_stl(rear)) {
                     father[rear] = front;
                     move[rear] = dc[d];
-                    dist[rear] = dist[front] + 1;
+                    distance[rear] = distance[front] + 1;
                     rear++;
                 } 
             }
@@ -669,7 +683,7 @@ static int bfs() {
  * @brief 输入.
  * @return 无
  */
-static void input() {
+void input() {
     int ch, i;
     for (i = 0; i < DIGITS; ++i) {
         do {
@@ -679,17 +693,21 @@ static void input() {
         if (ch == 'x') q[0][i] = 0; // x 映射成数字 0
         else           q[0][i] = ch - '0';
     }
+    front = 0; rear = 1;
+    father[0] = 0; // 初始状态无父状态
+    distance[0] = 0;
+    move[0] = -1;
     return;
 }
 
-static int top = -1;
-static char stack[MAX];
+int top = -1;
+char stack[MAX];
 /**
  * @brief 打印从初始状态到目标状态的移动序列.
  * @param[in] index 目标状态在队列q中的下标
  * @return 无
  */
-static void output(const int index) {
+void output(const int index) {
     int i;
     for (i = index; i > 0; i = father[i]) {
         stack[++top] = move[i];
@@ -703,7 +721,6 @@ static void output(const int index) {
 int main() {
     int ans;
 
-    front = 0; rear = 1;
     input();
     
     ans = bfs();
@@ -720,14 +737,14 @@ int main() {
 // 与状态一一对应，因此可以把状态一一映射到一个9位变进制数
 
 // 9 位变进制数，每个位数的单位，0!~8!
-static const int fac[] = {40320, 5040, 720, 120, 24, 6, 2, 1, 1};
+const int fac[] = {40320, 5040, 720, 120, 24, 6, 2, 1, 1};
 
 // 采用本方案，由于是完美哈希，没有冲突，
 // 可以用 MAX 代替 MAX_HASH_SIZE，减少内存占用量
-static int visited[MAX]; // 历史记录表
+int visited[MAX]; // 历史记录表
 
 /** 初始化哈希表. */
-static void init_lookup_table() {
+void init_lookup_table() {
     memset(visited, 0, sizeof(visited));
 }
 
@@ -737,12 +754,12 @@ static void init_lookup_table() {
  * @param[in] s 状态
  * @return 序数，作为hash值
  */
-static int hash(const State s) {
+int hash(const state_t *s) {
     int i, j;
     int key = 0; // 将 q[index] 映射到整数 key
     for (i = 0; i < 9; i++) {
         int cnt = 0;
-        for (j = i + 1; j < 9; j++) if (s[i] > s[j]) cnt++;
+        for (j = i + 1; j < 9; j++) if ((*s)[i] > (*s)[j]) cnt++;
         key += fac[i] * cnt;
     }
     return key;
@@ -753,8 +770,8 @@ static int hash(const State s) {
  * @param[in] index 状态在队列中的位置
  * @return 成功返回1，失败返回0
  */
-static int try_to_insert(const int index) {
-    const int key = hash(q[index]); // 将 q[index] 映射到整数 code
+int try_to_insert(const int index) {
+    const int key = hash(&q[index]); // 将 q[index] 映射到整数 code
     
     if (visited[key]) return 0;
     else visited[key] = 1;
@@ -768,23 +785,23 @@ static int try_to_insert(const int index) {
 int head[MAX_HASH_SIZE];
 int next[MAX];
 
-static void init_lookup_table_hash() {
+void init_lookup_table_hash() {
     memset(head, 0, sizeof(head));
     memset(next, 0, sizeof(next));
 }
-static int hash2(const State *s) {
+int hash2(const state_t *s) {
     int i;
     int v = 0;
     for(i = 0; i < 9; i++) v = v * 10 + (*s)[i];
     return v % MAX_HASH_SIZE;
 }
 
-static int try_to_insert_hash(const int index) {
+int try_to_insert_hash(const int index) {
     const int h = hash2(&(q[index]));
     int u = head[h]; // 从表头开始查找单链表
     while(u) {
         // 找到了，插入失败
-        if(memcmp(q[u], q[index], sizeof(State)) == 0) return 0;
+        if(memcmp(q[u], q[index], sizeof(state_t)) == 0) return 0;
         u = next[u]; // 顺着链表继续找
     }
     next[index] = head[h]; // 插入到链表中
@@ -796,7 +813,7 @@ static int try_to_insert_hash(const int index) {
 #include <set>
 struct cmp {
     bool operator() (int a, int b) const {
-        return memcmp(&q[a], &q[b], sizeof(State)) < 0;
+        return memcmp(&q[a], &q[b], sizeof(state_t)) < 0;
     }
 };
 std::set<int, cmp> visited_set;
@@ -903,23 +920,23 @@ typedef struct {
     char choice;  // 左右上下四个方向移动，见全局常量 DI DJ DC
 } state_t;
 
-static state_t states[MAX];  // 全局的一条状态变化路径
+state_t states[MAX];  // 全局的一条状态变化路径
 
-static int  startIndex, goalIndex; // 开始状态，目标状态对应的hash值
+int  startIndex, goalIndex; // 开始状态，目标状态对应的hash值
 
 // 目标状态
-static const int goal = 123456780;
+const int goal = 123456780;
 // 每个数字在棋盘中的位置，例如0，在(1,1)=4这个位置上
-static const int goal_pos[DIGITS] = {8,0,1,2,3,4,5,6,7};
-static const int space_number = 0; // 空格对应着数字 0
+const int goal_pos[DIGITS] = {8,0,1,2,3,4,5,6,7};
+const int space_number = 0; // 空格对应着数字 0
 
 // 上下左右四个方向
-static const int DI[] = {-1, 1, 0, 0};
-static const int DJ[] = {0, 0, -1, 1};
-static const char DC[] = { 'u', 'd', 'l', 'r' };
+const int DI[] = {-1, 1, 0, 0};
+const int DJ[] = {0, 0, -1, 1};
+const char DC[] = { 'u', 'd', 'l', 'r' };
 
 // 9 位变进制数，每个位数的单位，0!~8!
-static const int fac[] = {40320, 5040, 720, 120, 24, 6, 2, 1, 1};
+const int fac[] = {40320, 5040, 720, 120, 24, 6, 2, 1, 1};
 
 /**
  * @brief 计算状态的hash值，这里用康托展开，是完美哈希.
@@ -927,7 +944,7 @@ static const int fac[] = {40320, 5040, 720, 120, 24, 6, 2, 1, 1};
  * @param[in] s 当前状态
  * @return 序数，作为hash值
  */
-static int hash(int s) {
+int hash(int s) {
     int i, j;
     int d[DIGITS];
     int key = 0;
@@ -956,7 +973,7 @@ static int hash(int s) {
  * @param s 状态
  * @return 预估代价
  */
-static int calcH(int s) {
+int calcH(int s) {
     int i;
     int h = 0;
     
@@ -976,7 +993,7 @@ static int calcH(int s) {
  * @remark 《算法竞赛入门经典》第131页7.5.3节，是用0表示空格，
  * POJ 1077是用'x'表示空格，前者简化了一点，POJ 1077还需要把'x'映射成0
  */
-static int input() {
+int input() {
     int ch, i;
     int start = 0;
     for (i = 0; i < DIGITS; ++i) {
@@ -993,7 +1010,7 @@ static int input() {
 /**
  * 计算一个排列的逆序数，0 除外.
  */
-static int inversion_count(int permutation) {
+int inversion_count(int permutation) {
     int i, j;
     int d[DIGITS];
     int c = 0; // 逆序数
@@ -1025,22 +1042,22 @@ static int inversion_count(int permutation) {
  * @param s 目标状态
  * @return 1表示无解，0表示有解
  */
-static int not_solvable(const int s) {
+int not_solvable(const int s) {
     return inversion_count(s) % 2;
 }
 
 // 存放 next()的输出结果
-static char choice[4]; // 四个防线
-static int nextIndex[4]; // 接下来的四个状态
+char choice[4]; // 四个防线
+int nextIndex[4]; // 接下来的四个状态
 
 /*
  * @brief 向四个方向扩展
  * @param[in] s 状态
  * @return 无
  */
-static void next(int s) {
+void next(int s) {
     int i, j, k;
-    static int p[MATRIX_EDGE][MATRIX_EDGE]; // 一个状态对应的矩阵
+    int p[MATRIX_EDGE][MATRIX_EDGE]; // 一个状态对应的矩阵
     int i0, j0;  // 空格位置
 
     for (i = MATRIX_EDGE - 1; i >= 0; i--) {
@@ -1080,7 +1097,7 @@ static void next(int s) {
     }
 }
 
-static int cmpInt(const int *x, const int *y) {
+int cmpInt(const int *x, const int *y) {
     const int sub = *x - *y;
     if(sub > 0) {
         return 1;
@@ -1091,16 +1108,16 @@ static int cmpInt(const int *x, const int *y) {
     }
 }
 
-#include "heap.c"  // 相当于复制粘贴
-static heap_t heap;
-static int heapIndex[MAX + 4]; // 状态 x 在heap中的下标
+#include "heap.c" // 相当于复制粘贴
+heap_t heap;
+int heapIndex[MAX + 4]; // 状态 x 在heap中的下标
 
 /**
  * @brief A*搜索
  * @param[in] start 初始状态
  * @return 如果无解，返回0，如果有解返回1
  */
-static int astar(const int start) {
+int astar(const int start) {
     int i, j, k, ng, nf;
     if (not_solvable(start)) return 0;
 
@@ -1145,12 +1162,12 @@ static int astar(const int start) {
     return 0;
 }
 
-#include "stack.c"  // 相当于复制粘贴
+#include "stack.c" // 相当于复制粘贴
 /**
  * @brief 打印移动序列.
  * @return 无
  */
-static void output() {
+void output() {
     int i;
     stack_t stack;
     stack_init(&stack, MAX);
@@ -1171,7 +1188,7 @@ static void output() {
  * @brief 打印棋盘的每次变化.
  * @return 无
  */
-static void output1() {
+void output1() {
     int i;
     int d[DIGITS];
     stack_t stack;

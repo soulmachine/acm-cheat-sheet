@@ -17,15 +17,8 @@ C++可以直接使用\fn{std::stack}。
  * @date 2010-7-31
  * @version 1.0
  */
-
 #include <stdlib.h>  /* for malloc() */
 #include <string.h>  /* for memcpy() */
-
-#ifndef __cplusplus 
-typedef char bool;
-#define false 0
-#define true 1
-#endif
 
 typedef int stack_elem_t; // 元素的类型
 
@@ -45,7 +38,7 @@ typedef struct stack_t {
  * @param[in] capacity 初始容量
  * @return 无
  */
-static void stack_init(stack_t *s, const int capacity) {
+void stack_init(stack_t *s, const int capacity) {
     s->size = 0;
     s->capacity = capacity;
     s->elems = (stack_elem_t*)malloc(capacity * sizeof(stack_elem_t));
@@ -56,7 +49,7 @@ static void stack_init(stack_t *s, const int capacity) {
  * @param[inout] s 栈对象的指针
  * @return 无
  */
-static void stack_uninit(stack_t *s) {
+void stack_uninit(stack_t *s) {
     s->size = 0;
     s->capacity = 0;
     free(s->elems);
@@ -66,9 +59,9 @@ static void stack_uninit(stack_t *s) {
 /** 
  * @brief 判断栈是否为空.
  * @param[in] s 栈对象的指针
- * @return 是空，返回true，否则返回false
+ * @return 是空，返回 1，否则返回 0
  */
-static bool stack_empty(const stack_t *s) {
+int stack_empty(const stack_t *s) {
     return s->size == 0;
 }
 
@@ -77,7 +70,7 @@ static bool stack_empty(const stack_t *s) {
  * @param[in] s 栈对象的指针
  * @return 元素个数
  */
-static int stack_size(const stack_t *s) {
+int stack_size(const stack_t *s) {
     return s->size;
 }
 
@@ -87,7 +80,7 @@ static int stack_size(const stack_t *s) {
  * @param[in] x 要进栈的元素
  * @return 无
  */
-static void stack_push(stack_t *s, const stack_elem_t x)
+void stack_push(stack_t *s, const stack_elem_t x)
 {
     if(s->size == s->capacity) { /*已满，重新分配内存*/
         stack_elem_t* tmp = (stack_elem_t*)realloc(s->elems, 
@@ -103,7 +96,7 @@ static void stack_push(stack_t *s, const stack_elem_t x)
  * @param[in] s 栈对象的指针
  * @return 无
  */
-static void stack_pop(stack_t *s) {
+void stack_pop(stack_t *s) {
     s->size--;
 }
 
@@ -112,7 +105,7 @@ static void stack_pop(stack_t *s) {
  * @param[in] s 栈对象的指针
  * @return 栈顶元素
  */
-static stack_elem_t stack_top(const stack_t *s) {
+stack_elem_t stack_top(const stack_t *s) {
     return s->elems[s->size - 1];
 }
 \end{Codex}
@@ -148,7 +141,7 @@ static stack_elem_t stack_top(const stack_t *s) {
  * @note 无
  * @remarks 无
  */
-static void hanoi(int n, char x, char y, char z)
+void hanoi(int n, char x, char y, char z)
 {
     if(n ==  1) {
         /* 移动操作move(x,n,z)可定义为（c是初始值为的全局
@@ -170,14 +163,16 @@ static void hanoi(int n, char x, char y, char z)
 
 \subsection{数制转换}
 \begin{Codex}[label=convert_base.cpp]
- /*
+#include <stack>
+#include <stdio.h>
+
+ /**
   * @brief 数制转换，将一个整数转化为 d进制，d<=16.
   * @param[in] n 整数n
   * @param[in] d d进制
   * @return 无
   */
-static void convert_base(int n, const int d)
-{
+void convert_base(int n, const int d) {
 	std::stack<int> s;
 	int e;
 
@@ -194,11 +189,10 @@ static void convert_base(int n, const int d)
 	return;
 }
 
-// 栈的最大长度
-#define MAX 64 // 64位机器下，二进制数的位数最大为64，其它进制只可能比二进制短
-static int stack[MAX];
-static int top = -1;
- /*
+#define MAX 64 // 栈的最大长度
+int stack[MAX];
+int top = -1;
+ /**
   * @brief 数制转换，将一个整数转化为 d进制，d<=16，更优化的版本.
   *
   * 如果可以预估栈的最大空间，则用数组来模拟栈，这时常用的一个技巧。
@@ -209,8 +203,7 @@ static int top = -1;
   * @param[in] d d进制
   * @return 无
   */
-static void convert_base2(int n, const int d)
-{
+void convert_base2(int n, const int d) {
 	int e;
 
 	while(n != 0) {
@@ -231,7 +224,7 @@ static void convert_base2(int n, const int d)
 \subsection{队列的C语言实现}
 C++可以直接使用\fn{std::queue}。
 
-\begin{Codex}[label=queue.cpp]
+\begin{Codex}[label=queue.c]
 /** @file queue.c
   * @brief 队列，顺序存储，循环队列.
   * @author soulmachine@gmail.com
@@ -279,7 +272,7 @@ void queue_init(queue_t *q, const int capacity) {
   * @param[inout] q 队列对象的指针
   * @return 无
   */
-static int queue_uninit(queue_t *q) {
+void queue_uninit(queue_t *q) {
     q->front = 0;
     q->rear = 0;
     q->capacity = 0;
@@ -292,7 +285,7 @@ static int queue_uninit(queue_t *q) {
   * @param[in] q 队列结构体的指针
   * @return 是空，返回TRUE，否则返回FALSE
   */
-static bool queue_empty(const queue_t *q) {
+bool queue_empty(const queue_t *q) {
     return q->front == q->rear;
 }
 
@@ -301,7 +294,7 @@ static bool queue_empty(const queue_t *q) {
  * @param[in] s 栈对象的指针
  * @return 元素个数
  */
-static int queue_size(const queue_t *q) {
+int queue_size(const queue_t *q) {
     return (q->rear - q->front + q->capacity) % q->capacity;
 }
 
@@ -311,7 +304,7 @@ static int queue_size(const queue_t *q) {
   * @param[in] x 要添加的元素
   * @return 无
   */
-static void queue_push(queue_t *q, const queue_elem_t x) {
+void queue_push(queue_t *q, const queue_elem_t x) {
     if( (q->rear+1) % q->capacity == q->front) { // 已满，重新分配内存
         queue_elem_t* tmp = (queue_elem_t*)malloc(
             q->capacity * 2 * sizeof(queue_elem_t));
@@ -345,7 +338,7 @@ static void queue_push(queue_t *q, const queue_elem_t x) {
   * @param[out] x 存放退出队列的元素
   * @return 无
   */
-static void queue_pop(queue_t *q) {
+void queue_pop(queue_t *q) {
     q->front = (q->front + 1) % q->capacity;    
 }
 
@@ -354,7 +347,7 @@ static void queue_pop(queue_t *q) {
  * @param[in] q 队列对象的指针
  * @return 队首元素
  */
-static queue_elem_t queue_front(const queue_t *q) {
+queue_elem_t queue_front(const queue_t *q) {
     return q->elems[q->front];
 }
 
@@ -363,7 +356,7 @@ static queue_elem_t queue_front(const queue_t *q) {
  * @param[in] q 队列对象的指针
  * @return 队首元素
  */
-static queue_elem_t queue_back(const queue_t *q) {
+queue_elem_t queue_back(const queue_t *q) {
     return q->elems[q->rear - 1];
 }
 \end{Codex}
@@ -382,8 +375,7 @@ static queue_elem_t queue_back(const queue_t *q) {
  * @param[in] n (a+b)^n
  * @return 无
  */
-void yanghui_triangle(const int n)
-{
+void yanghui_triangle(const int n) {
     int i = 1;
     std::queue<int> q;
     /* 预先放入第一行的1 */

@@ -11,6 +11,8 @@
 \section{哈弗曼编码} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{POJ 1521 Entropy}
+
+\subsubsection{描述}
 给定一个英文字符串，使用0和1对其进行编码，求最优前缀编码，使其所需要的比特数最少。
 
 \subsubsection{分析}
@@ -20,25 +22,20 @@
 \begin{Codex}[label=poj1521_entropy.cpp]
 // 本题考查哈弗曼编码，但只需要统计哈弗曼编码后的总码长即可，
 // 没必要建哈弗曼树得出哈弗曼编码
-#include <cstdio>
-#include <cstring>
+#include <stdio.h>
+#include <string.h>
 #include <queue>
+#include <functional>
 
-static const int LINE_MAX = 256; // 一行最大字符数
-static const int MAX_ASCII = 128; // ASCII码最大值
+const int LINE_MAX = 256; // 一行最大字符数
+const int MAX_ASCII = 128; // ASCII码最大值
 
-class MyComparison {
-public:
-    bool operator() (const int& lhs, const int&rhs) const {
-        return lhs > rhs; // 使得从小到大排序，队列头为最小元素
-    }
-};
-
-int main() {
+int main_entropy() {
     char    s[LINE_MAX];
     int     count[MAX_ASCII] = {0}; // count[i]记录ASCII码为i的字符的出现次数
     int     sum;
-    std::priority_queue<int, std::vector<int>, MyComparison>    pq;
+    // 小根堆，队列头为最小元素
+    std::priority_queue<int, std::vector<int>, std::greater<int> >    pq;
 
     while (scanf("%s", s) > 0) {
         sum = 0; // 清零
@@ -50,7 +47,7 @@ int main() {
 
         for (int i = 0; i < len; i++) {
             count[s[i]]++;
-        } 
+        }
 
         for (int i = 0;i < MAX_ASCII; i++) {
             if (count[i] > 0) {
@@ -67,7 +64,7 @@ int main() {
         if (sum == 0) {
             sum = len; // 此时pq中只有一个元素
         }
-
+        
         while (!pq.empty()) { // clear
             pq.pop();
         }
