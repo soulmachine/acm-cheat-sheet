@@ -495,17 +495,27 @@ int main() {
 \item  TODO
 \myenddot
 
+\section{背包问题} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+背包问题(Knapsack problem\footnote{Knapsack problem, \myurl{http://en.wikipedia.org/wiki/Knapsack_problem}})有很多种版本，
+常见的是以下三种：
+\begindot
+\item 0-1背包问题(0-1 knapsack problem)：每种物品只有一个
+\item 完全背包问题(UKP, unbounded knapsack problem)：每种物品都有无限个可用
+\item 多重背包问题(BKP, bounded knapsack problem)：第i种物品有c[i]个可用
+\myenddot
 
-\section{0-1背包} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+其他版本的背包问题请参考“背包问题九讲”，\myurl{https://github.com/tianyicui/pack}
+
+\subsection{0-1背包问题}
 
 \subsubsection{描述}
-有$n$种物品，第$i$种物品的体积为$volume_i$，价值为$value_i$，每种物品只有一个。有一个容量为$V$的背包。
-求解将哪些物品装入背包可使这些物品的总体积不超过背包容量，且价值总和最大。 
+有$n$种物品，第$i$种物品的重量为$w_i$，价值为$v_i$，每种物品只有一个。背包能承受的重量为$W$。
+将哪些物品装入背包可使这些物品的总重量不超过背包容量，且价值总和最大？
 
 \subsubsection{输入}
 第1行包含一个整数T，是案例的个数。
-接下来是T个案例，每个案例3行，第1行包含两个整数$n, V(n \leq 1000 , V \leq 1000)$分别表示
-物品的种数和背包的容量，第2行包含n个整数表示每种物品的价值，第3行包含n个整数表示每种物品的体积。
+接下来是T个案例，每个案例3行，第1行包含两个整数$n, W(n \leq 1000 , W \leq 1000)$分别表示
+物品的种数和背包的容量，第2行包含n个整数表示每种物品的价值，第3行包含n个整数表示每种物品的重量。
 
 \subsubsection{输出}
 每行一个整数，表示价值总和的最大值。
@@ -524,81 +534,123 @@ int main() {
 \end{Code}
 
 \subsubsection{分析}
-定义状态f[i][j]，表示“把前i个物品装到容量为j的背包可以获得的最大价值”，则其状态转移方程便是：
-$$f[i][j]=\max\left\{f[i-1][j], f[i-1][j-volume[i]+value[i]\right\}$$
+由于每种物品仅有一个，可以选择装或者不装。
+
+定义状态f[i][j]，表示“把前i个物品装进容量为j的背包可以获得的最大价值”，
+则其状态转移方程便是：
+$$f[i][j]=\max\left\{f[i-1][j], f[i-1][j-w[i]+v[i]\right\}$$
+
+这个方程理解如下，把前i个物品装进容量为j的背包时，有两种情况：
+\begindot
+\item 第i个不装进去，这时所得价值为：$f[i-1][j]$
+\item 第i个装进去，这时所得价值为：$f[i-1][j-w[i]+v[i]$
+\myenddot
+
+动规过程的伪代码如下：
+\begin{Code}
+for i=1..n
+    for j=0..W
+        f[j]=max{f[j],f[j-w[i]]+v[i]};
+\end{Code}
+
+内循环从右向左也可以：
+\begin{Code}
+for i=1..n
+    for j=W..0
+        f[j]=max{f[j],f[j-w[i]]+v[i]};
+\end{Code}
+
+内循环从右向左时，可以把二维数组优化成一维数组。为什么呢？举个例子，测试数据如下：
+\begin{Code}
+1
+3 10
+4 5 6
+3 4 5
+\end{Code}
+
+f是从上到下、从右到左计算的，如图~\ref{fig:01pack}所示。
+\begin{center}
+\includegraphics[width=360pt]{01pack.gif}\\
+\figcaption{0-1背包问题的计算顺序}\label{fig:01pack}
+\end{center}
+
+当内循环是逆序时，且动规是用自底向上方式实现时，就可以保证同一行可以从右向左更新。
+
+设一维数组为d（又称为滚动数组\footnote{刘汝佳,算法竞赛入门经典，清华大学出版社，2009，第169页9.3.3节}），
+在更新d[j]之前，d[j]里保存的f[i-1][j]，更新之后，d[j]里保存的是f[i][j]。
 
 \subsubsection{代码}
-版本1，自顶向下。
+版本1，自底向上。
 
-\begin{Codex}[label=01pack.c]
+\begin{Codex}[label=01knapsack.c]
 #include <stdio.h>
 #include <string.h>
 
 #define MAXN 1000
-#define MAXV 1000
+#define MAXW 1000
 
 int T;
-int n, V;
-int volume[MAXN+1], value[MAXN+1]; /* 0 没有用 */
+int n, W;
+int w[MAXN+1], v[MAXN+1]; /* 0 没有用 */
 
-int f[MAXN + 1][MAXV + 1];
+int f[MAXN + 1][MAXW + 1];
 
 int main() {
     scanf("%d", &T);
     while(T--) {
         int i, j;
         memset(f, 0, sizeof(f));
-        scanf("%d %d", &n, &V);
-        for(i = 1; i <= n; ++i) scanf("%d", &value[i]);
-        for(i = 1; i <= n; ++i) scanf("%d", &volume[i]);
+        scanf("%d %d", &n, &W);
+        for(i = 1; i <= n; ++i) scanf("%d", &v[i]);
+        for(i = 1; i <= n; ++i) scanf("%d", &w[i]);
 
         for(i = 1; i <= n; ++i) {
-            for(j = 0; j <= V; ++j) {
+            /* for(j = W; j >= 0; --j) { /* 也可以 */
+            for(j = 0; j <= W; ++j) {
                 f[i][j] = f[i-1][j];
-                if(j >= volume[i]) {
-                    const int tmp = f[i-1][j-volume[i]] + value[i];
+                if(j >= w[i]) {
+                    const int tmp = f[i-1][j-w[i]] + v[i];
                     if(tmp > f[i][j]) f[i][j] = tmp;
                 }
             }
         }
-        printf("%d\n", f[n][V]);
+        printf("%d\n", f[n][W]);
     }
     return 0;
 }
 \end{Codex}
 
-版本2，自底向上，滚动数组。可以把数组f变成一维的，d是从右到左计算的，在计算d[j]
-之前，d[j]里保存的f[i-1][j]，计算完之后，d[j]里保存的是f[i][j]。
+版本2，自底向上，滚动数组。
 
-\begin{Codex}[label=01pack2.c]
+\begin{Codex}[label=01knapsack2.c]
 #include <stdio.h>
 #include <string.h>
 
 #define MAXN 1000
-#define MAXV 1000
+#define MAXW 1000
 
 int T;
-int n, V;
-int volume[MAXN], value[MAXN];
+int n, W;
+int w[MAXN], v[MAXN];
 
-int d[MAXV + 1]; // 滚动数组
+int d[MAXW + 1]; /* 滚动数组 */
 
 int main() {
     scanf("%d", &T);
     while(T--) {
         int i, j;
         memset(d, 0, sizeof(d));
-        scanf("%d %d", &n, &V);
-        for(i = 0; i < n; ++i) scanf("%d", &value[i]);
-        for(i = 0; i < n; ++i) scanf("%d", &volume[i]);
+        scanf("%d %d", &n, &W);
+        for(i = 0; i < n; ++i) scanf("%d", &v[i]);
+        for(i = 0; i < n; ++i) scanf("%d", &w[i]);
 
         for(i = 0; i < n; ++i) {
-            for(j = V; j >= volume[i]; --j) {
-                const int tmp = d[j - volume[i]] + value[i];
+            for(j = W; j >= w[i]; --j) {
+                const int tmp = d[j - w[i]] + v[i];
                 if(tmp > d[j]) d[j] = tmp;
             }
         }
-        printf("%d\n", d[V]);
+        printf("%d\n", d[W]);
     }
     return 0;
 }
@@ -616,8 +668,32 @@ int main() {
 \item  TODO
 \myenddot
 
-\section{完全背包} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{完全背包问题}
 
-\section{多重背包} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{描述}
+每种物品有无限个可用，其他信息与0-1背包相同。
+
+\subsubsection{分析}
+状态转移方程为：
+$$f[i][j]=\max\left\{f[i-1][j-k*w[i]+k*v[i], 0 \leq k*w[i] \leq j\right\}$$
+
+\subsubsection{代码}
+\begin{Codex}[label=ukp.c]
+
+\end{Codex}
+
+\subsection{多重背包问题}
+
+\subsubsection{描述}
+第i种物品有c[i]个可用，其他信息与0-1背包相同。
+
+\subsubsection{分析}
+状态转移方程为：
+$$f[i][j]=\max\left\{f[i-1][j-k*w[i]+k*v[i], 0 \leq k*w[i] \leq j, 0 \leq k \leq c[i]\right\}$$
+
+\subsubsection{代码}
+\begin{Codex}[label=bkp.c]
+
+\end{Codex}
 
 \section{最长公共子序列} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
