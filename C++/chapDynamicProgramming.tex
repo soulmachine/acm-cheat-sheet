@@ -321,7 +321,8 @@ int main() {
 
 \subsubsection{描述}
 有$n$种硬币，面值为别为$v_1,v_2,v_3,\cdots, v_n$，每种都有无限多。给定非负整数$S$，可以
-选取多少个硬币，使得面值和恰好为$S$？输出硬币数目的最小值和最大值。$1 \leq n \leq 100, 1 \leq S \leq 10000, 1 \leq v_i \leq S$。
+选取多少个硬币，使得面值和恰好为$S$？输出硬币数目的最小值和最大值。
+$1 \leq n \leq 100, 1 \leq S \leq 10000, 1 \leq v_i \leq S$。
 
 \subsubsection{输入}
 第1行$n$，
@@ -496,8 +497,8 @@ int main() {
 \myenddot
 
 \section{背包问题} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-背包问题(Knapsack problem\footnote{Knapsack problem, \myurl{http://en.wikipedia.org/wiki/Knapsack_problem}})有很多种版本，
-常见的是以下三种：
+背包问题(Knapsack problem\footnote{Knapsack problem, \myurl{http://en.wikipedia.org/wiki/Knapsack_problem}})
+有很多种版本，常见的是以下三种：
 \begindot
 \item 0-1背包问题(0-1 knapsack problem)：每种物品只有一个
 \item 完全背包问题(UKP, unbounded knapsack problem)：每种物品都有无限个可用
@@ -509,13 +510,13 @@ int main() {
 \subsection{0-1背包问题}
 
 \subsubsection{描述}
-有$n$种物品，第$i$种物品的重量为$w_i$，价值为$v_i$，每种物品只有一个。背包能承受的重量为$W$。
+有$N$种物品，第$i$种物品的重量为$w_i$，价值为$v_i$，每种物品只有一个。背包能承受的重量为$W$。
 将哪些物品装入背包可使这些物品的总重量不超过背包容量，且价值总和最大？
 
 \subsubsection{输入}
-第1行包含一个整数T，是案例的个数。
-接下来是T个案例，每个案例3行，第1行包含两个整数$n, W(n \leq 1000 , W \leq 1000)$分别表示
-物品的种数和背包的容量，第2行包含n个整数表示每种物品的价值，第3行包含n个整数表示每种物品的重量。
+第1行包含一个整数T，表示有T组测试用例。
+每组测试用例有3行，第1行包含两个整数$N, W(N \leq 1000 , W \leq 1000)$分别表示
+物品的种数和背包的容量，第2行包含N个整数表示每种物品的价值，第3行包含N个整数表示每种物品的重量。
 
 \subsubsection{输出}
 每行一个整数，表示价值总和的最大值。
@@ -548,19 +549,28 @@ $$f[i][j]=\max\left\{f[i-1][j], f[i-1][j-w[i]+v[i]\right\}$$
 
 动规过程的伪代码如下：
 \begin{Code}
-for i=1..n
+f[0..N][0..W] = 0
+for i=1..N
     for j=0..W
-        f[j]=max{f[j],f[j-w[i]]+v[i]};
+        f[i][j]=max{f[i-1][j],f[i-1][j-w[i]]+v[i]};
 \end{Code}
 
 内循环从右向左也可以：
 \begin{Code}
-for i=1..n
+f[0..N][0..W] = 0
+for i=1..N
     for j=W..0
-        f[j]=max{f[j],f[j-w[i]]+v[i]};
+        f[i][j]=max{f[i-1][j],f[i-1][j-w[i]]+v[i]};
 \end{Code}
 
-内循环从右向左时，可以把二维数组优化成一维数组。为什么呢？举个例子，测试数据如下：
+内循环从右向左时，可以把二维数组优化成一维数组。伪代码如下：
+\begin{Code}
+for i=1..N
+    for j=W..0
+        d[j]=max{d[j],d[j-w[i]]+v[i]};
+\end{Code}
+
+为什么呢？举个例子，测试数据如下：
 \begin{Code}
 1
 3 10
@@ -568,16 +578,31 @@ for i=1..n
 3 4 5
 \end{Code}
 
-f是从上到下、从右到左计算的，如图~\ref{fig:01pack}所示。
+f是从上到下、从右到左计算的，如图~\ref{fig:01knapsack}所示。
 \begin{center}
-\includegraphics[width=360pt]{01pack.gif}\\
-\figcaption{0-1背包问题的计算顺序}\label{fig:01pack}
+\includegraphics[width=360pt]{01knapsack.gif}\\
+\figcaption{0-1背包问题的计算顺序}\label{fig:01knapsack}
 \end{center}
 
 当内循环是逆序时，且动规是用自底向上方式实现时，就可以保证同一行可以从右向左更新。
 
 设一维数组为d（又称为滚动数组\footnote{刘汝佳,算法竞赛入门经典，清华大学出版社，2009，第169页9.3.3节}），
 在更新d[j]之前，d[j]里保存的f[i-1][j]，更新之后，d[j]里保存的是f[i][j]。
+
+事实上，使用一维数组解0-1背包问题的程序在后面会被多次用到，所以这里抽象出一
+个处理单个物品的函数，以后的代码中直接调用不加说明。
+\begin{Code}
+def ZeroOneKnapsack(d[], w, v)
+    for j = W..w
+        d[j] = max(d[j], d[j-w] + v)
+\end{Code}
+
+有了这个函数以后，0-1背包问题的伪代码就可以这样写：
+\begin{Code}
+d[0..W] = 0
+for i = 1..N
+    ZeroOneKnapsack(d[], w[i], v[i])
+\end{Code}
 
 \subsubsection{代码}
 版本1，自底向上。
@@ -589,32 +614,36 @@ f是从上到下、从右到左计算的，如图~\ref{fig:01pack}所示。
 #define MAXN 1000
 #define MAXW 1000
 
-int T;
-int n, W;
+int N, W;
 int w[MAXN+1], v[MAXN+1]; /* 0 没有用 */
 
 int f[MAXN + 1][MAXW + 1];
 
-int main() {
-    scanf("%d", &T);
-    while(T--) {
-        int i, j;
-        memset(f, 0, sizeof(f));
-        scanf("%d %d", &n, &W);
-        for(i = 1; i <= n; ++i) scanf("%d", &v[i]);
-        for(i = 1; i <= n; ++i) scanf("%d", &w[i]);
-
-        for(i = 1; i <= n; ++i) {
-            /* for(j = W; j >= 0; --j) { /* 也可以 */
-            for(j = 0; j <= W; ++j) {
-                f[i][j] = f[i-1][j];
-                if(j >= w[i]) {
-                    const int tmp = f[i-1][j-w[i]] + v[i];
-                    if(tmp > f[i][j]) f[i][j] = tmp;
-                }
+void dp() {
+    int i, j;
+    memset(f, 0, sizeof(f)); /* 背包不一定要装满 */
+    for(i = 1; i <= N; ++i) {
+        /* for(j = W; j >= 0; --j) { /* 也可以 */
+        for(j = 0; j <= W; ++j) {
+            f[i][j] = f[i-1][j];
+            if(j >= w[i]) {
+                const int tmp = f[i-1][j-w[i]] + v[i];
+                if(tmp > f[i][j]) f[i][j] = tmp;
             }
         }
-        printf("%d\n", f[n][W]);
+    }
+}
+
+int main() {
+    int i, T;
+    scanf("%d", &T);
+    while(T--) {
+        scanf("%d %d", &N, &W);
+        for(i = 1; i <= N; ++i) scanf("%d", &v[i]);
+        for(i = 1; i <= N; ++i) scanf("%d", &w[i]);
+
+        dp();
+        printf("%d\n", f[N][W]);
     }
     return 0;
 }
@@ -629,27 +658,42 @@ int main() {
 #define MAXN 1000
 #define MAXW 1000
 
-int T;
-int n, W;
+int N, W;
 int w[MAXN], v[MAXN];
 
 int d[MAXW + 1]; /* 滚动数组 */
 
+/**
+ * @brief 0-1背包问题中，处理单个物品.
+ * @param[in] d 滚动数组
+ * @param[in] w 该物品的重量
+ * @param[in] v 该物品的价值
+ * @return 无
+ */
+void zero_one_knapsack(int d[], const int w, const int v) {
+    int j;
+    for(j = W; j >= w; --j) {
+        const int tmp = d[j - w] + v;
+        if(tmp > d[j]) d[j] = tmp;
+    }
+}
+
+void dp() {
+    int i;
+    memset(d, 0, sizeof(d)); /* 背包不一定要装满 */
+
+    for(i = 0; i < N; ++i) zero_one_knapsack(d, w[i], v[i]);
+}
+
 int main() {
+    int i, T;
     scanf("%d", &T);
     while(T--) {
-        int i, j;
-        memset(d, 0, sizeof(d));
-        scanf("%d %d", &n, &W);
-        for(i = 0; i < n; ++i) scanf("%d", &v[i]);
-        for(i = 0; i < n; ++i) scanf("%d", &w[i]);
+        scanf("%d %d", &N, &W);
+        for(i = 0; i < N; ++i) scanf("%d", &v[i]);
+        for(i = 0; i < N; ++i) scanf("%d", &w[i]);
 
-        for(i = 0; i < n; ++i) {
-            for(j = W; j >= w[i]; --j) {
-                const int tmp = d[j - w[i]] + v[i];
-                if(tmp > d[j]) d[j] = tmp;
-            }
-        }
+        dp();
         printf("%d\n", d[W]);
     }
     return 0;
@@ -671,29 +715,394 @@ int main() {
 \subsection{完全背包问题}
 
 \subsubsection{描述}
-每种物品有无限个可用，其他信息与0-1背包相同。
+给你一个储钱罐(piggy bank)，往里面存硬币。存入的过程是不可逆的，要想把钱拿出来只能摔碎
+储钱罐。因此，你想知道里面是否有足够多的钱，把它摔碎是值得的。
+
+你可以通过储钱罐的重量来推测里面至少有多少钱。已知储钱罐空的时候的重量和装了硬币后的重量，
+还有每种硬币的重量和面值，每种硬币的数量不限。求在最坏情况下，储钱罐里最少有多少钱。
+
+\subsubsection{输入}
+第1行包含一个整数T，表示有T组测试用例。
+每组测试用例，第一行是两个整数E和F，分别表示空储钱罐的重量和装了硬币后的重量，以克(gram)为单位，
+储钱罐的重量不会超过10kg，即$1 \leq E \leq F \leq 10000$。第二行是一个整数$N(1 \leq N \leq 500)$，表示
+硬币的种类数目。接下来是N行，每行包含两个整数v和w($1 \leq v \leq 50000, 1 \leq w \leq 10000$)，分别
+表示硬币的面值和重量。
+
+\subsubsection{输出}
+每个案例打印一行。内容是"The minimum amount of money in the piggy-bank is X."，其中
+X表示储钱罐里最少有多少钱。如果不能精确地达到给定的重量，则打印"This is impossible."。
+
+\subsubsection{样例输入}
+\begin{Code}
+3
+10 110
+2
+1 1
+30 50
+10 110
+2
+1 1
+50 30
+1 6
+2
+10 3
+20 4
+\end{Code}
+
+\subsubsection{样例输出}
+\begin{Code}
+The minimum amount of money in the piggy-bank is 60.
+The minimum amount of money in the piggy-bank is 100.
+This is impossible.
+\end{Code}
 
 \subsubsection{分析}
-状态转移方程为：
+每种物品有无限个可用，这是完全背包问题。
+
+本题没有给出储钱罐的容量，但每个案例给出了，初始为空时的重量E和装了硬币后的重量F，
+因此可以把储钱罐看作一个容量为F-E的背包，背包必须要装满。
+
+这个问题非常类似于0-1背包问题，所不同的是每种物品有无限个。也就是从每种
+物品的角度考虑，与它相关的策略已并非取或不取两种，而是取0个、取1个、取2
+个……直至取$W/w[i]$个。
+
+一种好想好写的基本方法是转化为0-1背包问题：把第i种物品换成$W/w[i]$个0-1
+背包问题中的物品，则得到了物品数为$\sum \dfrac{W}{w[i]}$的0-1背包问题。
+时间复杂度是$O(NW\sum \dfrac{W}{w[i]})$。
+
+按照该思路，状态转移方程为：
 $$f[i][j]=\max\left\{f[i-1][j-k*w[i]+k*v[i], 0 \leq k*w[i] \leq j\right\}$$
 
-\subsubsection{代码}
-\begin{Codex}[label=ukp.c]
+伪代码如下：
+\begin{Code}
+for i = 1..N
+    for j = W..w
+        for k = 1..j/w[i]
+            d[j] = max{d[j], d[j-k*w[i]] + k*v[i]};
+\end{Code}
 
+也可以写成：
+\begin{Code}
+for i = 1..N
+    for k = 1..W/w[i]
+        ZeroOneKnapsack(d[], w, v)
+\end{Code}
+
+“拆分物品”还有更高效的拆分方法：把第i种物品拆分成重量为$2^k*w[i]$、价值为$2^k*v[i]$的
+若干物品，其中k取所有满足$2^k*w[i] \leq W$的非负整数。这是二进制的思想，因为闭区间[1, W/w[i]]中
+的任何整数都可以表示为$1, 2, 4, ..., 2^k$中若干个的和。
+
+这样处理单个物品的复杂度由$O\left(\dfrac{W}{w[i]}\right)$降到了$O\left(\log \dfrac{W}{w[i]}\right)$，伪代码如下：
+\begin{Code}
+def UnboundedKnapsack(d[], w, v)
+    k=1
+    while k*w <= W
+        ZeroOneKnapsack(d[], k*w, k*v)
+        k=2*k
+\end{Code}
+
+还存在更优化的算法，复杂度为$O(NW)$，伪代码如下：
+\begin{Code}
+for i = 1..N
+    for j = 0..W
+        d[j] = max{d[j], d[j-w[i]] + v[i]};
+\end{Code}
+
+与0-1背包问题相比，仅有一行代码不同，这里内循环是顺序的，而0-1背包是逆序的（在使用滚动数组的情况下）。
+
+为什么这个算法可行呢？首先想想为什么0-1背包中内循环要逆序，逆序是为了保证每个物品只选一次，保证在
+“选择第i件物品”时，依赖的是一个没有选择第i件物品的子结果$f[i-1][j-w[i]]$。而现在完全背
+包的特点却是每种物品可选无限个，没有了每个物品只选一次的限制，所以就可以并且必须采用j递增
+的顺序循环。
+
+根据上面的伪代码，状态转移方程也可以写成这种形式：
+$$f[i][j]=\max\left\{f[i-1][j], f[i][j-w[i]+v[i]\right\}$$
+
+抽象出处理单个物品的函数：
+\begin{Code}
+def UnboundedKnapsack(d[], w, v)
+    for j = w..W
+        d[j] = max(d[j], d[j-w] + v)
+\end{Code}
+
+\subsubsection{代码}
+\begin{Codex}[label=piggy_bank.c]
+#include <stdio.h>
+
+#define MAXN 500
+#define MAXW 10000
+ /* 无效值，不要用0x7FFFFFFF，执行加运算后会变成负数 */
+const int INF = 0x0FFFFFFF;
+
+int N, W;
+int w[MAXN], v[MAXN];
+
+int d[MAXW + 1]; /* 滚动数组 */
+
+/**
+ * @brief 完全背包问题中，处理单个物品.
+ * @param[in] d 滚动数组
+ * @param[in] w 该物品的重量
+ * @param[in] v 该物品的价值
+ * @return 无
+ */
+void unbounded_knapsack(int d[], const int w, const int v) {
+    int j;
+    for(j = w; j <= W; ++j) {
+        const int tmp = d[j - w] + v;
+        if(tmp < d[j]) d[j] = tmp; /* 求最小用 <，求最大用 > */
+    }
+}
+
+void zero_one_knapsack(int d[], const int w, const int v) {
+    int j;
+    for(j = W; j >= w; --j) {
+        const int tmp = d[j - w] + v;
+        if(tmp < d[j]) d[j] = tmp;  /* 求最小用 <，求最大用 > */
+    }
+}
+
+void unbounded_knapsack1(int d[], const int w, const int v) {
+    int k = 1;
+    while(k * w <= W) {
+        zero_one_knapsack(d, k * w, k * v);
+        k *= 2;
+    }
+}
+
+void dp() {
+    int i;
+    for(i = 0; i <= W; ++i) d[i] = INF; /* 背包要装满 */
+    d[0] = 0;
+
+    for(i = 0; i < N; ++i) unbounded_knapsack(d, w[i], v[i]);
+}
+
+int main() {    
+    int i, T;
+    int E, F;
+ 
+    scanf("%d", &T);
+    while(T--) {
+        scanf("%d %d", &E, &F);
+        W = F - E;
+        scanf("%d", &N);
+        for(i = 0; i < N; ++i) scanf("%d %d", &v[i], &w[i]);
+
+        dp();
+        if(d[W] == INF) {
+            printf("This is impossible.\n");
+        } else {
+            printf("The minimum amount of money in the piggy-bank is %d.\n",
+                    d[W]);
+        }
+    }
+    return 0;
+}
+
+/* 将第i种物品取0个，1个，...，W/w[i]个，该版本不能AC，会TLE */
+void unbounded_knapsack2(int d[], const int w, const int v) {
+    int j, k;
+    for(j = W; j >= w; --j) {
+        const int K = j / w;
+        for(k = 1; k <= K; ++k) {
+            const int tmp = d[j - k * w] + k * v;
+            if(tmp < d[j]) d[j] = tmp; /* 求最小用 <，求最大用 > */
+        }
+    }
+}
+
+/* 将第i种物品取0个，1个，...，W/w[i]个，该版本不能AC，会TLE */
+void unbounded_knapsack3(int d[], const int w, const int v) {
+    int k;
+    const int K = W / w;
+    for(k = 0; k < K; ++k){
+        zero_one_knapsack(d, w, v);
+    }
+}
 \end{Codex}
+
+\subsubsection{类似的题目}
+与本题相同的题目：
+\begindot
+\item POJ 1384 Piggy-Bank, \myurl{http://poj.org/problem?id=1384}
+\item HDOJ 1114 Piggy-Bank, \myurl{http://t.cn/zWXbXIn}
+\myenddot
+
+与本题相似的题目：
+\begindot
+\item POJ 2063 Investment, \myurl{http://poj.org/problem?id=2063}
+\myenddot
 
 \subsection{多重背包问题}
 
 \subsubsection{描述}
-第i种物品有c[i]个可用，其他信息与0-1背包相同。
+某地发生地震，为了挽救灾区同胞的生命，心系灾区同胞的你准备自己采购一些粮食
+支援灾区，现在假设你一共有资金W元，而市场有N种大米，每种大米都是袋装产品，
+其价格不等，并且只能整袋购买。
+
+请问：你用有限的资金最多能采购多少公斤粮食呢？
+
+\subsubsection{输入}
+第1行包含一个整数T，表示有T组测试用例。
+每组测试用例的第一行是两个整数W和N($1 \leq W \leq 100, 1 \leq N \leq 100$),分别表示经费的金
+额和大米的种类，然后是N行数据，每行包含3个整数w，v和c
+($1 \leq w \leq 20,1 \leq v \leq 200,1 \leq c \leq 20$)，
+分别表示每袋的价格、每袋的重量以及对应种类大米的袋数。
+
+\subsubsection{输出}
+对于每组测试用例，输出能够购买大米的最大重量，你可以假设经费买不光所有的大米，
+并且经费你可以不用完。每个实例的输出占一行。
+
+\subsubsection{样例输入}
+\begin{Code}
+1
+8 2
+2 100 4
+4 100 2
+\end{Code}
+
+\subsubsection{样例输出}
+\begin{Code}
+400
+\end{Code}
 
 \subsubsection{分析}
-状态转移方程为：
-$$f[i][j]=\max\left\{f[i-1][j-k*w[i]+k*v[i], 0 \leq k*w[i] \leq j, 0 \leq k \leq c[i]\right\}$$
+第i种物品有c[i]个可用，这是多重背包问题。
+
+与完全背包问题类似，也可以用“拆分物品”的思想把本问题转化为0-1背包问题：把
+第i种物品换成$c[i]$个0-1背包问题中的物品，则得到了物品数为$\sum c[i]$的0-1背包问题。
+时间复杂度是$O(NW\sum c[i])$。状态转移方程为：
+$$f[i][j]=\max\left\{f[i-1][j-k*w[i]+k*v[i], 0 \leq k \leq c[i], 0 \leq k*w[i] \leq j\right\}$$
+
+伪代码如下：
+\begin{Code}
+for i = 1..N
+    for j = W..w
+        K = min{j/w[i], c[i]}
+        for k = 1..K
+            d[j] = max{d[j], d[j-k*w[i]] + k*v[i]};
+\end{Code}
+
+也可以写成：
+\begin{Code}
+for i = 1..N
+    for k = 1..c[i]
+        ZeroOneKnapsack(d[], w, v)
+\end{Code}
+
+拆分物品也可以使用二进制的技巧，把第i种物品拆分成若干物品，其中每件物品都有一个
+系数，这个新物品的重量和价值均是原来的重量和价值乘以这个系数。系数分别为
+$1,2,2^2,...,2^{k-1},c[i]-2^k+1$，其中k是满足$2^k-1<c[i]$的最大整数。例如，某种物品
+有13个，即c[i]=13，则相应的k=3，这种物品应该被拆分成系数分别1,2,4,6的四个物品。
+
+这样处理单个物品的复杂度由$O(c[i])$降到了$O(\log c[i])$，伪代码如下：
+\begin{Code}
+def BoundedKnapsack(d[], w, v, c)
+    if c * w >= W
+        unbounded_knapsack(d[], w, v);
+        return;
+
+    k = 1;
+    while k < c
+        zero_one_knapsack(d[], k * w, k * v);
+        c -= k;
+        k *= 2;
+
+    zero_one_knapsack(d[], c * w, c * v);
+\end{Code}
 
 \subsubsection{代码}
 \begin{Codex}[label=bkp.c]
+#include <stdio.h>
+#include <string.h>
 
+#define MAXN 100
+#define MAXW 100
+
+int N, W;
+int w[MAXN], v[MAXN], c[MAXN];
+
+int d[MAXW + 1]; /* 滚动数组 */
+
+void zero_one_knapsack(int d[], const int w, const int v) {
+    int j;
+    for(j = W; j >= w; --j) {
+        const int tmp = d[j - w] + v;
+        if(tmp > d[j]) d[j] = tmp;  /* 求最小用 <，求最大用 > */
+    }
+}
+
+void unbounded_knapsack(int d[], const int w, const int v) {
+    int j;
+    for(j = w; j <= W; ++j) {
+        const int tmp = d[j - w] + v;
+        if(tmp > d[j]) d[j] = tmp; /* 求最小用 <，求最大用 > */
+    }
+}
+
+/**
+ * @brief 多重背包问题中，处理单个物品.
+ * @param[in] d 滚动数组
+ * @param[in] w 该物品的重量
+ * @param[in] v 该物品的价值
+ * @param[in] c 该物品的数量
+ * @return 无
+ */
+void bounded_knapsack(int d[], const int w, const int v, const int c) {
+    int k;
+    for(k = 0; k < c; ++k) {
+        zero_one_knapsack(d, w, v);
+    }
+}
+
+void bounded_knapsack1(int d[], const int w, const int v, int c) {
+    int k;
+    if(c * w >= W) {
+        unbounded_knapsack(d, w, v);
+        return;
+    }
+
+    k = 1;
+    while(k < c) {
+        zero_one_knapsack(d, k * w, k * v);
+        c -= k;
+        k *= 2;
+    }
+    zero_one_knapsack(d, c * w, c * v);
+}
+
+void dp() {
+    int i;
+    memset(d, 0, sizeof(d)); /* 背包不一定要装满 */
+
+    for(i = 0; i < N; ++i) bounded_knapsack1(d, w[i], v[i], c[i]);
+}
+ 
+int main() {
+    int i;
+    int T;
+    scanf("%d", &T);
+    while(T--) {
+        scanf("%d %d", &W, &N);
+        for(i = 0; i < N; ++i) scanf("%d %d %d", &w[i], &v[i], &c[i]);
+
+        dp();
+        printf("%d\n", d[W]);
+    }
+    return 0;
+}
 \end{Codex}
+
+\subsubsection{类似的题目}
+与本题相同的题目：
+\begindot
+\item HDOJ 2191 买大米, \myurl{http://acm.hdu.edu.cn/showproblem.php?pid=2191}
+\myenddot
+
+与本题相似的题目：
+\begindot
+\item TODO
+\myenddot
 
 \section{最长公共子序列} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
