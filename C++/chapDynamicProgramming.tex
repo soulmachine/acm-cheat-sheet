@@ -30,7 +30,164 @@
 
 分治和贪心的相同点：disjoint subproblems。
 
-\section{数字三角形} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{最长公共子序列} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{描述}
+一个序列的子序列(subsequence)是指在该序列中删去若干（可以为0个）元素后得到的序列。
+准确的说，若给定序列$X=(x_1,x_2,\cdots,x_m)$，则另一个序列$Z=(z_1,z_2,\cdots,z_k)$，
+是X的子序列是指存在一个严格递增下标序列$(i_1,i_2,\cdots,i_k)$使得对于所有$j=1,2,\cdots,k$
+有$z_j=x_{i_j}$。例如，序列$Z=(B,C,D,B)$是序列$X=(A,B,C,B,D,A,B)$的子序列，相应的
+递增下标序列为$(1,2,4,6)$。
+
+给定两个序列X和Y，求X和Y的最长公共子序列(longest common subsequence)。
+
+\subsubsection{输入}
+输入包括多组测试数据，每组数据占一行，包含两个字符串（字符串长度不超过200），代表两个序列。
+两个字符串之间由若干个空格隔开。
+
+\subsubsection{输出}
+对每组测试数据，输出最大公共子序列的长度，每组一行。
+
+\subsubsection{样例输入}
+\begin{Code}
+abcfbc abfcab
+programming contest 
+abcd mnp
+\end{Code}
+
+\subsubsection{样例输出}
+\begin{Code}
+4
+2
+0
+\end{Code}
+
+\subsubsection{分析}
+最长公共子序列问题具有最优子结构性质。
+设序列$X=(x_1,x_2,\cdots,x_m)$和$Y=(y_1,y_2,\cdots,y_n)$的最长公共子序列为$Z=(z_1,z_2,\cdots,z_k)$，则
+\begindot
+\item 若$x_m=y_n$，则$z_k=x_m=y_n$，且$Z_{k-1}$是$X_{m-1}$和$Y_{n-1}$的最长公共子序列。
+\item 若$x_m \neq y_n$且$z_k \neq x_m$，则Z是$X_{m-1}$和$Y$的最长公共子序列。
+\item 若$x_m \neq y_n$且$z_k \neq y_n$，则Z是$X$和$Y_{n-1}$的最长公共子序列。
+\myenddot
+其中，$X_{m-1}=(x_1,x_2,\cdots,x_{m-1})$, $Y_{n-1}=(y_1,y_2,\cdots,y_{n-1})$, $Z_{k-1}=(z_1,z_2,\cdots,z_{k-1})$。
+
+设状态为d[i][j]，表示序列$X_i$和$Y_j$的最长公共子序列的长度。由最优子结构可得状态转移方程如下：
+$$
+d[i][j]=\begin{cases}
+0 & i=0,j=0\\
+d[i-1][j-1]+1 & i,j>0; x_i=y_i \\
+\max\left\{d[i][j-1],d[i-1][j]\right\} & i,j>0; x_i \neq y_i
+\end{cases}
+$$
+
+如果要打印出最长公共子序列，需要另设一个数组p，p[i][j]记录d[i][j]是由哪个子问题得到的。
+
+\subsubsection{代码}
+\begin{Codex}[label=lcs.c]
+#include <stdio.h>
+#include <string.h>
+
+#define MAX 201  /* 字符串最大长度为200 */
+
+int d[MAX][MAX]; /* d[i][j]表示序列Xi和Yj的最长公共子序列的长度 */
+char x[MAX], y[MAX];  /* 字符串末尾有个'0' */
+
+void lcs(const char *x, const int m, const char *y, const int n) {
+    int i, j;
+    
+    for (i = 0; i <= m; i++) d[i][0] = 0;  /* 边界初始化 */
+    for (j = 0; j <= n; j++) d[0][j] = 0;
+
+    for (i = 1; i <= m; i++) {
+        for (j = 1; j <= n; j++) {
+            if (x[i-1] == y[j-1]) {
+                d[i][j] = d[i-1][j-1] + 1;
+            } else {
+                d[i][j] = d[i-1][j] > d[i][j-1] ? d[i-1][j] : d[i][j-1];
+            }
+        }
+    }
+}
+
+void lcs_extend(const char *x, const int m, const char *y, const int n);
+void lcs_print(const char *x, const int m, const char *y, const int n);
+
+int main() {
+    /* while (scanf ("%s%s", a, b)) { /* TLE */
+    /* while (scanf ("%s%s", a, b) == 2) {  /* AC */
+    while (scanf ("%s%s", x, y) != EOF) { /* AC */
+        const int lx = strlen(x);
+        const int ly = strlen(y);
+        lcs(x, lx, y, ly);
+        printf ("%d\n", d[lx][ly]);
+        /*
+        lcs_extend(x, lx, y, ly);
+        lcs_print(x, lx, y, ly);
+        printf("\n"); */
+    }
+    return 0;
+}
+
+int p[MAX][MAX]; /* p[i][j]记录d[i][j]是由哪个子问题得到的 */
+
+void lcs_extend(const char *x, const int m, const char *y, const int n) {
+    int i, j;
+    
+    memset(p, 0, sizeof(p));
+    for (i = 0; i <= m; i++) d[i][0] = 0;  /* 边界初始化 */
+    for (j = 0; j <= n; j++) d[0][j] = 0;
+
+    for (i = 1; i <= m; i++) {
+        for (j = 1; j <= n; j++) {
+            if (x[i-1] == y[j-1]) {
+                d[i][j] = d[i-1][j-1] + 1;
+                p[i][j] = 1;
+            } else {
+                if (d[i-1][j] >= d[i][j-1]) {
+                    d[i][j] = d[i-1][j];
+                    p[i][j] = 2;
+                } else {
+                    d[i][j] = d[i][j-1];
+                    p[i][j] = 3;
+                }
+            }
+        }
+    }
+}
+
+void lcs_print(const char *x, const int m, const char *y, const int n) {
+    if (m == 0 || n == 0) return;
+
+    if (p[m][n] == 1) {
+        lcs_print(x, m - 1, y, n - 1);
+        printf("%c", x[m - 1]);
+    } else if (p[m][n] == 2) {
+        lcs_print(x, m - 1, y, n);
+    } else {
+        lcs_print(x, m, y, n - 1);
+    }
+}
+\end{Codex}
+
+\subsubsection{类似的题目}
+与本题相同的题目：
+\begindot
+\item 《计算机算法设计与分析(第3版)》\footnote{王晓东, 计算机算法设计与分析(第3版), 电子工业出版社, 2007}第56页3.3节
+\item POJ 1458 Common Subsequence, \myurl{http://poj.org/problem?id=1458}
+\item HDOJ 1159 Common Subsequence, \myurl{http://acm.hdu.edu.cn/showproblem.php?pid=1159}
+\item 《程序设计导引及在线实践》\footnote{李文新,程序设计导引及在线实践, 清华大学出版社, 2007}第203页10.5节
+\item 百练 2806 公共子序列, \myurl{http://poj.grids.cn/practice/2806/}
+\myenddot
+
+与本题相似的题目：
+\begindot
+\item HDOJ 1080 Human Gene Functions, \myurl{http://acm.hdu.edu.cn/showproblem.php?pid=1080}
+\item HDOJ 1503 Advanced Fruits, \myurl{http://acm.hdu.edu.cn/showproblem.php?pid=1503}
+\myenddot
+
+\section{DAG上的动态规划} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{数字三角形}
 
 \subsubsection{描述}
 有一个由非负整数组成的三角形，第一行只有一个数，除了最下一行之外每个数的左下角和右下
@@ -45,13 +202,11 @@
 如何走才能使得这个和最大？
 
 \subsubsection{输入}
-Your program is to read from standard input. The first line contains one integer N: the 
-number of rows in the triangle. The following N lines describe the data of the triangle. 
-The number of rows in the triangle is > 1 but <= 100. The numbers in the triangle, 
-all integers, are between 0 and 99.
+第一行是一个整数$N (1 \le N \leq 100)$，给出三角形的行数。接下来的N行给出数字三角形。三
+角形中的数全部是整数，范围在0到100之间。
 
 \subsubsection{输出}
-Your program is to write to standard output. The highest sum is written as an integer.
+输出最大的和。
 
 \subsubsection{样例输入}
 \begin{Code}
@@ -75,13 +230,13 @@ Your program is to write to standard output. The highest sum is written as an in
 回溯法很慢。
 
 本题可以用动态规划来求解(具有最有子结构和重叠子问题两个要素，后面会看到)。把当前位置(i,j)看
-成一个状态，然后定义状态(i,j)的指数函数d(i,j)为从位置(i,j)出发时能得到的最大和（包括格子(i,j)本
-身的值a(i,j)）。在这个状态定义下，原问题的解是d(1,1)。
+成一个状态，然后定义状态d[i][j]为从位置(i,j)出发时能得到的最大和（包括格子(i,j)本
+身的值a[i][j]）。在这个状态定义下，原问题的解是d[0][0]。
 
 下面来看看不同状态之间是怎样转移的。从位置(i,j)出发有两种决策，如果往左走，则走到(i+1,j)后需要求
-“从(i+1,j)出发后能得到的最大和”这一子问题，即d(i+1,j)，类似地，往右走之后需要求d(i+1,j+1)。应该
-选择d(i+1,j)和d(i+1,j+1)中较大的一个，因此可以得到如下的状态转移方程：
-$$d(i,j)=a(i,j)+\max\left\{d(i+1,j), d(i+1,j+1)\right\}$$
+“从(i+1,j)出发后能得到的最大和”这一子问题，即d[i+1][j]，类似地，往右走之后需要求d[i+1][j+1]。应该
+选择d[i+1][j]和d[i+1][j+1]中较大的一个，因此可以得到如下的状态转移方程：
+$$d[i][j]=a[i][j]+\max\left\{d[i+1][j], d[i+1][j+1]\right\}$$
 
 \subsubsection{代码}
 版本1，自顶向下。
@@ -173,15 +328,14 @@ int main() {
 与本题相同的题目：
 \begindot
 \item 《算法竞赛入门经典》\footnote{刘汝佳,算法竞赛入门经典，清华大学出版社，2009}第159页9.1.1节
-\item  POJ 1163 - The Triangle, \myurl{http://poj.org/problem?id=1163}
+\item POJ 1163 The Triangle, \myurl{http://poj.org/problem?id=1163}
+\item 百练 2760 数字三角形, \myurl{http://poj.grids.cn/practice/2760/}
 \myenddot
 
 与本题相似的题目：
 \begindot
 \item  TODO
 \myenddot
-
-\section{DAG上的动态规划} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{嵌套矩形}
 
@@ -192,7 +346,7 @@ int main() {
 矩形排成一行，使得除最后一个外，每一个矩形都可以嵌套在下一个矩形内。
 
 \subsubsection{输入}
-第一行是一个正正数$N(0<N<10)$，表示测试数据组数，
+第一行是一个正整数$N(0<N<10)$，表示测试数据组数，
 每组测试数据的第一行是一个正正数n，表示该组测试数据中含有矩形的个数$(n<=1000)$
 随后的n行，每行有两个数$a,b(0<a,b<100)$，表示矩形的长和宽
 
@@ -333,8 +487,32 @@ $1 \leq n \leq 100, 1 \leq S \leq 10000, 1 \leq v_i \leq S$。
 第1行为最小值，
 第2行为最大值。
 
+\subsubsection{样例输入}
+\begin{Code}
+3
+6
+1
+2
+3
+\end{Code}
+
+\subsubsection{样例输出}
+\begin{Code}
+2
+6
+\end{Code}
+
 \subsubsection{分析}
 本题实质上是求DAG中固定终点的最长路径和最短路径。
+
+把每种面值看作一个点，表示“还需要凑足的面值”，则初始状态为S，目标状态为0。若当前状态为i，
+每使用一个硬币j，状态便转移到$i-v_j$。
+
+设状态为d[i]，表示从节点i出发的最长路径长度，则原问题的解是d[S]。状态转移方程如下：
+$$d[i]=\max\left\{d[j]+1,(i,j) \in E\right\}$$
+
+本题还可以看作是完全背包问题（见\S \ref{sec:ukp}节）：背包容量为S，背包必须要装满，物品即硬币，每个硬币的费用为面值$v_i$，
+价值均为1。求背包中物品的最小价值和最大价值。
 
 \subsubsection{代码}
 版本1，自顶向下。
@@ -393,21 +571,7 @@ int dp2(const int s) { //最大值
     return *ans;
 }
 
-/**
- * @brief 打印路径.
- * @param[in] d 上面的 min 或 min
- * @param[in] s 面值之和
- * @return 无
- */
-void print_path(const int* d, const int s){//打印的是边
-    int i;
-    for(i = 0; i < n; ++i) if(v[i] <= s && d[s-v[i]] + 1 == d[s]) {
-        printf("%d ",i);
-        print_path(d, s-v[i]);
-        break;
-    }
-    printf("\n");
-}
+void print_path(const int* d, const int s);
 
 int main() {
     int i;
@@ -427,6 +591,22 @@ int main() {
 
     return 0;
 }
+
+/**
+ * @brief 打印路径.
+ * @param[in] d 上面的 min 或 min
+ * @param[in] s 面值之和
+ * @return 无
+ */
+void print_path(const int* d, const int s) {//打印的是边
+    int i;
+    for(i = 0; i < n; ++i) if(v[i] <= s && d[s-v[i]] + 1 == d[s]) {
+        printf("%d ",i);
+        print_path(d, s-v[i]);
+        break;
+    }
+    printf("\n");
+}
 \end{Codex}
 
 版本2，自底向上。
@@ -439,24 +619,9 @@ int main() {
 
 int n, S, v[MAXN], min[MAXV + 1], max[MAXV + 1];
 int min_path[MAXV], max_path[MAXV];
-/**
- * @brief 打印路径.
- * @param[in] d 上面的 min_path 或 min_path
- * @param[in] s 面值之和
- * @return 无
- */
-void print_path(const int *d, int s) {
-    while(s) {
-        printf("%d ", d[S]);
-        S -= v[d[s]];
-    }
-    printf("\n");
-}
 
-int main() {
+void dp() {
     int i, j;
-    scanf("%d%d", &n, &S);
-    for(i = 0; i < n; ++i) scanf("%d", &v[i]);
 
     min[0] = max[0] = 0;
     for(i = 1; i <= S; ++i) {
@@ -476,10 +641,198 @@ int main() {
             }
         }
     }
+}
+
+void print_path(const int *d, int s);
+
+int main() {
+    int i;
+    scanf("%d%d", &n, &S);
+    for(i = 0; i < n; ++i) scanf("%d", &v[i]);
+
+    dp();
     printf("%d\n", min[S]);
     // print_path(min_path, S);
     printf("%d\n", max[S]);
     // print_path(max_path, S);
+    return 0;
+}
+
+/**
+ * @brief 打印路径.
+ * @param[in] d 上面的 min_path 或 min_path
+ * @param[in] s 面值之和
+ * @return 无
+ */
+void print_path(const int *d, int s) {
+    while(s) {
+        printf("%d ", d[S]);
+        S -= v[d[s]];
+    }
+    printf("\n");
+}
+\end{Codex}
+
+版本3，当作完全背包问题。
+
+\begin{Codex}[label=coin_change3.c]
+#include <stdio.h>
+#include <string.h>
+
+#define MAXN 100
+#define MAXW 10000
+ /* 无效值，不要用0x7FFFFFFF，执行加运算后会变成负数 */
+const int INF = 0x0FFFFFFF;
+
+int N, W;
+int w[MAXN], v[MAXN];
+
+int min[MAXW + 1], max[MAXW + 1]; /* 滚动数组 */
+
+int min_path[MAXW + 1], max_path[MAXW + 1];
+void print_path(const int *d, int s);
+
+/**
+ * @brief 完全背包问题中，处理单个物品.
+ * @param[in] d 滚动数组
+ * @param[in] i 该物品的下标
+ * @return 无
+ */
+void unbounded_knapsack(int min[], int max[], const int i) {
+    int j;
+    for(j = w[i]; j <= W; ++j) {
+        if(min[j - w[i]] + v[i] < min[j]) {
+            min[j] = min[j - w[i]] + v[i];
+            // min_path[j] = i;
+        }
+        if(max[j - w[i]] + v[i] > max[j]) {
+            max[j] = max[j - w[i]] + v[i];
+            // max_path[j] = i;
+        }
+    }
+}
+
+void dp() {
+    int i, j;
+    min[0] = 0;
+    max[0] = 0;
+    for(j = 1; j <= W; ++j) { /* 背包要装满 */
+        min[j] = INF;
+        max[j] = -INF;
+    }
+
+    for(i = 0; i < N; ++i) unbounded_knapsack(min, max, i);
+}
+
+int main() {
+    int i;
+    for (i = 0; i < MAXN; ++i) v[i] = 1;
+    scanf("%d%d", &N, &W);
+    for(i = 0; i < N; ++i) scanf("%d", &w[i]);
+
+    dp();
+    printf("%d\n", min[W]);
+    // print_path(min_path, W);
+    printf("%d\n", max[W]);
+    // print_path(max_path, W);
+    return 0;
+}
+
+/**
+ * @brief 打印路径.
+ * @param[in] d 上面的 min_path 或 min_path
+ * @param[in] j 面值之和
+ * @return 无
+ */
+void print_path(const int *d, int j) {
+    while(j) {
+        printf("%d ", d[j]);
+        j -= w[d[j]];
+    }
+    printf("\n");
+}
+\end{Codex}
+
+\subsubsection{类似的题目}
+与本题相同的题目：
+\begindot
+\item 《算法竞赛入门经典》\footnote{刘汝佳,算法竞赛入门经典，清华大学出版社，2009}第162页例题9-3
+\item  tyvj 1214 硬币问题, \myurl{http://www.tyvj.cn/problem_show.aspx?id=1214}
+\myenddot
+
+与本题相似的题目：
+\begindot
+\item  TODO
+\myenddot
+
+\subsection{最长上升子序列}
+
+\subsubsection{描述}
+当一个序列严格递增时，我们称这个序列是上升的。
+对于一个给定的序列$(a_1, a_2, ..., a_N)$，我们可以得到一些上升的子序列$(a_{i1}, a_{i2}, ..., a_{iK})$，
+这里$1 \leq i1 < i2 < ... < iK \leq N$。例如，对于序列(1, 7, 3, 5, 9, 4, 8)，
+有它的一些上升子序列，如(1, 7), (3, 4, 8)等等，这些子序列中最长的长度是4，比如子序列(1, 3, 5, 8)。
+
+对于给定的序列，求\textbf{最长上升子序列}(longest increasing subsequence)的长度。
+
+\subsubsection{输入}
+第一行是序列的长度$N (1 \leq N \leq 1000)$。
+第二行给出序列中的N个整数，这些整数的取值范围都在0到10000。
+
+\subsubsection{输出}
+最长上升子序列的长度。
+
+\subsubsection{样例输入}
+\begin{Code}
+7
+1 7 3 5 9 4 8
+\end{Code}
+
+\subsubsection{样例输出}
+\begin{Code}
+4
+\end{Code}
+
+\subsubsection{分析}
+设状态为d[j]，表示以$a_j$为终点的最长上升子序列的长度。状态转移方程如下；
+$$
+\begin{cases}
+d[j]=1 & j=1\\
+d[j]=\max\left\{d[i]\right\}+1 & 1<i<j,a_i<a_j
+\end{cases}
+$$
+
+\subsubsection{代码}
+
+\begin{Codex}[label=lis.c]
+#include<stdio.h>
+#define MAXN 1001 // a[0]未用
+
+int N;
+int a[MAXN];
+int d[MAXN];
+
+void dp() {
+    int i, j;
+    d[1] = 1;
+ 
+    for (j = 2; j <= N; j++) { // 每次求以aj为终点的最长上升子序列的长度
+        int max = 0;  // 记录aj左边的上升子序列的最大长度 
+        for (i = 1; i < j; i++)  if (a[i] <a[j] && max < d[i]) max = d[i];
+        d[j] = max + 1;
+    }
+}
+
+int main() {
+    int i, max;
+    scanf("%d",&N);
+    for (i = 1; i <= N;i++) scanf("%d",&a[i]);
+    
+    dp();
+
+    max = 0;
+    for(i = 1; i <= N;i++) if (d[i] > max) max = d[i];
+    printf("%d\n",max);
     return 0;
 }
 \end{Codex}
@@ -506,6 +859,8 @@ int main() {
 \myenddot
 
 其他版本的背包问题请参考“背包问题九讲”，\myurl{https://github.com/tianyicui/pack}
+
+背包问题是一种“多阶段决策问题”。
 
 \subsection{0-1背包问题}
 
@@ -592,9 +947,9 @@ f是从上到下、从右到左计算的，如图~\ref{fig:01knapsack}所示。
 事实上，使用一维数组解0-1背包问题的程序在后面会被多次用到，所以这里抽象出一
 个处理单个物品的函数，以后的代码中直接调用不加说明。
 \begin{Code}
-def ZeroOneKnapsack(d[], w, v)
-    for j = W..w
-        d[j] = max(d[j], d[j-w] + v)
+def ZeroOneKnapsack(d[], i)
+    for j = W..w[i]
+        d[j] = max(d[j], d[j-w[i]] + v[i])
 \end{Code}
 
 有了这个函数以后，0-1背包问题的伪代码就可以这样写：
@@ -666,15 +1021,14 @@ int d[MAXW + 1]; /* 滚动数组 */
 /**
  * @brief 0-1背包问题中，处理单个物品.
  * @param[in] d 滚动数组
- * @param[in] w 该物品的重量
- * @param[in] v 该物品的价值
+ * @param[in] i 该物品的下标
  * @return 无
  */
-void zero_one_knapsack(int d[], const int w, const int v) {
+void zero_one_knapsack(int d[], const int i) {
     int j;
-    for(j = W; j >= w; --j) {
-        const int tmp = d[j - w] + v;
-        if(tmp > d[j]) d[j] = tmp;
+    for(j = W; j >= w[i]; --j) {
+        const int tmp = d[j - w[i]] + v[i];
+        if(tmp > d[j]) d[j] = tmp; /* 求最小用 <，求最大用 > */
     }
 }
 
@@ -682,7 +1036,7 @@ void dp() {
     int i;
     memset(d, 0, sizeof(d)); /* 背包不一定要装满 */
 
-    for(i = 0; i < N; ++i) zero_one_knapsack(d, w[i], v[i]);
+    for(i = 0; i < N; ++i) zero_one_knapsack(d, i);
 }
 
 int main() {
@@ -713,6 +1067,7 @@ int main() {
 \myenddot
 
 \subsection{完全背包问题}
+\label{sec:ukp}
 
 \subsubsection{描述}
 给你一个储钱罐(piggy bank)，往里面存硬币。存入的过程是不可逆的，要想把钱拿出来只能摔碎
@@ -794,10 +1149,10 @@ for i = 1..N
 
 这样处理单个物品的复杂度由$O\left(\dfrac{W}{w[i]}\right)$降到了$O\left(\log \dfrac{W}{w[i]}\right)$，伪代码如下：
 \begin{Code}
-def UnboundedKnapsack(d[], w, v)
+def UnboundedKnapsack(d[], i)
     k=1
-    while k*w <= W
-        ZeroOneKnapsack(d[], k*w, k*v)
+    while k*w[i] <= W
+        ZeroOneKnapsack(d[], k*w[i], k*v[i])
         k=2*k
 \end{Code}
 
@@ -820,9 +1175,9 @@ $$f[i][j]=\max\left\{f[i-1][j], f[i][j-w[i]+v[i]\right\}$$
 
 抽象出处理单个物品的函数：
 \begin{Code}
-def UnboundedKnapsack(d[], w, v)
-    for j = w..W
-        d[j] = max(d[j], d[j-w] + v)
+def UnboundedKnapsack(d[], i)
+    for j = w[i]..W
+        d[j] = max(d[j], d[j-w[i]] + v[i])
 \end{Code}
 
 \subsubsection{代码}
@@ -842,30 +1197,31 @@ int d[MAXW + 1]; /* 滚动数组 */
 /**
  * @brief 完全背包问题中，处理单个物品.
  * @param[in] d 滚动数组
- * @param[in] w 该物品的重量
- * @param[in] v 该物品的价值
+ * @param[in] i 该物品的下标
  * @return 无
  */
-void unbounded_knapsack(int d[], const int w, const int v) {
+void unbounded_knapsack(int d[], const int i) {
     int j;
-    for(j = w; j <= W; ++j) {
-        const int tmp = d[j - w] + v;
+    for(j = w[i]; j <= W; ++j) {
+        const int tmp = d[j - w[i]] + v[i];
         if(tmp < d[j]) d[j] = tmp; /* 求最小用 <，求最大用 > */
     }
 }
-
-void zero_one_knapsack(int d[], const int w, const int v) {
+/** c，物品的系数 */
+void zero_one_knapsack(int d[], const int i, const int c) {
     int j;
-    for(j = W; j >= w; --j) {
-        const int tmp = d[j - w] + v;
+    const int neww = c * w[i];
+    const int newv = c * v[i];
+    for(j = W; j >= neww; --j) {
+        const int tmp = d[j - neww] + newv;
         if(tmp < d[j]) d[j] = tmp;  /* 求最小用 <，求最大用 > */
     }
 }
 
-void unbounded_knapsack1(int d[], const int w, const int v) {
+void unbounded_knapsack1(int d[], const int i) {
     int k = 1;
-    while(k * w <= W) {
-        zero_one_knapsack(d, k * w, k * v);
+    while(k * w[i] <= W) {
+        zero_one_knapsack(d, i, k);
         k *= 2;
     }
 }
@@ -875,7 +1231,7 @@ void dp() {
     for(i = 0; i <= W; ++i) d[i] = INF; /* 背包要装满 */
     d[0] = 0;
 
-    for(i = 0; i < N; ++i) unbounded_knapsack(d, w[i], v[i]);
+    for(i = 0; i < N; ++i) unbounded_knapsack(d, i);
 }
 
 int main() {    
@@ -925,6 +1281,7 @@ void unbounded_knapsack3(int d[], const int w, const int v) {
 \subsubsection{类似的题目}
 与本题相同的题目：
 \begindot
+\item 《算法竞赛入门经典》\footnote{刘汝佳,算法竞赛入门经典，清华大学出版社，2009}第167页例题9-4
 \item POJ 1384 Piggy-Bank, \myurl{http://poj.org/problem?id=1384}
 \item HDOJ 1114 Piggy-Bank, \myurl{http://t.cn/zWXbXIn}
 \myenddot
@@ -998,18 +1355,18 @@ $1,2,2^2,...,2^{k-1},c[i]-2^k+1$，其中k是满足$2^k-1<c[i]$的最大整数�
 
 这样处理单个物品的复杂度由$O(c[i])$降到了$O(\log c[i])$，伪代码如下：
 \begin{Code}
-def BoundedKnapsack(d[], w, v, c)
-    if c * w >= W
-        unbounded_knapsack(d[], w, v);
+def BoundedKnapsack(d[], i)
+    if c[i]*w[i] >= W
+        unbounded_knapsack(d[], w[i], v[i]);
         return;
 
     k = 1;
-    while k < c
-        zero_one_knapsack(d[], k * w, k * v);
-        c -= k;
+    while k < c[i]
+        zero_one_knapsack(d[], k * w[i], k * v[i]);
+        c[i] -= k;
         k *= 2;
 
-    zero_one_knapsack(d[], c * w, c * v);
+    zero_one_knapsack(d[], c[i] * w[i], c[i] * v[i]);
 \end{Code}
 
 \subsubsection{代码}
@@ -1025,18 +1382,21 @@ int w[MAXN], v[MAXN], c[MAXN];
 
 int d[MAXW + 1]; /* 滚动数组 */
 
-void zero_one_knapsack(int d[], const int w, const int v) {
+/** c，物品的系数 */
+void zero_one_knapsack(int d[], const int i, const int c) {
     int j;
-    for(j = W; j >= w; --j) {
-        const int tmp = d[j - w] + v;
+    const int neww = c * w[i];
+    const int newv = c * v[i];
+    for(j = W; j >= neww; --j) {
+        const int tmp = d[j - neww] + newv;
         if(tmp > d[j]) d[j] = tmp;  /* 求最小用 <，求最大用 > */
     }
 }
 
-void unbounded_knapsack(int d[], const int w, const int v) {
+void unbounded_knapsack(int d[], const int i) {
     int j;
-    for(j = w; j <= W; ++j) {
-        const int tmp = d[j - w] + v;
+    for(j = w[i]; j <= W; ++j) {
+        const int tmp = d[j - w[i]] + v[i];
         if(tmp > d[j]) d[j] = tmp; /* 求最小用 <，求最大用 > */
     }
 }
@@ -1044,39 +1404,39 @@ void unbounded_knapsack(int d[], const int w, const int v) {
 /**
  * @brief 多重背包问题中，处理单个物品.
  * @param[in] d 滚动数组
- * @param[in] w 该物品的重量
- * @param[in] v 该物品的价值
+ * @param[in] i 该物品的下标
  * @param[in] c 该物品的数量
  * @return 无
  */
-void bounded_knapsack(int d[], const int w, const int v, const int c) {
+void bounded_knapsack(int d[], const int i) {
     int k;
-    for(k = 0; k < c; ++k) {
-        zero_one_knapsack(d, w, v);
+    for(k = 0; k < c[i]; ++k) {
+        zero_one_knapsack(d, i, 1);
     }
 }
 
-void bounded_knapsack1(int d[], const int w, const int v, int c) {
+/* 另一个版本，拆分物品更加优化 */
+void bounded_knapsack1(int d[], const int i) {
     int k;
-    if(c * w >= W) {
-        unbounded_knapsack(d, w, v);
+    if(c[i] * w[i] >= W) {
+        unbounded_knapsack(d, i);
         return;
     }
 
     k = 1;
-    while(k < c) {
-        zero_one_knapsack(d, k * w, k * v);
-        c -= k;
+    while(k < c[i]) {
+        zero_one_knapsack(d, i, k);
+        c[i] -= k;
         k *= 2;
     }
-    zero_one_knapsack(d, c * w, c * v);
+    zero_one_knapsack(d, i, c[i]);
 }
 
 void dp() {
     int i;
     memset(d, 0, sizeof(d)); /* 背包不一定要装满 */
 
-    for(i = 0; i < N; ++i) bounded_knapsack1(d, w[i], v[i], c[i]);
+    for(i = 0; i < N; ++i) bounded_knapsack1(d, i);
 }
  
 int main() {
@@ -1104,5 +1464,3 @@ int main() {
 \begindot
 \item TODO
 \myenddot
-
-\section{最长公共子序列} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
