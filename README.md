@@ -11,7 +11,7 @@ Java 文件夹下是Java版，内容一摸一样，代码是用Java写的
 这个模板制作精良，很有taste，感谢陈硕 :)
 
 ##在Windows下编译
-1. 安装Tex Live 2012 <http://www.tug.org/texlive/>。把`D:\texlive\2012\bin\win32`加入PATH环境变量。
+1. 安装Tex Live 2012 <http://www.tug.org/texlive/>。把bin目录例如`D:\texlive\2012\bin\win32`加入PATH环境变量。
 2. 安装TeXstudio <http://texstudio.sourceforge.net/>
 3. (可选)启动Tex Live Manager，更新所有已安装的软件包。
 4. 安装字体。在Windows下，这个LaTex模板额外使用了5个字体，下载地址 <http://weibo.com/1663402687/zrSNhgTGK>
@@ -36,4 +36,4 @@ Java 文件夹下是Java版，内容一摸一样，代码是用Java写的
 
 本书模板已经写好了，基本上不需要很多LaTeX知识就可以动手了。
 
-欢迎给本书添加内容或纠正错误，在自己本地编译成PDF，预览没问题后，就可以发pull request给本项目了。
+欢迎给本书添加内容或纠正错误，在自己本地编译成PDF，预览没问题后，就可以发pull request过来了。
