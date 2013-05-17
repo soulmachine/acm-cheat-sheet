@@ -43,3 +43,29 @@ void quick_sort(elem_t a[], const int start, const int end) {
     }
 }
 \end{Codex}
+
+\section{归并排序} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{Codex}[label=quick_sort.c]
+typedef int elem_t;
+const int MAXN = 100; //数组范围
+elem_t a[MAXN];       //待排序数组
+elem_t b[MAXN];       //辅助数组
+
+//参数是起点和终点
+void merge_sort(int s, int e)
+{
+    if (e - s <= 0)return;
+    int mid = (s + e) / 2, p1 = s, p2 = mid + 1, i = s;
+    merge_sort(s, mid);
+    merge_sort(mid + 1, e);
+    while (p1 <= mid || p2 <= e)
+    {
+        if (p2 > e || (p1 <= mid && a[p1] <= a[p2]))
+            b[i++] = a[p1++];
+        else b[i++] = a[p2++];
+    }
+    for (i = s; i <= e; i++)
+        a[i] = b[i];
+}
+\end{Codex}
