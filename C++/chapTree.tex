@@ -220,12 +220,6 @@ C++可以直接使用\fn{std::priority_queue}。
 #include <stdlib.h>  /* for malloc() */
 #include <string.h>  /* for memcpy() */
 
-#ifndef __cplusplus 
-typedef char bool;
-#define false 0
-#define true 1
-#endif
-
 typedef int heap_elem_t; // 元素的类型
 
 /**
@@ -238,6 +232,19 @@ typedef struct heap_t {
     heap_elem_t  *elems;   /** 堆的数组 */
     int (*cmp)(const heap_elem_t*, const heap_elem_t*);   /** 元素的比较函数 */
 }heap_t;
+
+
+/** 基本类型（如int, long, float, double）的比较函数 */
+int cmp_int(const heap_elem_t *x, const heap_elem_t *y) {
+    const int sub = *x - *y;
+    if(sub > 0) {
+        return 1;
+    } else if(sub < 0) {
+        return -1;
+    } else {
+        return 0;
+    }
+}
 
 /** 
  * @brief 堆的初始化.
@@ -276,14 +283,10 @@ int heap_uninit(heap_t *h) {
 /** 
  * @brief 判断堆是否为空.
  * @param[in] h 堆对象的指针
- * @return 是空，返回true，否则返回false
+ * @return 是空，返回 1，否则返回 0
  */
-bool heap_empty(const heap_t *h) {
-    if(h != NULL) {
-        return h->size == 0;
-    } else {
-        return false;
-    }
+int heap_empty(const heap_t *h) {
+    return h->size == 0;
 }
 
 /** 

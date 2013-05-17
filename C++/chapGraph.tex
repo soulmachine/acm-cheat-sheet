@@ -1097,16 +1097,6 @@ void next(int s) {
     }
 }
 
-int cmpInt(const int *x, const int *y) {
-    const int sub = *x - *y;
-    if(sub > 0) {
-        return 1;
-    } else if(sub < 0) {
-        return -1;
-    } else {
-        return 0;
-    }
-}
 
 #include "heap.c" // 相当于复制粘贴
 heap_t heap;
@@ -1220,7 +1210,7 @@ void output1() {
 
 int main() {
     const int start = input();
-    heap_init(&heap, MAX + 4, cmpInt);
+    heap_init(&heap, MAX + 4, cmp_int);
     if (start > 0) {
         if (astar(start)) {
             output();
