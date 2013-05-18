@@ -328,8 +328,8 @@ void queue_push(queue_t *q, const queue_elem_t x) {
         q->elems = tmp;
         q->capacity *= 2;
     }
-	q->elems[q->rear] = x;
-	q->rear = (q->rear + 1) % q->capacity;
+    q->elems[q->rear] = x;
+    q->rear = (q->rear + 1) % q->capacity;
 }
 
 /** 

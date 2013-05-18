@@ -95,7 +95,7 @@ int check(const int row, const int column) {
     int ok = 1;
     int i;
     for(i = 0; i < row; ++i) {
-        // 两个点的坐标为(row, column), (j, C[j])
+        // 两个点的坐标为(row, column), (i, C[i])
         // 检查是否在同一列，或对角线上
         if(column == C[i] || row - i == column - C[i] || 
             row - i == C[i] - column) {
@@ -109,7 +109,7 @@ int check(const int row, const int column) {
 /** 
  * @brief 八皇后，回溯法
  *
- * @param[in] row 搜索当前行，该再哪一列上放一个皇后
+ * @param[in] row 搜索当前行，该在哪一列上放一个皇后
  * @return 无
  */
 void search(const int row) {
@@ -150,7 +150,7 @@ int check2(const int row, const int column) {
 /** 
  * @brief 八皇后，回溯法，更优化的版本，用空间换时间
  *
- * @param[in] row 搜索当前行，该再哪一列上放一个皇后
+ * @param[in] row 搜索当前行，该在哪一列上放一个皇后
  * @return 无
  */
 void search2(const int row) {

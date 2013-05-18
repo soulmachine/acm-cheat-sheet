@@ -4,7 +4,7 @@
 
 
 \subsection{直接插入排序}
-直接插入排序(Straight Insertion Sort)的基本思想是：把数组a[n]中待排序的n个元素看成为一个有序表和一个无序表，开始时有序表中只包含一个元素a[0]，无序表中包含有n-1个元素a[1]~a[n-1]，排序过程中每次从无序表中取出第一个元素，把它插入到有序表中的适当位置，使之成为新的有序表，这样经过n-1次插入后，无序表就变为空表，有序表中就包含了全部n个元素，至此排序完毕。在有序表中寻找插入位置是采用从后向前的顺序查找的方法。
+\textbf{直接插入排序}(Straight Insertion Sort)的基本思想是：把数组a[n]中待排序的n个元素看成为一个有序表和一个无序表，开始时有序表中只包含一个元素a[0]，无序表中包含有n-1个元素a[1]~a[n-1]，排序过程中每次从无序表中取出第一个元素，把它插入到有序表中的适当位置，使之成为新的有序表，这样经过n-1次插入后，无序表就变为空表，有序表中就包含了全部n个元素，至此排序完毕。在有序表中寻找插入位置是采用从后向前的顺序查找的方法。
 
 直接插入排序的C语言实现如下。
 \begin{Codex}[label=straight_insertion_sort.c]
@@ -35,7 +35,7 @@ void straight_insertion_sort(elem_t a[], const int start, const int end) {
 
 
 \subsection{折半插入排序}
-在查找插入位置时，若改为折半查找，就是折半插入排序(Binary Insertion Sort)。
+在查找插入位置时，若改为折半查找，就是\textbf{折半插入排序}(Binary Insertion Sort)。
 
 折半插入排序的C语言实现如下。
 \begin{Codex}[label=binary_insertion_sort.c]
@@ -77,7 +77,7 @@ void binary_insertion_sort(elem_t a[], const int start, const int end) {
 $$R_i.key < \max\left\{R_j.key\right\},\; j<i$$
 的记录较少时，直接插入排序的效率就可大大提高，从另一方面来看，由于直接插入排序算法简单，则在n值很小时效率也比较高。希尔排序正是从这两点分析出发对直接插入排序进行改进得到的一种插入排序方法。
 
-希尔排序(Shell Sort)的基本思想是：设待排序元素序列有n个元素，首先取一个整数$gap=\lfloor \dfrac{n}{3} \rfloor+1$作为间隔，将全部元素分为gap个子序列，所有距离为gap的元素放在同一个子序列中，在每一个子序列中分别施行直接插入排序。然后缩小间隔gap，取$gap=\lfloor \dfrac{gap}{3}\rfloor+1$ ，重复上述的子序列划分和排序工作，直到最后取$gap=1$，将所有元素放在同一个序列中排序为止。
+\textbf{希尔排序}(Shell Sort)的基本思想是：设待排序元素序列有n个元素，首先取一个整数$gap=\lfloor \dfrac{n}{3} \rfloor+1$作为间隔，将全部元素分为gap个子序列，所有距离为gap的元素放在同一个子序列中，在每一个子序列中分别施行直接插入排序。然后缩小间隔gap，取$gap=\lfloor \dfrac{gap}{3}\rfloor+1$ ，重复上述的子序列划分和排序工作，直到最后取$gap=1$，将所有元素放在同一个序列中排序为止。
 
 图~\ref{fig:shellsort}展示了希尔排序的过程。
 
@@ -132,7 +132,7 @@ void shell_sort(elem_t a[], const int start, const int end) {
 
 
 \subsection{冒泡排序}
-冒泡排序(Bubble Sort)的基本方法是：设待排序元素序列的元素个数为n，从后向前两两比较相邻元素的值，如果发生逆序（即前一个比后一个大），则交换它们，直到序列比较完。我们称它为一趟冒泡，结果是最小的元素交换到待排序序列的第一个位置，其他元素也都向排序的最终位置移动。下一趟冒泡时前一趟确定的最小元素不参加比较，待排序序列减少一个元素，一趟冒泡的结果又把序列中最小的元素交换到待排序序列的第一个位置。这样最多做n-1趟冒泡就能把所有元素排好序。
+\textbf{冒泡排序}(Bubble Sort)的基本方法是：设待排序元素序列的元素个数为n，从后向前两两比较相邻元素的值，如果发生逆序（即前一个比后一个大），则交换它们，直到序列比较完。我们称它为一趟冒泡，结果是最小的元素交换到待排序序列的第一个位置，其他元素也都向排序的最终位置移动。下一趟冒泡时前一趟确定的最小元素不参加比较，待排序序列减少一个元素，一趟冒泡的结果又把序列中最小的元素交换到待排序序列的第一个位置。这样最多做n-1趟冒泡就能把所有元素排好序。
 
 冒泡排序的C语言实现如下。
 \begin{Codex}[label=bubble_sort.c]
@@ -169,7 +169,7 @@ void bubble_sort(elem_t a[], const int start, const int end) {
 \end{Codex}
 
 \subsection{快速排序}
-快速排序的基本思想是任取待排序元素序列中的某个元素（例如取第一个元素）作为基准，按照该元素的关键字大小，将整个元素序列划分为左右两个子序列：左侧子序列中所有元素的关键字都小于基准元素的关键字，右侧子序列中所有元素的关键字都大于或等于基准元素的关键字，基准元素则排在这两个子序列中间（这也是该元素最终应该安放的位置）。然后分别对这两个子序列重复施行上述算法，直到所有的元素都排在相应位置为止。
+\textbf{快速排序}(Quick sort)的基本思想是任取待排序元素序列中的某个元素（例如取第一个元素）作为基准，按照该元素的关键字大小，将整个元素序列划分为左右两个子序列：左侧子序列中所有元素的关键字都小于基准元素的关键字，右侧子序列中所有元素的关键字都大于或等于基准元素的关键字，基准元素则排在这两个子序列中间（这也是该元素最终应该安放的位置）。然后分别对这两个子序列重复施行上述算法，直到所有的元素都排在相应位置为止。
 
 一趟快排的过程如图~\ref{fig:bubblesort} (a)所示。整个快速排序的过程可递归，如图~\ref{fig:bubblesort} (b)所示。
 
@@ -224,11 +224,11 @@ void quick_sort(elem_t a[], const int start, const int end) {
 
 
 \section{选择排序} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-选择排序的基本思想是：每一趟在后面n-i(i=1, 2, ..., n-2)个元素中选取最小的元素作为有序序列的第i个元素。
+\textbf{选择排序}(Selection sort)的基本思想是：每一趟在后面n-i(i=1, 2, ..., n-2)个元素中选取最小的元素作为有序序列的第i个元素。
 
 
 \subsection{简单选择排序}
-简单选择排序(simple selection sort)也叫直接选择排序(straight selection sort)，其基本步骤是：
+\textbf{简单选择排序}(simple selection sort)也叫直接选择排序(straight selection sort)，其基本步骤是：
 \begindot
 \item 在一组元素a[i]~a[n-1]中选择最小的元素；
 \item 若它不是这组元素中的第一个元素，则将它与这组元素的第一个元素对调；
@@ -308,7 +308,7 @@ void heap_sort(heap_elem_t *a, const int n,
 
 
 \section{归并排序} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-所谓“归并”，就是将两个或两个以上的有序序列合并成一个有序序列。考研大纲只要求二路归并排序。
+所谓“归并”，就是将两个或两个以上的有序序列合并成一个有序序列。我们先从最简单的二路\textbf{归并排序}(Merge sort)入手。
 
 图~\ref{fig:mergesort}是一个二路归并排序的例子。
 
@@ -371,7 +371,7 @@ void merge_sort(elem_t a[], elem_t tmp[], const int start, const int end) {
 
 
 \section{基数排序} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-利用多关键字实现对单关键字排序的算法就称为基数排序(Radix sort)。
+利用多关键字实现对单关键字排序的算法就称为\textbf{基数排序}(Radix sort)。
 
 有两种顺序，最高位优先MSD(Most Significant Digit first)和最低位优先LSD(Least Significant Digit first)。
 
@@ -414,8 +414,7 @@ typedef struct static_list_node_t {
   * @param[in] a 静态链表数组
   * @return 无
   */
-static void static_list_print(const static_list_node_t a[])
-{
+static void static_list_print(const static_list_node_t a[]) {
     int i = a[0].link;
     while (i != 0) {
         printf("%d ", a[i].key);
@@ -429,8 +428,7 @@ static void static_list_print(const static_list_node_t a[])
   * @param[in] i 第i位
   * @return 整数n第i位的数字
   */
-static int get_digit(int n, const int i)
-{
+static int get_digit(int n, const int i) {
     int j;
     for(j = 1; j < i; j++) {
         n /= 10;
@@ -448,8 +446,7 @@ static int get_digit(int n, const int i)
   * @note 无
   * @remarks 无
   */
-void radix_sort(static_list_node_t a[], const int n, const int d)
-{
+void radix_sort(static_list_node_t a[], const int n, const int d) {
     int i, j, k, current, last;
     int rear[R], front[R];
 

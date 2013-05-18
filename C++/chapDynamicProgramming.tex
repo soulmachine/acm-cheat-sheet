@@ -796,9 +796,9 @@ void print_path(const int *d, int j) {
 \subsubsection{分析}
 设状态为d[j]，表示以$a_j$为终点的最长上升子序列的长度。状态转移方程如下；
 $$
-\begin{cases}
-d[j]=1 & j=1\\
-d[j]=\max\left\{d[i]\right\}+1 & 1<i<j,a_i<a_j
+d[j]=\begin{cases}
+1 & j=1\\
+\max\left\{d[i]\right\}+1 & 1<i<j,a_i<a_j
 \end{cases}
 $$
 
@@ -840,8 +840,9 @@ int main() {
 \subsubsection{类似的题目}
 与本题相同的题目：
 \begindot
-\item 《算法竞赛入门经典》\footnote{刘汝佳,算法竞赛入门经典，清华大学出版社，2009}第162页例题9-3
-\item  tyvj 1214 硬币问题, \myurl{http://www.tyvj.cn/problem_show.aspx?id=1214}
+\item 《程序设计导引及在线实践》\footnote{李文新,程序设计导引及在线实践,清华大学出版社,2007}第198页例题10.3
+\item  百练 2757 最长上升子序列, \myurl{http://poj.grids.cn/practice/2757/}
+\item POJ 2533 Longest Ordered Subsequence, \myurl{http://poj.org/problem?id=2533}
 \myenddot
 
 与本题相似的题目：
@@ -956,7 +957,7 @@ def ZeroOneKnapsack(d[], i)
 \begin{Code}
 d[0..W] = 0
 for i = 1..N
-    ZeroOneKnapsack(d[], w[i], v[i])
+    ZeroOneKnapsack(d[], i)
 \end{Code}
 
 \subsubsection{代码}
@@ -1126,12 +1127,12 @@ This is impossible.
 时间复杂度是$O(NW\sum \dfrac{W}{w[i]})$。
 
 按照该思路，状态转移方程为：
-$$f[i][j]=\max\left\{f[i-1][j-k*w[i]+k*v[i], 0 \leq k*w[i] \leq j\right\}$$
+$$f[i][j]=\max\left\{f[i-1][j-k*w[i]]+k*v[i], 0 \leq k*w[i] \leq j\right\}$$
 
 伪代码如下：
 \begin{Code}
 for i = 1..N
-    for j = W..w
+    for j = W..w[i]
         for k = 1..j/w[i]
             d[j] = max{d[j], d[j-k*w[i]] + k*v[i]};
 \end{Code}
@@ -1330,12 +1331,12 @@ void unbounded_knapsack3(int d[], const int w, const int v) {
 与完全背包问题类似，也可以用“拆分物品”的思想把本问题转化为0-1背包问题：把
 第i种物品换成$c[i]$个0-1背包问题中的物品，则得到了物品数为$\sum c[i]$的0-1背包问题。
 时间复杂度是$O(NW\sum c[i])$。状态转移方程为：
-$$f[i][j]=\max\left\{f[i-1][j-k*w[i]+k*v[i], 0 \leq k \leq c[i], 0 \leq k*w[i] \leq j\right\}$$
+$$f[i][j]=\max\left\{f[i-1][j-k*w[i]]+k*v[i], 0 \leq k \leq c[i], 0 \leq k*w[i] \leq j\right\}$$
 
 伪代码如下：
 \begin{Code}
 for i = 1..N
-    for j = W..w
+    for j = W..w[i]
         K = min{j/w[i], c[i]}
         for k = 1..K
             d[j] = max{d[j], d[j-k*w[i]] + k*v[i]};
@@ -1345,7 +1346,7 @@ for i = 1..N
 \begin{Code}
 for i = 1..N
     for k = 1..c[i]
-        ZeroOneKnapsack(d[], w, v)
+        ZeroOneKnapsack(d[], i)
 \end{Code}
 
 拆分物品也可以使用二进制的技巧，把第i种物品拆分成若干物品，其中每件物品都有一个
@@ -1355,18 +1356,22 @@ $1,2,2^2,...,2^{k-1},c[i]-2^k+1$，其中k是满足$2^k-1<c[i]$的最大整数�
 
 这样处理单个物品的复杂度由$O(c[i])$降到了$O(\log c[i])$，伪代码如下：
 \begin{Code}
+// c, 物品系数
+def ZeroOneKnapsack(d[], i, c)
+    for j = W..w[i]
+        d[j] = max(d[j], d[j-c*w[i]] + c*v[i])
 def BoundedKnapsack(d[], i)
     if c[i]*w[i] >= W
-        unbounded_knapsack(d[], w[i], v[i]);
+        unbounded_knapsack(d[], i);
         return;
 
     k = 1;
     while k < c[i]
-        zero_one_knapsack(d[], k * w[i], k * v[i]);
+        zero_one_knapsack(d[], i, k);
         c[i] -= k;
         k *= 2;
 
-    zero_one_knapsack(d[], c[i] * w[i], c[i] * v[i]);
+    zero_one_knapsack(d[], i, c);
 \end{Code}
 
 \subsubsection{代码}
