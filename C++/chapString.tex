@@ -257,9 +257,9 @@ static long hash(const char key[], const int M) {
  */
 static long rehash(const long h, const char first, const char next, 
                    const long RM) {
-                       long newh = (h + Q - RM * first % Q) % Q;
-                       newh = (newh * R + next) % Q;
-                       return newh;
+    long newh = (h + Q - RM * first % Q) % Q;
+    newh = (newh * R + next) % Q;
+    return newh;
 }
 
 /*
