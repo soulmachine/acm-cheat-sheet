@@ -35,16 +35,16 @@ KMP算法是Knuth、Morris和Pratt在1976年发表的。它的基本思想是，
  * @return 无
  */
 void compute_prefix(const char pattern[], const int m, int next[]) {
-	int i;
+    int i;
     int j = -1;
 
-	next[0] = j;
-	for (i = 1; i < m; i++) {
-		while (j > -1 && pattern[j + 1] != pattern[i]) j = next[j];
+    next[0] = j;
+    for (i = 1; i < m; i++) {
+        while (j > -1 && pattern[j + 1] != pattern[i]) j = next[j];
 
-		if (pattern[i] == pattern[j + 1]) j++;
-		next[i] = j;
-	}
+        if (pattern[i] == pattern[j + 1]) j++;
+        next[i] = j;
+    }
 }
 
 /*
@@ -57,35 +57,35 @@ void compute_prefix(const char pattern[], const int m, int next[]) {
  * @return 成功则返回第一次匹配的位置，失败则返回-1
  */
 int kmp(const char text[], const int n, const char pattern[], const int m) {
-	int i;
+    int i;
     int j = -1;
     int *next = (int*)malloc(sizeof(int) * m);
 
     compute_prefix(pattern, m, next);
 
-	for (i = 0; i < n; i++) {
-		while (j > -1 && pattern[j + 1] != text[i]) j = next[j];
+    for (i = 0; i < n; i++) {
+        while (j > -1 && pattern[j + 1] != text[i]) j = next[j];
 
-		if (text[i] == pattern[j + 1]) j++;
-		if (j == m - 1) {
-			free(next);
-			return i-j;
-		}
-	}
+        if (text[i] == pattern[j + 1]) j++;
+        if (j == m - 1) {
+            free(next);
+            return i-j;
+        }
+    }
 
-	free(next);
-	return -1;
+    free(next);
+    return -1;
 }
 
 
 int main(int argc, char *argv[]) {
-	char text[] = "ABC ABCDAB ABCDABCDABDE";
-	char pattern[] = "ABCDABD";
+    char text[] = "ABC ABCDAB ABCDABCDABDE";
+    char pattern[] = "ABCDABD";
     char *ch = text;
-	int i = kmp(text, strlen(text), pattern, strlen(pattern));
+    int i = kmp(text, strlen(text), pattern, strlen(pattern));
 
     if (i >= 0) printf("matched @: %s\n", ch + i);
-	return 0;
+    return 0;
 }
 \end{Codex}
 
@@ -257,9 +257,9 @@ static long hash(const char key[], const int M) {
  */
 static long rehash(const long h, const char first, const char next, 
                    const long RM) {
-    long newh = (h + Q - RM * first % Q) % Q;
-    newh = (newh * R + next) % Q;
-    return newh;
+                       long newh = (h + Q - RM * first % Q) % Q;
+                       newh = (newh * R + next) % Q;
+                       return newh;
 }
 
 /*
