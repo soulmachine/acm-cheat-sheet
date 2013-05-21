@@ -1469,3 +1469,137 @@ int main() {
 \begindot
 \item TODO
 \myenddot
+
+
+\section{递归结构中的动态规划} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+本节介绍一些递归结构中的动态规划。递归结构是指可以递归定义的数据结构，例如单链表，凸多边形、树和表达式等。
+
+
+\subsection{最优矩阵链乘}
+\subsubsection{描述}
+一个$m \times n$的矩阵乘以一个$n \times p$的矩阵等于一个$m \times p$的矩阵，运算量为$mnp$。
+
+矩阵乘法不满足分配律，但满足结合律，即$A \times B \times C=(A \times B) \times C=A \times (B \times C)$。
+
+假设A、B、C分别是$2 \times 3$、$3 \times 4$、$4 \times 5$的矩阵，则$(A \times B) \times C$的运算量为$2 \times 3 \times 4 + 2 \times 4 \times 5=64$，$A \times (B \times C)$的运算量为$3 \times 4 \times 5 + 2 \times 3 \times 5=90$，显然第一种运算顺序节省运算量。
+
+给出N个矩阵组成的序列，设计一种方法把它们依次乘起来，使得总的运算量尽量小。
+
+\subsubsection{输入}
+对于每个矩阵序列，只给出它们的维度。每个序列由两个部分组成，第一行包含一个整数N，表示矩阵的个数；接下来的N行，每行一对整数，分别表示矩阵的行数和列数。给出的顺序与矩阵链乘的顺序一致。最后一行N为0，表示输入结束。N不大于10。
+
+\subsubsection{输出}
+假设矩阵命名为$A_1,A_2,...,A_N$。对每个测试用例输出一行，包含一个使用了小括号的表达式，清晰地指出乘法的先后顺序。每行输出以"Case x: "为前缀，x表示测试用例编号。如果有多个正确结果，只需要输出其中一个。
+
+\subsubsection{样例输入}
+\begin{Code}
+3
+1 5
+5 20
+20 1
+3
+5 10
+10 20
+20 35
+6
+30 35
+35 15
+15 5
+5 10
+10 20
+20 25
+0
+\end{Code}
+
+\subsubsection{样例输出}
+\begin{Code}
+Case 1: (A1 x (A2 x A3))
+Case 2: ((A1 x A2) x A3)
+Case 3: ((A1 x (A2 x A3)) x ((A4 x A5) x A6))
+\end{Code}
+
+\subsubsection{分析}
+假设第i个矩阵$A_i$的维度是$p_{i-1} \times p_i$, i=1..N。
+
+设状态为d[i][j]，表示子问题$A_i, A_{i+1},..., A_j$的最优解，状态转移方程如下：
+$$d[i][j]=\min\left\{d[i][k]+d[k+1][j] + p_{i-1}p_kp_j\right\}$$
+
+\subsubsection{代码}
+\begin{Codex}[label=oams.c]
+#include <stdio.h>
+#include <memory.h>
+#include <limits.h>
+
+#define INF INT_MAX
+#define MAXN 10
+
+int N;  /** 矩阵的个数. */
+int p[MAXN + 1];  /** 矩阵Ai的维度是p[i-1]xp[i]. */
+int d[MAXN][MAXN];  /** 状态，d[i][j]表示子问题Ai~Aj 的最优解. */
+int s[MAXN][MAXN]; /** 子问题Ai~Aj 应该在s[i][j]处断开 */
+
+/**
+ * @brief 打印子问题Ai~Aj的解
+ * @param[in] i Ai
+ * @param[in] j Aj
+ * @return 无
+ */
+void print(const int i, const int j) {
+	if (i == j) {
+		printf("A%d",i);
+	} else {  /* i < j */
+		printf("(");
+		print(i, s[i][j]);
+		printf(" x ");
+		print(s[i][j]+1, j);
+		printf(")");
+	}
+}
+
+void dp() {
+    int i, j, k, l; /* l表示区间长度 */
+    for (i = 1;i <= N; ++i) d[i][i]=0;
+
+    for (l = 2; l <= N; ++l) {
+        for (i = 1; i <= N - l + 1; ++i) {
+            j = i + l -1;
+            d[i][j] = INF;
+            for (k = i; k < j; ++k) {
+                if (d[i][j] > d[i][k] + d[k+1][j] + p[i-1] * p[k] * p[j]) {
+                    d[i][j] = d[i][k] + d[k+1][j] + p[i-1] * p[k] * p[j];
+                    s[i][j] = k;
+                }
+            }
+        }
+    }
+}
+
+int main() {
+    int i;
+	int cas = 1;
+	while (scanf("%d", &N) && N > 0) {
+		memset(s, 0, sizeof(s));
+		for (i = 0; i < N; ++i)  scanf("%d %d",&p[i],&p[i+1]);
+
+		dp();
+
+		printf("Case %d: ", cas++);
+		print(1, N);
+		printf("\n");
+	}
+	return 0;
+}
+\end{Codex}
+
+\subsubsection{类似的题目}
+与本题相同的题目：
+\begindot
+\item UVa 348 Optimal Array Multiplication Sequence, \myurl{http://t.cn/zH2pchp}
+\item ZOJ 1276 Optimal Array Multiplication Sequence, \myurl{http://t.cn/zH2gW1P}
+\myenddot
+
+与本题相似的题目：
+\begindot
+\item Matrix67 - 十个利用矩阵乘法解决的经典题目，\myurl{http://www.matrix67.com/blog/archives/276}
+\myenddot
+
