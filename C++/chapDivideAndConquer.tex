@@ -121,7 +121,8 @@ int main() {
 \subsubsection{类似的题目}
 与本题相同的题目：
 \begindot
-\item 《算法竞赛入门经典》\footnote{刘汝佳,算法竞赛入门经典，清华大学出版社，2009}第148页8.3.3节
+\item 《算法竞赛入门经典》\footnote{刘汝佳,算法竞赛入门经典，清华大学出版社，2009}第148页8.3.1节
+\item 《计算机算法设计与分析(第3版)》\footnote{王晓东, 计算机算法设计与分析(第3版), 电子工业出版社, 2007}第19页2.6节
 \item NYOJ 45 棋盘覆盖, \myurl{http://acm.nyist.net/JudgeOnline/problem.php?pid=45}
 \myenddot
 
@@ -132,4 +133,135 @@ int main() {
 
 
 \section{循环赛日程表} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{描述}
+有$2^k$个运动员参加循环比赛，需要设计比赛日程表。要求如下：
 
+\begindot
+\item 每个选手必须与其他n-1个选手各赛一次
+\item 每个选手一天只能赛一次
+\item 比赛一共进行n-1天
+\myenddot
+
+按此要求设计一张比赛日程表，它有n行和n-1列，第i行第j列为第i个选手第j天遇到的对手。
+
+\subsubsection{输入}
+只有一个数k，$0<k<9$，且k为自然数。
+
+\subsubsection{输出}
+一张比赛日程表，它有n行和n-1列（不算第一列，第一列表示选手的编号），第i行第j列为第i个选手第j天遇到的对手。相邻的两个整数用空格隔开。
+
+\subsubsection{样例输入}
+\begin{Code}
+1
+\end{Code}
+
+\subsubsection{样例输出}
+\begin{Code}
+1 2
+2 1
+\end{Code}
+
+\subsubsection{分析}
+根据分而治之的思想，可从其中一半选手($2^{k-1}$位)的比赛日程，推导出全体选手的日程，最终细分到只有两位选手的比赛日程。
+
+图~\ref{fig:chessboard}所示是k=3时的一个可行解，它是由4块拼起来的。左上角是k=2时的一组解，左下角是由左上角每个数加4得到，而右上角、右下角分别由左下角、左上角复制得到。
+\begin{center}
+\includegraphics{roundrobin.png}\\
+\figcaption{循环赛日程表问题k=3时的解}\label{fig:roundrobin}
+\end{center}
+
+\subsubsection{代码}
+\begin{Codex}[label=roundrobin_scheduling.c]
+#include<stdio.h>
+#include<stdlib.h>
+
+#define MAXN 512   /* N=2^k, 0<k9 */
+short schedule[MAXN][MAXN];
+
+void dc(const int k) {
+    int i, j, t;
+    int n, n2; /* 当前的n，即将扩展的n */
+
+    /* k=1，即两个人时，日程表可以直接写出 */
+    n=2;
+    schedule[0][0]=1; schedule[0][1]=2;
+    schedule[1][0]=2; schedule[1][1]=1;
+
+     /* 迭代处理，依次处理2^2....2^k个选手的比赛日程 */
+    for(t = 1; t < k; t++, n *= 2) {
+        n2 = n * 2;
+        //填左下角元素
+        for(i = n; i < n2; i++)
+            for(j = 0; j < n; j++)
+                schedule[i][j] = schedule[i-n][j] + n;
+
+        //将左下角元素抄到右上角
+        for(i = 0; i < n; i++)
+            for(j = n; j < n2; j++)
+                schedule[i][j] = schedule[i+n][j-n];
+
+        //将左上角元素抄到右下角
+        for(i = n; i < n2; i++)
+            for(j = n;j < n2; j++)
+                schedule[i][j] = schedule[i-n][j-n];
+    }
+}
+
+/* 另一个版本 */
+void dc2(const int k) {
+    int i, j, r;
+    int n;
+    const int N = 1 << k;
+
+    /* 第一列是选手的编号 */
+    for(i = 0; i < N; i++) schedule[i][0] = i + 1;
+    schedule[0][1] = 1;  /* 当 k=0时，只有一个人 */
+
+    for (n = 2; n <= N; n *= 2) {  /* 方块大小, 2, 4, 8 */
+        const int half = n / 2;
+        for (r = 0; r < N; r += n) { /* 方块所在行 */
+            for (i = r; i <= r + half -1; i++) {  /* 左上角小方块的所有行 */
+                for (j = 0; j < half; j++) {  /* 左上角小方块的所有行 */
+                    /* 右下角 <-- 左上角 */
+                    schedule[i + half][j + half] = schedule[i][j];
+                    /* 右上角 <-- 左下角 */
+                    schedule[i][j + half] = schedule[i + half][j];
+                }
+            }
+        }
+    }
+}
+
+
+int main(){
+    int k, N;
+    int i,j;
+
+    scanf("%d",&k);
+    N = 1 << k;
+
+    dc(k);
+    // dc2(k);
+
+    // 输出日程表
+    for(i = 0; i < N; i++) {
+        for(j = 0; j < N; j++) printf("%d ", schedule[i][j]);
+        printf("\n");
+    }
+    return 0;
+}
+\end{Codex}
+
+\subsubsection{类似的题目}
+与本题相同的题目：
+\begindot
+\item 《算法竞赛入门经典》\footnote{刘汝佳,算法竞赛入门经典，清华大学出版社，2009}第149页8.3.2节
+\item 《计算机算法设计与分析(第3版)》\footnote{王晓东, 计算机算法设计与分析(第3版), 电子工业出版社, 2007}第34页2.11节
+\item NKOJ 1437 校长杯, \myurl{http://acm.nankai.edu.cn/p1437.html}
+\myenddot
+
+与本题相似的题目：
+\begindot
+\item SPOJ 2826 Round-Robin Scheduling, \myurl{http://www.spoj.com/problems/RRSCHED/}
+\item UVa OJ 678 Schedule of Taiwan Baseball League, \myurl{http://t.cn/zHJD9TQ}
+\myenddot
