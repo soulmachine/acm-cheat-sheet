@@ -43,7 +43,7 @@
 
 本题只需要求总数，不需要求具体怎么摆放，因此简化很多。根据上面的思路，设$f(k)$表示棋盘是$2^k \times 2^k$时所需L型牌的总数，可得递推公式$f(k)=4f(k-1)+1$。
 
-注意，$2^100$是一个很大的数，本题需要处理大数。
+注意，$2^100$是一个很大的数，本题需要处理大数，见\S \ref{sec:bigintmul}节。
 
 \subsubsection{代码}
 \begin{Codex}[label=chessboard_cover.c]
@@ -62,7 +62,7 @@ int  d[MAXK][MAX_LEN * 2];  /* d[k-1] = f(k) */
 /**
  * @brief 打印大整数.
  * @param[in] x 大整数，用数组表示，低位在低地址
- * @param[in] n 数组a的长度
+ * @param[in] n 数组x的长度
  * @return 无
  */
 void bigint_print(const int x[], const int n) {
