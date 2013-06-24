@@ -325,11 +325,11 @@ static tbt_node_t *next(const tbt_node_t *p) {
 Morris中序遍历的步骤如下：
 \begin{enumerate}
 \item 初始化当前节点cur为root节点
-\item 如果cur没有左孩子，则输出当前节点并将其右孩子作为当前节点，即current = current->rchild。
+\item 如果cur没有左孩子，则输出当前节点并将其右孩子作为当前节点，即cur = cur->rchild。
 \item 如果cur有左孩子，则寻找cur的前驱，即cur的左子树的最右下角结点。\\
    a) 如果前驱节点的右孩子为空，将它的右孩子指向当前节点，当前节点更新为当前节点的左孩子。\\
    b) 如果前驱节点的右孩子为当前节点，将它的右孩子重新设为空（恢复树的形状），输出当前节点，当前节点更新为当前节点的右孩子。
-\item 重复2、3步骤，直到current为空。
+\item 重复2、3步骤，直到cur为空。
 \end{enumerate}
 如图~\ref{fig:inorderMorris}所示，cur表示当前节点，深色节点表示该节点已输出。
 
@@ -340,16 +340,21 @@ Morris中序遍历的步骤如下：
 
 C语言实现见第\S\ref{sec:morrisTraversalImpl}节。
 
+\subsubsection{相关的题目}
+\begindot
+\item Leet Code - Binary Tree Inorder Traversal, \myurl{http://leetcode.com/onlinejudge\#question_94}
+\myenddot
+
 
 \subsection{Morris先序遍历}
 Morris先序遍历的步骤如下：
 \begin{enumerate}
 \item 初始化当前节点cur为root节点
-\item 如果cur没有左孩子，则输出当前节点并将其右孩子作为当前节点，即current = current->rchild。
+\item 如果cur没有左孩子，则输出当前节点并将其右孩子作为当前节点，即cur = cur->rchild。
 \item 如果cur有左孩子，则寻找cur的前驱，即cur的左子树的最右下角结点。\\
    a) 如果前驱节点的右孩子为空，将它的右孩子指向当前节点，\textbf{输出当前节点（在这里输出，这是与中序遍历唯一的不同点）}当前节点更新为当前节点的左孩子。\\
    b) 如果前驱节点的右孩子为当前节点，将它的右孩子重新设为空（恢复树的形状），\sout{输出当前节点，}当前节点更新为当前节点的右孩子。
-\item 重复2、3步骤，直到current为空。
+\item 重复2、3步骤，直到cur为空。
 \end{enumerate}
 如图~\ref{fig:preorderMorris}所示。
 
@@ -367,11 +372,11 @@ Morris后续遍历稍微复杂，需要建立一个临时节点dump，令其左�
 Morris后序遍历的步骤如下：
 \begin{enumerate}
 \item 初始化当前节点cur为root节点
-\item 如果cur没有左孩子，则\sout{输出当前节点并}将其右孩子作为当前节点，即current = current->rchild。
+\item 如果cur没有左孩子，则\sout{输出当前节点并}将其右孩子作为当前节点，即cur = cur->rchild。
 \item 如果cur有左孩子，则寻找cur的前驱，即cur的左子树的最右下角结点。\\
    a) 如果前驱节点的右孩子为空，将它的右孩子指向当前节点，当前节点更新为当前节点的左孩子。\\
    b) 如果前驱节点的右孩子为当前节点，将它的右孩子重新设为空（恢复树的形状），\sout{输出当前节点，}\textbf{倒序输出从当前节点的左孩子到该前驱节点这条路径上的所有节点。}当前节点更新为当前节点的右孩子。
-\item 重复2、3步骤，直到current为空。
+\item 重复2、3步骤，直到cur为空。
 \end{enumerate}
 如图~\ref{fig:postorderMorris}所示。
 
