@@ -30,6 +30,7 @@
 
 分治和贪心的相同点：disjoint subproblems。
 
+
 \section{最长公共子序列} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{描述}
 一个序列的子序列(subsequence)是指在该序列中删去若干（可以为0个）元素后得到的序列。
@@ -184,6 +185,112 @@ void lcs_print(const char *x, const int m, const char *y, const int n) {
 \item HDOJ 1080 Human Gene Functions, \myurl{http://acm.hdu.edu.cn/showproblem.php?pid=1080}
 \item HDOJ 1503 Advanced Fruits, \myurl{http://acm.hdu.edu.cn/showproblem.php?pid=1503}
 \myenddot
+
+
+\section{最大M子段和} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{描述}
+给定一个整数序列$S_1,S_2,\cdot,S_n(1 \leq n \leq 1,000,000, -32768 \leq S_i \leq 32768)$，定义函数$sum(i,j)=S_i+\cdot+S_j(1 \leq i \leq j \leq n)$。
+
+现给定一个正整数m，找出m对i和j，使得$sum(i_1,j_1)+sum(i_2,j_2)+ ... +sum(i_m,j_m)$最大。这就是\textbf{最大M子段和}(maximum m segments sum)。
+
+\subsubsection{输入}
+每个测试用例由两个正整数m和n开头，接着是n个整数。
+
+\subsubsection{输出}
+每行输出一个最大和。
+
+\subsubsection{样例输入}
+\begin{Code}
+1 3 1 2 3
+2 6 -1 4 -2 3 -2 3
+\end{Code}
+
+\subsubsection{样例输出}
+\begin{Code}
+6
+8
+\end{Code}
+
+\subsubsection{分析}
+设状态为d[i,j]，表示前j项分为i段的最大和，且第i段必须包含S[j]，则状态转移方程如下：
+$$
+d[i,j]=\max\left\{d[i,j-1]+S[j],\max\left\{d[i-1,t]+S[j]\right\}\right\}, \text{ 其中 }i \leq j \leq n, i-1 \leq t < j
+$$
+
+分为两种情况：
+\begindot
+\item 情况一，S[j]包含在第i段之中，$d[i,j-1]+S[j]$。
+\item 情况二，$\max\left\{d[i-1,t]+S[j]\right\}$，S[j]独立划分成为一段。
+\myenddot
+
+观察上述两种情况可知d[i,j]的值只和d[i,j-1]和d[i-1,t]这两个值相关，因此不需要二维数组，可以用滚动数组，只需要两个一维数组，用d[j]表示现阶段的最大值，即$d[i,j-1]+S[j]$，用prev[j]表示上一阶段的最大值，即$\max\left\{d[i-1,t]+S[j]\right\}$。
+
+\subsubsection{代码}
+\begin{Codex}[label=mmss.c]
+#include <stdio.h>
+#include <stdlib.h>
+#include <limits.h>
+
+/**
+ * @brief 最大m段子序列和
+ * @param[in] S 数组
+ * @param[in] n 数组长度
+ * @param[in] m m段
+ * @return 最大m段子序列和
+ */
+int mmss(int S[], int n, int m) {
+    int max_sum, i, j;
+
+    /* d[i]表示现阶段最大值，prev[i]表示上阶段最大值 */
+    /* d[0], prev[0] 未使用 */
+    int *d = (int*) calloc(n + 1, sizeof(int));
+    int *prev = (int*) calloc(n + 1, sizeof(int));
+    S--;  // 因为 j是从1开始，而S从0开始，这里要减一
+
+    for (i = 1; i <= m; ++i) {
+        max_sum = INT_MIN;
+        for (j = i; j <= n; ++j) {
+            // 状态转移方程
+            if (d[j - 1] < prev[j - 1])
+                d[j] = prev[j - 1] + S[j];
+            else
+                d[j] = d[j - 1] + S[j];
+
+            prev[j - 1] = max_sum;  // 存放上阶段最大值
+            if (max_sum < d[j])
+                max_sum = d[j];  // 更新 max_sum
+        }
+        prev[j - 1] = max_sum;
+    }
+
+    return max_sum;
+}
+
+int main() {
+    int n, m, i, *S;
+    while (scanf("%d%d", &m, &n) == 2) {
+        S = (int*) malloc(sizeof(int) * n);
+        for (i = 0; i < n; ++i)
+            scanf("%d", &S[i]);
+        printf("%d\n", mmss(S, n, m));
+        free(S);
+    }
+    return 0;
+}
+\end{Codex}
+
+\subsubsection{相关题目}
+与本题相同的题目：
+\begindot
+\item HDOJ 1024 Max Sum Plus Plus, \myurl{http://acm.hdu.edu.cn/showproblem.php?pid=1024}
+\myenddot
+
+与本题相似的题目：
+\begindot
+\item LeetCode Best Time to Buy and Sell Stock III, \myurl{http://leetcode.com/onlinejudge\#question_123}，\\
+参考代码\myurl{https://gist.github.com/soulmachine/5906637}
+\myenddot
+
 
 \section{DAG上的动态规划} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
