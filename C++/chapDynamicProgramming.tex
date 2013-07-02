@@ -187,9 +187,140 @@ void lcs_print(const char *x, const int m, const char *y, const int n) {
 \myenddot
 
 
-\section{最大M子段和} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{最大连续子序列和} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{描述}
 给定一个整数序列$S_1,S_2,\cdot,S_n(1 \leq n \leq 1,000,000, -32768 \leq S_i \leq 32768)$，定义函数$sum(i,j)=S_i+\cdot+S_j(1 \leq i \leq j \leq n)$。
+
+求最大的$sum(i,j)$，即\textbf{最大连续子序列和}(maximum continuous subsequence sum)。
+
+\subsubsection{输入}
+每个测试用例由正整数n开头，接着是n个整数。
+
+\subsubsection{输出}
+每行输出一个最大和。
+
+\subsubsection{样例输入}
+\begin{Code}
+3 1 2 3
+6 -1 4 -2 3 -2 3
+\end{Code}
+
+\subsubsection{样例输出}
+\begin{Code}
+6
+6
+\end{Code}
+
+\subsubsection{分析}
+设状态为d[j]，表示以S[j]结尾的最大连续子序列和，则状态转移方程如下：
+\begin{eqnarray}
+d[j] &=& \max\left\{d[j-1]+S[j],S[j]\right\}, \text{ 其中 }1 \leq j \leq n \nonumber \\
+target &=& \max\left\{d[j]\right\}, \text{ 其中 }1 \leq j \leq n \nonumber
+\end{eqnarray}
+
+解释如下：
+\begindot
+\item 情况一，S[j]不独立，与前面的某些数组成一个连续子序列，则最大连续子序列和为$d[j-1]+S[j]$。
+\item 情况二，S[j]独立划分成为一段，即连续子序列仅包含一个数S[j]，则最大连续子序列和为$S[j]$。
+\myenddot    
+
+\subsubsection{代码}
+\begin{Codex}[label=mcss.c]
+#include <stdio.h>
+#include <stdlib.h>
+
+inline static int max(int a , int b) {
+   return (a > b) ? a : b ;
+}
+
+inline static int min(int a , int b) {
+   return (a < b) ? a : b ;
+}
+
+/**
+ * @brief 最大连续子序列和，思路四
+ * @param[in] S 数列
+ * @param[in] n 数组的长度
+ * @return 最大连续子序列和
+ */
+int mcss(int S[], int n) {
+    int i, maxs, mins;
+    int *sum = (int*) malloc((n + 1) * sizeof(int));  // 前n项和
+    sum[0] = 0;
+    maxs = 0, mins = 0;
+    for (i = 1; i <= n; i++) {
+        sum[i] = sum[i - 1] + S[i - 1];
+        maxs = max(maxs, sum[i]);
+        mins = min(mins, sum[i]);
+    }
+    free(sum);
+    return maxs - mins;
+}
+
+/**
+ * @brief 最大连续子序列和，动规
+ * @param[in] S 数列
+ * @param[in] n 数组的长度
+ * @return 最大连续子序列和
+ */
+int mcss_dp(int S[], int n) {
+    int i, result;
+    int *d = (int*) malloc(n * sizeof(int));
+    d[0] = S[0];
+    result = d[0];
+    for (i = 1; i < n; i++) {
+        d[i] = max(S[i], d[i - 1] + S[i]);
+        if (result < d[i])
+            result = d[i];
+    }
+    free(d);
+    return result;
+}
+
+int main() {
+    int n, *S;
+    while (scanf("%d", &n) > 0) {
+        int i;
+        S = (int*) malloc(n * sizeof(int));
+        for (i = 0; i < n; i++)
+            scanf("%d", &S[i]);
+
+        printf("%d\n", mcss_dp(S, n));
+        free(S);
+    }
+    return 0;
+}
+\end{Codex}
+
+\subsubsection{其他解法}
+
+\begindot
+\item 思路一：直接在i到j之间暴力枚举，复杂度是$O(n^3)$
+\item 思路二：处理后枚举，连续子序列的和等于两个前缀和之差，复杂度$O(n^2)$。
+\item 思路三：分治法，把序列分为两段，分别求最大连续子序列和，然后归并，复杂度$O(n\log n)$
+\item 思路四：把$O(n^2)$的代码稍作处理，得到$O(n)$的算法
+\item 思路五：M=1的最大M子段和，见第 \S \ref{sec:mmss} 节
+\myenddot
+
+感兴趣的读者请参考这篇博客，\myurl{http://www.cnblogs.com/gj-Acit/archive/2013/02/12/2910332.html}
+
+\subsubsection{相关题目}
+与本题相同的题目：
+\begindot
+\item TODO
+\myenddot
+
+与本题相似的题目：
+\begindot
+\item HDOJ 1024 Max Sum Plus Plus, \myurl{http://acm.hdu.edu.cn/showproblem.php?pid=1024}
+\myenddot
+
+
+\section{最大M子段和} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\label{sec:mmss}
+
+\subsubsection{描述}
+给定一个整数序列$S_1,S_2,\cdot,S_n(1 \leq n \leq 1,000,000, -32768 \leq S_i \leq 32768)$，定义函数$sum(i,j)=S_i+ ... +S_j(1 \leq i \leq j \leq n)$。
 
 现给定一个正整数m，找出m对i和j，使得$sum(i_1,j_1)+sum(i_2,j_2)+ ... +sum(i_m,j_m)$最大。这就是\textbf{最大M子段和}(maximum m segments sum)。
 
@@ -213,14 +344,15 @@ void lcs_print(const char *x, const int m, const char *y, const int n) {
 
 \subsubsection{分析}
 设状态为d[i,j]，表示前j项分为i段的最大和，且第i段必须包含S[j]，则状态转移方程如下：
-$$
-d[i,j]=\max\left\{d[i,j-1]+S[j],\max\left\{d[i-1,t]+S[j]\right\}\right\}, \text{ 其中 }i \leq j \leq n, i-1 \leq t < j
-$$
+\begin{eqnarray}
+d[i,j] &=& \max\left\{d[i,j-1]+S[j],\max\left\{d[i-1,t]+S[j]\right\}\right\}, \text{ 其中 }i \leq j \leq n, i-1 \leq t < j \nonumber \\
+target &=& \max\left\{d[m,j]\right\}, \text{ 其中 }m \leq j \leq n \nonumber
+\end{eqnarray}
 
 分为两种情况：
 \begindot
 \item 情况一，S[j]包含在第i段之中，$d[i,j-1]+S[j]$。
-\item 情况二，$\max\left\{d[i-1,t]+S[j]\right\}$，S[j]独立划分成为一段。
+\item 情况二，S[j]独立划分成为一段，$\max\left\{d[i-1,t]+S[j]\right\}$。
 \myenddot
 
 观察上述两种情况可知d[i,j]的值只和d[i,j-1]和d[i-1,t]这两个值相关，因此不需要二维数组，可以用滚动数组，只需要两个一维数组，用d[j]表示现阶段的最大值，即$d[i,j-1]+S[j]$，用prev[j]表示上一阶段的最大值，即$\max\left\{d[i-1,t]+S[j]\right\}$。
@@ -263,6 +395,8 @@ int mmss(int S[], int n, int m) {
         prev[j - 1] = max_sum;
     }
 
+    free(d);
+    free(prev);
     return max_sum;
 }
 
