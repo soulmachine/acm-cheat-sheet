@@ -3,9 +3,9 @@
 \section{算法思想} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 当把问题分成若干步骤并递归求解时，如果当前步骤没有合法选择，则函数将返回上一级递归调用，
-这种现象称为回溯(backtrack)。正是因为这个原因，枚举递归算法常被称为回溯法。
+这种现象称为\textbf{回溯}(backtrack)。正是因为这个原因，枚举递归算法常被称为\textbf{回溯法}。
 
-回溯法 = 深搜 + 剪枝。树的深搜或图的深搜都可以。深搜一般用递归来写，这样比较简洁。
+\textbf{回溯法 = 深搜 + 剪枝}。树的深搜或图的深搜都可以。深搜一般用递归来写，这样比较简洁。
 
 回溯法比暴力枚举法快的原因，在于：暴力枚举法，是每生成一个完整的解答后，
 再来判断这个解答是否合法，而回溯法则在生成每一步中都进行判断，
@@ -192,3 +192,164 @@ int main() {
 \begindot
 \item POJ 1321 棋盘问题, \myurl{http://poj.org/problem?id=1321}
 \myenddot
+
+
+\section{还原IP地址} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{描述}
+本题是 LeetCode Online Judge上的"Restore IP Addresses"。
+
+给定一个只包含数字的字符串，还原出所有合法的IP地址。
+
+例如：给定"25525511135"，返回["255.255.11.135", "255.255.111.35"]。 (顺序无关紧要)
+
+\subsubsection{分析}
+这题很明显分为四步，有层次，因此可以尝试用回溯法解决。
+
+\subsubsection{代码}
+\begin{Codex}[label=restore_ip_adresses.cpp]
+#include <iostream>
+#include <vector>
+using namespace std;
+
+class Solution {
+public:
+    vector<string> restoreIpAddresses(string s) {
+        vector<string> result;
+        string ip;
+        dfs(s, 0, 0, ip, result);
+        return result;
+    }
+
+    /**
+     * @brief 解析字符串
+     * @param[in] s 字符串
+     * @param[in] startIndex 从s的哪里开始
+     * @param[in] step 当前步骤编号，从0开始编号，取值为0,1,2,3,4表示结束了
+     * @param[in] intermediate 当前解析出来的中间结果
+     * @param[out] result 存放所有可能的IP地址
+     * @return 无
+     */
+    void dfs(string s, int startIndex, int step, string intermediate,
+            vector<string> &result) {
+        if (s.size() - startIndex > (4 - step) * 3)
+            return;  // 非法结果，剪枝
+        if (s.size() - startIndex < (4 - step))
+            return;  // 非法结果，剪枝
+
+        if (startIndex == s.size() && step == 4) {  // 找到一个合法解
+            intermediate.resize(intermediate.size() - 1);
+            result.push_back(intermediate);
+            return;
+        }
+
+        int num = 0;
+        for (int i = startIndex; i < startIndex + 3; i++) {
+            num = num * 10 + (s[i] - '0');
+
+            if (num <= 255) {  // 当前结点合法，则继续往下递归
+                intermediate += s[i];
+                dfs(s, i + 1, step + 1, intermediate + '.', result);
+            }
+            if (num == 0) {  // 非法结果，剪枝
+                break;
+            }
+        }
+    }
+};
+\end{Codex}
+
+
+\section{Combination Sum} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{描述}
+本题是 LeetCode Online Judge上的"Combination Sum"。
+
+给定一个数的集合(C)和一个目标数(T)，找到C中所有不重复的组合，让这些被选出来的数加起来等于T。
+
+每一个数可以被选无数次。
+
+注意：
+\begindot
+\item 所有的数（包括目标）都是正整数
+\item 一个组合（$a_1,a_2,\cdot,a_k$）中的元素必须以非递减顺序排列
+\item 一个组合不能与另一个组合重复
+\myenddot
+
+例如，给定一组数2,3,6,7,和目标7，则答案是
+\begin{Code}
+[7]
+[2, 2, 3] 
+\end{Code}
+
+\subsubsection{分析}
+这题没有固定的步骤数，但是步骤也是有限的，因此可以尝试用回溯法。
+
+\subsubsection{代码}
+
+\begin{Codex}[label=combination_sum.cpp]
+    vector<vector<int> > combinationSum(vector<int> &nums, int target) {
+        std::sort(nums.begin(), nums.end());
+        vector<vector<int> > result;
+        vector<int> intermediate;
+        dfs(nums, target, 0, intermediate, result);
+        return result;
+    }
+    void dfs(vector<int>& nums, int gap, int level,
+            vector<int>& intermediate, vector<vector<int> > &result) {
+        if (gap == 0) {  // 找到一个合法解
+            result.push_back(intermediate);
+            return;
+        }
+        for (int i = level; i < nums.size(); i++) {
+            if (gap < nums[i]) return; // 剪枝
+
+            intermediate.push_back(nums[i]);
+            dfs(nums, gap - nums[i], i, intermediate, result);
+            intermediate.pop_back();  // 恢复环境
+        }
+    }
+\end{Codex}
+
+
+\section{Combination Sum II} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{描述}
+本题是 LeetCode Online Judge上的"Combination Sum II"。
+
+本题与上一题唯一不同的是，每个数只能使用一次。
+
+\subsubsection{分析}
+这题没有固定的步骤数，但是步骤也是有限的，因此可以尝试用回溯法。
+
+\subsubsection{代码}
+\begin{Codex}[label=combination_sum2.cpp]
+    vector<vector<int> > combinationSum2(vector<int> &nums, int target) {
+        sort(nums.begin(), nums.end());
+        vector<vector<int> > result;
+        vector<int> intermediate;
+        dfs(nums, target, 0, intermediate, result);
+        return result;
+    }
+    void dfs(vector<int> &nums, int gap, int index,
+            vector<int> &intermediate, vector<vector<int> > &result) {
+        if (gap == 0) {  //  找到一个合法解
+            result.push_back(intermediate);
+            return;
+        }
+
+        int previous = -1;
+        for (int i = index; i < nums.size(); i++) {
+            // 如果当前循环没有选nums[i]，则下一次循环就不能再选nums[i]
+            if (previous == nums[i])
+                continue;
+            if (gap < nums[i]) return;  // 剪枝
+
+            previous = nums[i];
+
+            intermediate.push_back(nums[i]);
+            dfs(nums, gap - nums[i], i + 1, intermediate, result);
+            intermediate.pop_back();  // 恢复环境
+        }
+    }
+\end{Codex}
