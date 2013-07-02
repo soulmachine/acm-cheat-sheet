@@ -2,6 +2,8 @@
 在面试和笔试中，经常会出现这类题目，把C++, Java标准库中的一些函数单独拿出来，让你重新实现。这类题目短小精悍，很能考验一个人的基本功是否扎实。
 
 \section{下一个排列} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{描述}
 实现C++ STL 中的 \fn{next_permutation()}，函数原型如下：
 
 \begin{Code}
@@ -14,12 +16,15 @@
 void next_permutation(int num[], int len);
 \end{Code}
 
+\subsubsection{分析}
 算法过程如图~\ref{fig:permutation}所示（来自\myurl{http://fisherlei.blogspot.com/2012/12/leetcode-next-permutation.html}）。
 
 \begin{center}
 \includegraphics[width=360pt]{next-permutation.png}\\
 \figcaption{下一个排列算法流程}\label{fig:permutation}
 \end{center}
+
+\subsubsection{代码}
 
 \begin{Codex}[label=next_permutation.c]
 static void swap(int array[], int i, int j) {
@@ -65,6 +70,8 @@ void next_permutation(int num[], int len) {
 
 
 \section{数组循环右移} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{描述}
 将一个长度为n的数组A的元素循环右移（ROR, Rotate Right）k位，比如数组 {1, 2, 3, 4, 5}循环右移3位之后就变成{3, 4, 5, 1, 2}。
 
 \subsubsection{方法一}
