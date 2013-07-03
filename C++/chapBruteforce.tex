@@ -2,21 +2,390 @@
 
 
 \section{枚举排列} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+枚举排列，即输出某个集合的所有排列。例如，集合{1,2,3}的所有排列是{(1,2,3),(1,3,2),(2,1,3),(2,3,1),(3,1,2),(3,2,1)}。
 
 \subsection{生成1到n的全排列}
 
+\subsubsection{描述}
+给定一个正整数n，输出1到n的所有排列。
 
-\subsection{生成可重复集合的排列}
+\subsubsection{分析}
+我们尝试用递归的思路：先输出以1开头的排列（这一步是递归调用），然后输出以2开头的排列（又是递归调用），...，最后才是以n开头的排列。
+
+以1开头的排列，第一位是1，后面是2到9的排列，这是一个子问题，可以接着递归。
+
+伪代码如下：
+\begin{Code}
+void print_permutation(序列P，集合S) {
+    if (S为空) 输出序列P
+    else {
+        for(按照从小到大的顺序依次考虑S中的每个元素e) {
+            print_permutation(在A的末尾添加e后得到的新序列, S-{e});
+        }
+    }
+}
+// 调用
+print_permutation({}, S);
+\end{Code}
+
+\subsubsection{代码}
+下面考虑用C语言实现。不难想到用数组表示P和S。由于P和S是互补的，它们二者知道其中给一个，另一个就完全确定了，因此不用保存P。
+
+C语言实现如下：
+
+\begin{Codex}[label=print_permutation_n.c]
+#include <stdio.h>
+#include <stdlib.h>
+
+/*
+ * @brief 输出1到n的全排列
+ * @param[in] n n
+ * @param[in] cur 当前进行到哪个位置
+ * @param[out] 存放一个排列
+ * @return 无
+ */
+static void print_permutation_r(int n, int cur, int P[]) {
+    int i, j;
+    if (cur == n) { // 递归边界
+        for (i = 0; i < n; i++)
+            printf("%d", P[i]);
+        printf("\n");
+    } else {
+        // 尝试在A[cur]中填各种整数i，按从小到大的顺序
+        for (i = 1; i <= n; i++) {
+            int ok = 1;
+            for (j = 0; j < cur; j++)
+                if (P[j] == i)
+                    ok = 0; // 如果i已经在A[0]~A[cur-1]出现过，则不能再选
+            if (ok) {
+                P[cur] = i;
+                print_permutation_r(n, cur + 1, P); // 递归调用
+            }
+        }
+    }
+}
+
+/**
+ * @brief 输出1到n的全排列
+ * @param[in] n n
+ * @return 无
+ */
+void print_permutation(int n) {
+    int *P = (int*)malloc(n * sizeof(int));
+    print_permutation_r(n, 0, P);
+    free(P);
+    return;
+}
+//test
+int main() {
+    print_permutation(3);
+    return 0;
+}
+\end{Codex}
+
+
+\subsection{生成可重集的排列}
+
+\subsubsection{描述}
+如果把问题改成，给定一个数组S，按字典序输出所有排列。
+
+\subsubsection{分析}
+此时S不再仅限于整数，可以是字符等。
+
+首先想到可以利用上一题的思路，先输出1到n的全排列，然后把打印语句改成\fn{printf("\%c", S[P[i]-1])}即可。
+
+但是这个方法有点问题，当集合中有重复元素时，它不能正确处理。例如S="AAA"，它会打印出6个AAA。见下面的代码。
+
+\begin{Code}
+#include <stdio.h>
+#include <stdlib.h>
+
+/*
+ * @brief 输出1到n的全排列，把数字当做下标
+ * @param[in] S 字符集合
+ * @param[in] n n
+ * @param[in] cur 当前进行到哪个位置
+ * @param[out] 存放一个排列
+ * @return 无
+ */
+static void print_permutation_r(char S[], int n, int cur, int P[]) {
+    int i, j;
+    if (cur == n) { // 递归边界
+        for (i = 0; i < n; i++)
+            printf("%c", S[P[i]-1]);
+        printf("\n");
+    } else {
+        // 尝试在A[cur]中填各种整数i，按从小到大的顺序
+        for (i = 1; i <= n; i++) {
+            int ok = 1;
+            for (j = 0; j < cur; j++)
+                if (P[j] == i)
+                    ok = 0; // 如果i已经在A[0]~A[cur-1]出现过，则不能再选
+            if (ok) {
+                P[cur] = i;
+                print_permutation_r(S, n, cur + 1, P); // 递归调用
+            }
+        }
+    }
+}
+
+/**
+ * @brief 输出字符集合的全排列
+ * @param[in] S 字符集合
+ * @param[in] n n
+ * @return 无
+ */
+void print_permutation(char S[], int n) {
+    int *P = (int*)malloc(n * sizeof(int));
+    print_permutation_r(S, n, 0, P);
+    free(P);
+    return;
+}
+
+//test
+int main() {
+    char *S="ABC";
+    char *S1="AAA";
+    print_permutation(S,3);
+    print_permutation(S1,3); // 不能正确处理可重集
+    return 0;
+}
+\end{Code}
+
+再换一个思路，还是在上一节的代码上进行修改，把\fn{if(P[j]==i)}和\fn{P[cur]=i}分别改成\fn{if(P[j]==S[i])}和\fn{P[cur]=S[i]}。这样，只要把S中的所有元素按从小到大的顺序排序，然后调用\fn{print_permutation_r(S, n, 0, P)}即可。
+
+这个方法看上去不错，可惜还是有个小问题。例如\fn{S="AAA"}，程序什么也不输出（正确答案应该是唯一的全排列AAA），原因在于，我们禁止S数组中出现重复，而在S中本来就有重复元素，这个“禁令”是错误的。
+
+解决方法是，统计P[0]到P[cur-1]中S[i]出现的次数c1，以及S数组中S[i]的出现次数c2，只要c1<c2，就能继续选择S[i]。
+
+结果又如何呢？这次有输出了，可是输出了27个AAA。遗漏是没有了，可是出现了重复。程序先把第1个A作为开头，递归调用结束后用第2个A作为开头，递归调用结束后用第3个A作为开头。每次输出3个排列，共27个。
+
+枚举时应该\textbf{不重不漏}地取遍集合的所有元素。由于数组已经排序，所以只需要检查当前元素和前一个元素不相同，就可以做到不重不漏了。即只需要在\fn{for (i = 1; i <= n; i++)}和其后的花括号之间加上\fn{if(i==0 \&\& S[i] != S[i-1])}。见下面的代码。
+
+\subsubsection{代码}
+
+\begin{Codex}[label=print_permutation.c]
+#include <stdio.h>
+#include <stdlib.h>
+
+/*
+ * @brief 输出集合的全排列
+ * @param[in] S 字符集合
+ * @param[in] n n
+ * @param[in] cur 当前进行到哪个位置
+ * @param[out] 存放一个排列
+ * @return 无
+ */
+static void print_permutation_r(char S[], int n, int cur, char P[]) {
+    int i, j;
+    if (cur == n) { // 递归边界
+        for (i = 0; i < n; i++)
+            printf("%c", P[i]);
+        printf("\n");
+    } else {
+        // 尝试在A[cur]中填各种元素，按从小到大的顺序
+        for (i = 0; i < n; i++) if(i == 0 || S[i] != S[i-1]){
+            int c1 = 0, c2 = 0;
+            for (j = 0; j < cur; j++) if (P[j] == S[i]) ++c1;
+            for (j = 0; j < n; j++) if (S[j] == S[i]) ++c2;
+            if (c1 < c2) {
+                P[cur] = S[i];
+                print_permutation_r(S, n, cur + 1, P); // 递归调用
+            }
+        }
+    }
+}
+
+/**
+ * @brief 输出字符集合的全排列
+ * @param[in] S 字符集合
+ * @param[in] n n
+ * @return 无
+ */
+void print_permutation(char S[], int n) {
+    char *P = (char*)malloc(n * sizeof(char));
+    print_permutation_r(S, n, 0, P);
+    free(P);
+    return;
+}
+
+//test
+int main() {
+    char *S="ABC";
+    char *S1="AAA";
+    print_permutation(S,3);
+    print_permutation(S1,3); // 可以正确处理可重集
+    return 0;
+}
+\end{Codex}
+
+
+\subsection{下一个排列}
+还可以利用STL中的\fn{std::next_permutation()}或第 \S \ref{sec:nextpermutation}节的\fn{next_permutation()}。
+
+\subsubsection{代码}
+
+\begin{Codex}[label=print_permutation_next.c]
+#include <stdio.h>
+#include <stdlib.h>
+#include <algorithm>
+
+/**
+ * @brief 输出字符集合的全排列，利用std::next_permutation
+ * @param[in] S 字符集合
+ * @param[in] n n
+ * @return 无
+ */
+void print_permutation(char S[], int n) {
+    std::sort(&S[0], &S[n]);
+    do {
+        for(int i = 0; i < n; i++) printf("%c", S[i]);
+        printf("\n");
+    }while(std::next_permutation(&S[0], &S[n]));
+    return;
+}
+
+#include "next_permutation.c"  // 等价于复制粘贴
+
+/**
+ * @brief 输出字符集合的全排列，利用第15章的next_permutation
+ * @param[in] S 字符集合
+ * @param[in] n n
+ * @return 无
+ */
+void print_permutation1(char S[], int n) {
+    std::sort(&S[0], &S[n]);
+    int *N = (int*)malloc(n * sizeof(int));
+    for (int i = 0; i < n; ++i) N[i]=S[i]-'A';
+    do {
+        for(int i = 0; i < n; i++) printf("%c", S[N[i]]);
+        printf("\n");
+    }while(std::next_permutation(&N[0], &N[n]));
+    return;
+}
+
+//test
+int main() {
+    char S[]="ABC";
+    char S1[]="AAA";
+    print_permutation(S,3);
+    print_permutation(S1,3);
+    printf("\n\n");
+    print_permutation1(S,3);
+    print_permutation1(S1,3);
+    return 0;
+}
+\end{Codex}
 
 
 \section{子集生成} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+给定一个集合，输出它所有的子集。为了简单起见，本节讨论的集合中没有重复元素。
 
 
 \subsection{增量构造法}
+一次选出一个元素，放或者不放到集合中。
+
+\subsubsection{代码}
+
+\begin{Codex}[label=subset.c]
+#include <stdio.h>
+#include <stdlib.h>
+
+/**
+ * @brief 增量构造法
+ * @param[in] S 输入集合
+ * @param[in] n 集合大小
+ * @param[inout] P 某个子集
+ * @param[in] cur p的当前位置
+ * @param[in] ed S的当前位置，前面的元素已经选过了
+ * @return 无
+ */
+void print_subset1(int *S, int n, int *P, int cur, int ed) {
+    int i, j;
+    for (i = ed; i < n; i++) {
+        // 选择 S[i]
+        P[cur] = S[i];
+        for (j = 0; j <= cur; j++) printf("%d ", P[j]);
+        printf("\n");
+        // 不选择 S[i]
+        print_subset1(S, n, P, cur + 1, i + 1);
+    }
+}
+\end{Codex}
 
 
 \subsection{位向量法}
+开一个位向量B，B[i]=1表示选择S[i], B[i]=0表示不选择。
+
+\subsubsection{代码}
+
+\begin{Codex}[label=subset.c]
+/**
+ * @brief 位向量法
+ * @param[in] S 输入集合
+ * @param[in] n 集合大小
+ * @param[in] B 位向量
+ * @param[in] cur B的当前位置
+ * @return 无
+ */
+void print_subset2(int *S, int n, char *B, int cur) {
+    int i;
+    if (cur == n) {
+        for (i = 0; i < n; i++) if (B[i]) printf("%d ", S[i]);
+        printf("\n");
+        return;
+    }
+    B[cur] = 1;
+    print_subset2(S, n, B, cur + 1);
+    B[cur] = 0;
+    print_subset2(S, n, B, cur + 1);
+}
+\end{Codex}
 
 
 \subsection{二进制法}
+前提：集合的元素不超过int位数。用一个int整数表示位向量，第i位为1，则表示选择S[i]，为0则不选择。例如S=\{A,B,C,D\}，则0110=6表示子集\{B,C\}。
+
+这种方法最巧妙。因为它不仅能生成子集，还能方便的表示集合的并、交、差等集合运算。设两个集合的位向量分别为B1和B2，则B1|B2, B1\&B2, B1\^{}B2分别对应集合的并、交、对称差。
+
+\subsubsection{代码}
+
+\begin{Codex}[label=subset.c]
+/**
+ * @brief 二进制法
+ * @param[in] S 输入集合
+ * @param[in] n 集合大小
+ * @param[in] B 位向量
+ * @param[in] cur B的当前位置
+ * @return 无
+ */
+void print_subset3(int *S, int n) {
+    int i, j;
+    for (i = 1; i < (1 << n); i++) {
+        for (j = 0; j < n; j++)
+            if (i & (1 << j)) printf("%d ", S[j]);
+        printf("\n");
+    }
+}
+
+int main() {
+    int n, i;
+
+    while(scanf("%d",&n) > 0) {
+        int *S = (int*)malloc(n * sizeof(int));
+        int *P = (int*)malloc(n * sizeof(int));
+        char *B = (char*)malloc(n * sizeof(char));
+
+        for(i = 0; i < n; i++) scanf("%d",&S[i]);
+
+        print_subset1(S, n, P, 0, 0); putchar('\n');
+        print_subset2(S, n, B, 0); putchar('\n');
+        print_subset3(S, n);
+
+        free(S);
+        free(P);
+        free(B);
+    }
+    return 0;
+}
+\end{Codex}

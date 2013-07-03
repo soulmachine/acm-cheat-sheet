@@ -2,6 +2,7 @@
 在面试和笔试中，经常会出现这类题目，把C++, Java标准库中的一些函数单独拿出来，让你重新实现。这类题目短小精悍，很能考验一个人的基本功是否扎实。
 
 \section{下一个排列} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\label{sec:nextpermutation}
 
 \subsubsection{描述}
 实现C++ STL 中的 \fn{next_permutation()}，函数原型如下：
@@ -43,12 +44,13 @@ static void reverse(int array[], int begin, int end) { //左闭右开区间
  * @brief 返回下一个排列，例如当前排列是12345，下一个是12354
  * @param[inout] num 当前排列，例如 12345
  * @param[in] len num的长度
- * @return 无
+ * @return 成功返回1，失败返回0
  */
-void next_permutation(int num[], int len) {
+int next_permutation(int num[], int len) {
     int i = len - 2;  // partition number's index
     while (i >= 0 && num[i] >= num[i + 1])
         i--;
+    if(i == -1) return 0;
     if (i >= 0) {
         int j = len - 1;  // change number's index
         while (num[j] <= num[i])
@@ -58,9 +60,9 @@ void next_permutation(int num[], int len) {
     } else {
         reverse(num, i + 1, len);
     }
+    return 1;
 }
 \end{Codex}
-
 
 \subsubsection{相关的题目}
 与本题相同的题目：
