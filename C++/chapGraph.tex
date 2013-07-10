@@ -850,8 +850,351 @@ int try_to_insert_stl(const int index) {
 \end{Codex}
 
 \section{最小生成树} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+“最小”指的是边的权值之和最小。
+
+构造最小生成树(Minimum Spanning Tree, MST)有多种算法。其中多数算法利用了最小生成树的一个性质（简称为MST性质）：假设$N=(V, E)$是一个连通网，$U$是顶点集$V$的一个非空子集。若$(u, v)$是一条具有最小权值的边，其中$u \in U, v \in V-U$，则必存在一颗包含边$(u, v)$的最小生成树。
+
+Prim算法和Kruskal算法是两个利用MST性质构造最小生成树的算法。它们都属于贪心法。
 
 \subsection{Prim算法}
+假设$N=(V, E)$是一个连通网，$TE$是$N$上最小生成树中边的集合。算法从$U={u_0}(u_0 \in V), TE=\{\}$开始，重复执行下述操作：在所有$u \in U, v \in V-U$的边$(u, v) \in E$中找一条代价最小的边$(u_0, v_0)$并入集合$TE$，同时$v_0$并入U，直至$U=V$为止。此时$TE$中必有$n-1$条边，则$T=(V, TE)$为$N$的最小生成树。
+为实现这个算法需附设一个数组\fn{closedge}，以记录从$U$到$V-U$具有最小代价的边。对每个顶点$v_i \in V-U$，在辅助数组中存在一个相应分量\fn{closedge[i-1]}，它包括两个域，其中\fn{lowcost}存储该边上的权。显然，$closedge[i].lowcost=\min\left\{cost(u, v_i), u \in U\right\}$。\fn{adjvex}域存储该边依附的在U中的顶点。
+
+图 \ref{fig:prim}所示为按Prim算法构造网的一棵最小生成树的过程，在构造过程中辅助数组中各分量值的变化如表\ref{tab:prim}所示。
+
+\begin{center}
+\includegraphics[width=240pt]{prim1.png}\\
+\includegraphics[width=240pt]{prim2.png}\\
+\includegraphics[width=240pt]{prim3.png}\\
+\figcaption{Prim算法构造最小生成树的过程}\label{fig:prim}
+\end{center}
+
+\begin{center}
+\tabcaption{构造最小生成树过程中辅助数组的变化}
+\label{tab:prim}
+\begin{tabular}{|c|cccccccc|}
+\hline
+\textbf{\diagbox{closedge}{i}} & \textbf{1} & \textbf{2} & \textbf{3} & \textbf{4}& \textbf{5}& \textbf{U}& \textbf{U-V}& \textbf{k}\\
+\hline
+adjvex & $v_0$ & $v_0$ & $v_0$ & & & $v_0$ & $\{v_1,v_2,v_3,v_4,v_5\}$ & \multirow{2}{*}{2} \\
+lowcost & 6 & 1 & 5 & & & & & \\
+adjvex & $v_2$ & & $v_1$ & $v_2$ & $v_2$ & $\{v_0,v_2\}$ & $\{v_1,v_3,v_4,v_5\}$ & \multirow{2}{*}{5} \\
+lowcost & 5 & 0 & 5 & 6 & 4 & & & \\
+adjvex & $v_2$ & & $v_6$ & $v_2$ & & $\{v_0,v_2,v_5\}$ & $\{v_1,v_3,v_4\}$ & \multirow{2}{*}{3} \\
+lowcost & 5 & 0 & 2 & 6 & 0 & & & \\
+adjvex & $v_2$ & & & $v_2$ & & $\{v_0,v_2,v_5,v_3\}$ & $\{v_1,v_4\}$ & \multirow{2}{*}{1} \\
+lowcost & 5 & 0 & 0 & 6 & 0 & & & \\
+adjvex & & & & $v_1$ & & $\{v_0,v_2,v_5,v_3,v_1\}$ & $\{v_4\}$ & \multirow{2}{*}{4} \\
+lowcost & 0 & 0 & 0 & 3 & 0 & & & \\
+adjvex & & & & & & $\{v_0,v_2,v_5,v_3,v_1,v_4\}$ & $\{\}$ & \multirow{2}{*}{} \\
+lowcost & 0 & 0 & 0 & 0 & 0 & & & \\
+\hline
+\end{tabular}
+\end{center}
+
+
+\subsubsection{代码}
+
+\begin{Codex}[label=mgraph_prim1.c]
+#include <stdio.h>
+#include <stdlib.h>  /* for malloc() */
+#include <limits.h>  /* for INT_MAX */
+
+/** 顶点数的最大值*/
+#define MAX_VERTICES_NUM 100
+/** 边的权值，对无权图，用0或1表示是否相邻；对有权图，则为权值. */
+typedef int graph_weight_t;
+/** 顶点信息，例如顶点名字. */
+typedef char graph_vertex_t;
+
+/**
+ *@struct
+ *@brief 邻接矩阵.
+ */
+typedef struct mgraph_t {
+    int vertices_num; /* 顶点数*/
+    int edges_num; /* 边数*/
+    /* 顶点表，存放顶点的信息，如名字等*/
+    graph_vertex_t vertices[MAX_VERTICES_NUM];
+    /* 邻接矩阵，存放边的信息，如权重等*/
+    graph_weight_t matrix[MAX_VERTICES_NUM][MAX_VERTICES_NUM];
+    int kind; /* 图(网)的种类，1表示有向，0表示无向*/
+} mgraph_t;
+
+mgraph_t g;
+
+typedef struct closedge_t {
+    int adjvex; /* 弧头，属于U */
+    graph_weight_t lowcost; /* 边 adjvex->本下标 的权值，0表示已经加入U */
+} closedge_t;
+
+/*
+ * @brief 在V-E集合中寻找最小的边
+ * @param[in] closedge MST中的边，起点为adjvex，终点为本下标
+ * @param[in] n closedge数组的长度
+ * @return 找到了则返回弧尾的下标，V-U为空集则返回-1，表示终止
+ */
+static int min_element(const closedge_t closedge[], int n) {
+    int i;
+    int min_value = INT_MAX;
+    int min_loc = -1;
+    for (i = 0; i < n; i++)
+        if (closedge[i].lowcost > 0) {
+            if (min_value > closedge[i].lowcost) {
+                min_value = closedge[i].lowcost;
+                min_loc = i;
+            }
+        }
+    return min_loc;
+}
+
+/**
+ * @brief 从顶点u出发构造图g的最小生成树TE，输出TE的边.
+ * @param[in] g 图对象的指针
+ * @return MST的边的权值之和
+ */
+graph_weight_t mgraph_prim(const mgraph_t *g) {
+    graph_weight_t sum = 0; /* 权值之和 */
+    int i, j;
+    int u = 0; /* 从0号顶点出发 */
+    const int n = g->vertices_num;
+    /* closedge[n]，记录从顶点集U到V-U的边*/
+    closedge_t* const closedge = (closedge_t*) malloc(n * sizeof(closedge_t));
+
+    /* 辅助数组初始化*/
+    for (i = 0; i < n; i++) if (i != u) {
+        closedge[i].adjvex = u;
+        closedge[i].lowcost = g->matrix[u][i];
+    }
+    closedge[u].lowcost = 0; /* 初始, U={u} */
+
+    for (i = 0; i < n; i++) if (i != u) { /* 其余的n-1个顶点*/
+        /* 求出TE的下一个顶点k */
+        const int k = min_element(closedge, n);
+        /*输出生成树TE的边，即此边加入TE*/
+        printf("%c - %c\n", g->vertices[closedge[k].adjvex], g->vertices[k]);
+        sum += g->matrix[closedge[k].adjvex][k];
+        closedge[k].lowcost = 0; /* 顶点k并入U */
+        /* 更新k的邻接点的值，不相邻为无穷大*/
+        for (j = 0; j < n; j++) {
+            const int w = g->matrix[k][j];
+            if (w < closedge[j].lowcost) {
+                closedge[j].adjvex = k;
+                closedge[j].lowcost = w;
+            }
+        }
+    }
+    free(closedge);
+    return sum;
+}
+
+/* test
+
+输入数据:
+
+7 11
+A B 7
+A D 5
+B C 8
+B D 9
+B E 7
+C E 5
+D E 15
+D F 6
+E F 8
+E G 9
+F G 11
+
+输出:
+
+A - D : 5
+D - F : 6
+A - B : 7
+B - E : 7
+E - C : 5
+E - G : 9
+Total:39
+*/
+int main() {
+    int i, j, k, m, n;
+    char chx, chy;
+    int cost;
+
+    /* 读取节点和边的数目 */
+    scanf("%d%d", &m, &n);
+    getchar(); // 消耗回车键
+    g.vertices_num = m;
+    g.edges_num = n;
+    for (i = 0; i < m; i++) g.vertices[i] = 'A' + i;
+
+    /* 初始化图，所有节点间距离为无穷大 */
+    for (i = 0; i < m; i++) {
+        for (j = 0; j < m; j++) {
+            g.matrix[i][j] = INT_MAX;
+        }
+    }
+
+    /* 读取边信息 */
+    for (k = 0; k < n; k++) {
+        scanf("%c %c %d", &chx, &chy, &cost);
+        getchar();
+        i = chx - 'A';
+        j = chy - 'A';
+        g.matrix[i][j] = cost;
+        g.matrix[j][i] = cost;
+    }
+
+    /* 求解最小生成树 */
+    printf("Total:%d\n", mgraph_prim(&g));
+    return 0;
+}
+\end{Codex}
+
+\subsubsection{算法分析}
+假设网中有$n$个顶点，则第一个进行初始化的循环语句的频度为$n$，第二个循环语句的频度为$n-1$。其中有两个内循环：其一是在\fn{closedge[v].lowcost}中求最小值，其频度为$n-1$；其二是重新选择具有最小代价的边，其频度为$n$。因此Prim算法的时间复杂度为$O(n^2)$，与网中边数无关，因此适用于求边稠密的图的最小生成树。
+
+Prim算法的另一种实现是使用小根堆，其流程是：小根堆中存储一个端点在生成树中，另一个端点不在生成树的边，每次从小根堆的堆顶可选出权值最小的边$(u, v)$，将其从堆中推出，加入生成树中。然后将新出现的所有一个端点在生成树中，一个端点不在生成树的边都插入小根堆中。下一轮迭代中，下一条满足要求的边又上升到堆顶。如此重复$n-1$次，最后建立起该图的最小生成树。该算法的C代码实现如下。
+
+\subsubsection{代码}
+
+\begin{Codex}[label=mgraph_prim2.c]
+#include <stdio.h>
+#include <stdlib.h>  /* for malloc() */
+#include <limits.h>  /* for INT_MAX */
+
+/** 顶点数的最大值*/
+#define MAX_VERTICES_NUM 100
+/** 边的权值，对无权图，用0或1表示是否相邻；对有权图，则为权值. */
+typedef int graph_weight_t;
+/** 顶点信息，例如顶点名字. */
+typedef char graph_vertex_t;
+
+/**
+ *@struct
+ *@brief 邻接矩阵.
+ */
+typedef struct mgraph_t {
+    int vertices_num; /* 顶点数*/
+    int edges_num; /* 边数*/
+    /* 顶点表，存放顶点的信息，如名字等*/
+    graph_vertex_t vertices[MAX_VERTICES_NUM];
+    /* 邻接矩阵，存放边的信息，如权重等*/
+    graph_weight_t matrix[MAX_VERTICES_NUM][MAX_VERTICES_NUM];
+    int kind; /* 图(网)的种类，1表示有向，0表示无向*/
+} mgraph_t;
+
+mgraph_t g;
+
+
+/**
+ * @struct 边
+ */
+typedef struct edge_t{
+    int tail;  /** 弧尾, from */
+    int head;  /** 弧头, to */
+    graph_weight_t cost;  /** 权值 */
+}edge_t;
+
+static int edge_cmp(const edge_t *e1, const edge_t *e2) {
+    const edge_t* const e11 = (const edge_t *)e1;
+    const edge_t* const e22 = (const edge_t *)e2;
+    return e11->cost - e22->cost;
+}
+
+typedef edge_t heap_elem_t; // 元素的类型
+
+#include "heap.c"  // 相当于复制粘贴
+
+
+/**
+  * @brief 从顶点u出发构造图g的最小生成树TE.
+  * @param[in] g 图对象的指针
+  * @return MST的边的权值之和
+  */
+int mgraph_prim(const mgraph_t *g){
+    graph_weight_t sum = 0; /* 权值之和 */
+    int u = 0; /* 从0号顶点出发 */
+    int i, count = 1;
+    edge_t ed;
+    heap_t h;
+    const int n = g->vertices_num;
+    /* 判断顶点是否已经加入最小生成树*/
+    int* U = (int *)malloc(n * sizeof(int));
+    for(i = 0; i < n; i++) U[i] = 0;
+    heap_init(&h, g->edges_num, edge_cmp);
+
+    /* 开始顶点加入U(所以count初始为1) */
+    U[u] = 1;
+    while (count < n) {
+        int v;
+        for(v = 0; v < n; v++) if(!U[v]) { /* 若v不在生成树，(u,v)加入堆*/
+            ed.tail = u;
+            ed.head = v;
+            /* tail在树内，head不在树内*/
+            ed.cost = g->matrix[u][v];
+            heap_push(&h, ed);
+        }
+        while(!heap_empty(&h) && count < n) {
+            /* 从堆中退出最小权值边，存入ed */
+            ed = heap_top(&h); heap_pop(&h);
+            if(!U[ed.head]) {
+                /* 输出生成树TE的边，即此边加入TE */
+                printf("%c - %c\n", g->vertices[ed.tail],
+                        g->vertices[ed.head]);
+                sum += g->matrix[ed.tail][ed.head];
+                u = ed.head;
+                /* u并入到生成树的顶点集合U */
+                U[u] = 1;
+                count++;
+                break;
+            }
+        }
+    }
+
+    free(U);
+    heap_uninit(&h);
+    return sum;
+}
+
+
+// test，输入数据与 mgraph_prim1.c 相同
+int main() {
+    int i, j, k, m, n;
+    char chx, chy;
+    int cost;
+
+    /* 读取节点和边的数目 */
+    scanf("%d%d", &m, &n);
+    getchar(); // 消耗回车键
+    g.vertices_num = m;
+    g.edges_num = n;
+    for (i = 0; i < m; i++) g.vertices[i] = 'A' + i;
+
+    /* 初始化图，所有节点间距离为无穷大 */
+    for (i = 0; i < m; i++) {
+        for (j = 0; j < m; j++) {
+            g.matrix[i][j] = INT_MAX;
+        }
+    }
+
+    /* 读取边信息 */
+    for (k = 0; k < n; k++) {
+        scanf("%c %c %d", &chx, &chy, &cost);
+        getchar();
+        i = chx - 'A';
+        j = chy - 'A';
+        g.matrix[i][j] = cost;
+        g.matrix[j][i] = cost;
+    }
+
+    /* 求解最小生成树 */
+    printf("Total:%d\n", mgraph_prim(&g));
+    return 0;
+}
+\end{Codex}
+
+\subsubsection{算法分析}
+该算法迭代次数为$O(n)$，每次迭代将平均$e/n$条边插入最小堆中，$e$条边从堆中删除，堆的插入和删除操作时间复杂度均为$O(\log_2 e)$，则总的时间复杂度为 $O(e\log_2e)$。
 
 \subsection{Kruskal算法}
 
