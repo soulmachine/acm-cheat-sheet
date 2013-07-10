@@ -396,14 +396,12 @@ void bigint_mul(const int x[], const int y[], int z[]) {
 
     for (i = 0; i < MAX_LEN; i++) {
         for (j = 0; j < MAX_LEN; j++) { /*用y[i]，去乘以x的各位*/
-            z[i + j] += y[i] * x[j];  /* 两数第i, j位相乘，累加到结果的第i+j位 */
-        }
-    }
-    
-    for (i = 0; i < MAX_LEN * 2; i++) {  /* 统一处理进位问题 */
-        if (z[i] >= BIGINT_MOD) {  /* 看是否要进位 */
-            z[i+1] += z[i] / BIGINT_MOD;  /* 进位 */
-            z[i] %= BIGINT_MOD;
+            z[i + j] += y[i] * x[j]; /* 两数第i, j位相乘，累加到结果的第i+j位 */
+
+            if (z[i] >= BIGINT_MOD) { /* 看是否要进位 */
+                z[i + 1] += z[i] / BIGINT_MOD; /* 进位 */
+                z[i] %= BIGINT_MOD;
+            }
         }
     }
 }
@@ -417,7 +415,7 @@ int main() {
 
     bigint_mul(x, y, z);
     bigint_print(z, MAX_LEN * 2);
-    printf("\n"); 
+    printf("\n");
     return 0;
 }
 \end{Codex}
