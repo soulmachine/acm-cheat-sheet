@@ -588,37 +588,107 @@ int main() {
 
 
 \section{重建二叉树} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{Codex}[label=binary_tree.cpp]
-/** 
+\begin{Codex}[label=binary_tree_rebuild.c]
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stddef.h>
+/**
  * @brief 给定前序遍历和中序遍历，输出后序遍历.
  *
- * @param[in] n 序列的长度
  * @param[in] pre 前序遍历的序列
  * @param[in] in 中序遍历的序列
+ * @param[in] n 序列的长度
  * @param[out] post 后续遍历的序列
  * @return 无
  */
-void build(const int n, const char * pre, const char *in, char *post) {
-	if(n <= 0) return;
-	int p = strchr(in, pre[0]) - in;
-	build(p, pre + 1, in, post);
-	build(n - p - 1, pre + p + 1, in + p + 1, post + p);
-	post[n - 1] = pre[0];
+void build_post(const char * pre, const char *in, const int n, char *post) {
+    if(n <= 0) return;
+    int left_len = strchr(in, pre[0]) - in;
+    build_post(pre + 1, in, left_len, post);
+    build_post(pre + left_len + 1, in + left_len + 1,
+            n - left_len - 1, post + left_len);
+    post[n - 1] = pre[0];
 }
 
+#define MAX  64
 // 测试
 // BCAD CBAD，输出 CDAB
 // DBACEGF ABCDEFG，输出 ACBFGED
-int build_test() {
-    const int MAX = 64;
+void build_post_test() {
     char pre[MAX] = {0};
     char in[MAX] = {0};
     char post[MAX] = {0};
     scanf("%s%s", pre, in);
-    
+
     const int n = strlen(pre);
-    build(n, pre, in, post);
+    build_post(pre, in, n, post);
     printf("%s\n", post);
+}
+
+/* 结点数据的类型. */
+typedef char elem_t;
+
+/**
+ *@struct
+ *@brief 二叉树结点.
+ */
+typedef struct bt_node_t {
+    elem_t data; /* 节点的数据 */
+    struct bt_node_t *lchild; /* 左孩子 */
+    struct bt_node_t *rchild; /* 右孩子 */
+} bt_node_t;
+
+/**
+ * @brief 给定前序遍历和中序遍历，重建二叉树.
+ *
+ * @param[in] pre 前序遍历的序列
+ * @param[in] in 中序遍历的序列
+ * @param[in] n 序列的长度
+ * @param[out] root 根节点
+ * @return 无
+ */
+void rebuild(const char *pre, const char *in, int n, bt_node_t **root) {
+    // 检查终止条件
+    if (n <= 0 || pre == NULL || in == NULL)
+        return;
+    //获得前序遍历的第一个结点
+    *root = (bt_node_t*) malloc(sizeof(bt_node_t));
+    (*root)->data = *pre;
+    (*root)->lchild = NULL;
+    (*root)->rchild = NULL;
+
+    int left_len = strchr(in, pre[0]) - in;
+    //重建左子树
+    rebuild(pre + 1, in, left_len, &((*root)->lchild));
+    //重建右子树
+    rebuild(pre + left_len + 1, in + left_len + 1, n - left_len - 1,
+            &((*root)->rchild));
+}
+
+void print_post_order(const bt_node_t *root) {
+    if(root != NULL) {
+        print_post_order(root->lchild);
+        print_post_order(root->rchild);
+        printf("%c", root->data);
+    }
+}
+
+void rebuild_test() {
+    char pre[MAX] = { 0 };
+    char in[MAX] = { 0 };
+    scanf("%s%s", pre, in);
+    const int n = strlen(pre);
+
+    bt_node_t *root;
+    rebuild(pre, in, n, &root);
+    print_post_order(root);
+}
+
+int main() {
+    build_post_test();
+    rebuild_test();
+    return 0;
 }
 \end{Codex}
 
@@ -653,7 +723,7 @@ typedef struct heap_t {
 
 
 /** 基本类型（如int, long, float, double）的比较函数 */
-int cmp_int(const heap_elem_t *x, const heap_elem_t *y) {
+int cmp_int(const int *x, const int *y) {
     const int sub = *x - *y;
     if(sub > 0) {
         return 1;
