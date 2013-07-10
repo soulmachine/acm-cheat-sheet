@@ -1844,3 +1844,320 @@ int main() {
 \item Matrix67 - 十个利用矩阵乘法解决的经典题目，\myurl{http://www.matrix67.com/blog/archives/276}
 \myenddot
 
+
+\section{最大子矩形} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+在一个给定的矩形网格中有一些障碍点，要找出网格内部不包含任何障碍点，且边界与坐标轴平行的最大子矩形。
+
+遇到求矩形面积，一般把左上角设置为坐标原点，这与数学中的坐标系不同。
+
+解决方法参考“浅谈用极大化思想解决最大子矩形问题”，\myurl{http://wenku.baidu.com/view/728cd5126edb6f1aff001fbb.html}
+
+方法一是一种暴力枚举法，方法二是一种动规法。
+
+\subsection{奶牛浴场}
+\subsubsection{描述}
+由于john建造了牛场围栏，激起了奶牛的愤怒，奶牛的产奶量急剧减少。为了讨好奶牛，john决定在牛场中建造一个大型浴场。但是john的奶牛有一个奇怪的习惯，每头奶牛都必须在牛场中的一个固定的位置产奶，而奶牛显然不能在浴场中产奶，于是，john希望所建造的浴场不覆盖这些产奶点。这回，他又要求助于clevow了。你还能帮助clevow吗？
+
+john的牛场和规划的浴场都是矩形。浴场要完全位于牛场之内，并且浴场的轮廓要与牛场的轮廓平行或者重合。浴场不能覆盖任何产奶点，但是产奶点可以位于浴场的轮廓上。
+
+clevow当然希望浴场的面积尽可能大了，所以你的任务就是帮她计算浴场的最大面积。
+
+\subsubsection{输入}
+输入文件的第一行包含两个整数L和W($1 \leq L,W \leq 30000$)，分别表示牛场的长和宽。文件的第二行包含一个整数n($0 \leq n \leq 5000$)，表示产奶点的数量。以下n行每行包含两个整数x和y，表示一个产奶点的坐标。所有产奶点都位于牛场内，即：$0 \leq x \leq l, 0< \leq y \leq w$。
+
+\subsubsection{输出}
+输出文件仅一行，包含一个整数S，表示浴场的最大面积。
+
+\subsubsection{样例输入}
+\begin{Code}
+10 10
+4
+1 1
+9 1
+1 9
+9 9
+\end{Code}
+
+\subsubsection{样例输出}
+\begin{Code}
+80
+\end{Code}
+
+\subsubsection{分析}
+这里使用方法二，需要先做一定的预处理。由于第二种算法复杂度与牛场的面积有关，而题目中牛场的面积很大（30000×30000），因此需要对数据进行离散化处理。离散化后矩形的大小降为S×S，所以时间复杂度为O(S2)，空间复杂度为O(S)。需要注意的是，为了保证算法能正确执行，把(0,0)和(m,n)设置为产奶点，相当于加上了一个“虚拟边界”。
+
+\subsubsection{代码}
+\begin{Codex}[label=cow_bath.c]
+/**
+ * OJ: https://vijos.org/p/1055
+ */
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+#define MAXN 5001
+
+#define max(a,b)  (a > b ? a : b)
+#define min(a,b)  (a < b ? a : b)
+
+int L, W; /* 长，竖向x坐标，宽，横向y坐标 */
+int n; /* n个产奶点 */
+int x[MAXN], y[MAXN]; /* 产奶点坐标 */
+
+int int_cmp(const void *a, const void *b) {
+    const int *ia = (const int*) a;
+    const int *ib = (const int*) b;
+    return *ia - *ib;
+}
+
+#include "binary_search.c"  // 相当于复制粘贴
+
+/**
+ * @brief 求最大子矩形
+ *
+ * 参考 http://wenku.baidu.com/view/728cd5126edb6f1aff001fbb.html 的第二种方法
+ *
+ * @param[in] L 长度，纵向
+ * @param[in] W 宽度，横向
+ * @param[in] x 纵向x坐标
+ * @param[in] y 横向y坐标
+ * @param[in] n 障碍点的个数
+ * @return 最大子矩形的面积
+ */
+int max_submatrix(const int L, const int W,
+        const int x[], const int y[], int n) {
+    int *a = (int*) malloc((n + 1) * sizeof(int));
+    int *b = (int*) malloc((n + 1) * sizeof(int));
+    int la = n, lb = n;
+    int i, j;
+    int lm, rm; // 左边界，右边界
+    int result = 0, temp;
+    int **v;  // 新的01矩阵，1表示障碍点
+    int *h;  // 高度
+    int *l;  // 左边界
+    int *r;  // 右边界
+
+    memcpy(a, x, n * sizeof(int));
+    memcpy(b, y, n * sizeof(int));
+    a[la++] = 0;
+    b[lb++] = 0;
+    a[la++] = L;
+    b[lb++] = W;
+
+    // 去重
+    qsort(a, la, sizeof(int), int_cmp);
+    qsort(b, lb, sizeof(int), int_cmp);
+    for (j = 1, i = 1; i < la; i++) { // 去重
+        if (a[i] != a[i - 1])
+            a[j++] = a[i];
+    }
+    la = j;
+    for (j = 1, i = 1; i < lb; i++) { // 去重
+        if (b[i] != b[i - 1])
+            b[j++] = b[i];
+    }
+    lb = j;
+    h = (int*) malloc(lb * sizeof(int));
+    l = (int*) malloc(lb * sizeof(int));
+    r = (int*) malloc(lb * sizeof(int));
+    //*******************************//
+
+    // 计算 v矩阵
+    v = (int**) malloc(la * sizeof(int*));
+    for (i = 0; i < la; i++) {
+        v[i] = (int*) malloc(lb * sizeof(int));
+        memset(v[i], 0, lb * sizeof(int));
+    }
+    for (i = 0; i < n; i++) {
+        int ia, ib;
+        ia = binary_search(a, la, x[i]);
+        ib = binary_search(b, lb, y[i]);
+        v[ia][ib] = 1; //标记障碍点
+    }
+
+    // 初始化
+    for (i = 0; i < lb; i++) {
+        l[i] = 0;
+        r[i] = W;
+        h[i] = 0;
+    }
+
+    for (i = 1; i < la; i++) { // 从上到下
+        lm = 0;
+        for (j = 0; j < lb; j++) { // 从左到右计算l[j]
+            if (!v[i - 1][j]) {  //如果上一个不是障碍点
+                h[j] = h[j] + a[i] - a[i - 1]; //高度累加
+                // l[i][j]=max(l[i-1][j] , 左边第一个障碍点(i-1,j)的位置)
+                l[j] = max(l[j], lm);
+            } else {  //如果上一个点是障碍点
+                h[j] = a[i] - a[i - 1]; //高度重新计算
+                l[j] = 0;
+                r[j] = W;
+                lm = b[j]; //更新(i-1,j)左边第一个障碍点的位置
+            }
+        }
+        rm = W;
+        for (j = lb - 1; j >= 0; j--) {  //  从右到左计算r[j]
+            //r[i][j]=min(r[i-1][j] , (i-1,j)右边第一个障碍点的位置)
+            r[j] = min(r[j], rm);
+            temp = h[j] * (r[j] - l[j]);
+            result = max(result, temp);  //计算最优解
+            if (v[i - 1][j]) //如果该点是障碍点，更新(i-1,j)右边第一个障碍点的位置
+                rm = b[j];
+        }
+    }
+    // 计算横条的面积
+    for (i = 1; i < la; i++) {
+        temp = W * (a[i] - a[i - 1]);
+        result = max(result, temp);
+    }
+
+    free(a);
+    free(b);
+    for (i = 0; i < la; i++) {
+        free(v[i]);
+    }
+    free(v);
+    free(h);
+    free(l);
+    free(r);
+    return result;
+}
+
+int main() {
+    int i;
+    while (scanf("%d%d", &L, &W) == 2) {
+        scanf("%d", &n);
+        for (i = 0; i < n; i++) {
+            scanf("%d%d", &x[i], &y[i]);
+        }
+
+        printf("%d\n", max_submatrix(L, W, x, y, n));
+    }
+    return 0;
+}
+\end{Codex}
+
+\subsubsection{相关的题目}
+与本题相同的题目：
+\begindot
+\item Vijos 1055 奶牛浴场, \myurl{https://vijos.org/p/1055}
+\myenddot
+
+与本题相似的题目：
+\begindot
+\item LeetCode Maximal Rectangle, \myurl{http://leetcode.com/onlinejudge\#question_85}，\\ 参考代码\myurl{https://gist.github.com/soulmachine/b20a15009450016038d9}
+\item POJ 3494 Largest Submatrix of All 1's, \myurl{http://poj.org/problem?id=3494}
+\myenddot
+
+
+\subsection{最大全1子矩阵}
+\subsubsection{描述}
+给定一个$m \times n$的01矩阵，求最大的全1子矩阵。
+
+\subsubsection{输入}
+输入包含多组测试用例。每组测试用例第一行包含两个整数m和n($1 \leq m,n \leq 2000$)，接下来是m行数据，每行n个元素。
+
+\subsubsection{输出}
+对每个测试用例，输出最大全1子矩阵的1的个数。如果输入的矩阵是全0，则输出0.
+
+\subsubsection{样例输入}
+\begin{Code}
+2 2
+0 0
+0 0
+4 4
+0 0 0 0
+0 1 1 0
+0 1 1 0
+0 0 0 0
+\end{Code}
+
+\subsubsection{样例输出}
+\begin{Code}
+0
+4
+\end{Code}
+
+\subsubsection{分析}
+注意，上一题算的是面积，这一题算的是个数，在某些细节上处理不同。
+
+\subsubsection{代码}
+\begin{Codex}[label=largest_rectangle.c]
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+
+#define max(a,b)  (a > b ? a : b)
+#define min(a,b)  (a < b ? a : b)
+
+#define  MAXN 2001
+
+int matrix[MAXN][MAXN];
+
+int lagest_rectangle(/*int **matrix, */int m, int n) {
+    int i, j;
+    int *H = (int*) malloc(n * sizeof(int));  // 高度
+    int *L = (int*) malloc(n * sizeof(int));  // 左边界
+    int *R = (int*) malloc(n * sizeof(int));  // 右边界
+    int ret = 0;
+
+    memset(H, 0, n * sizeof(int));
+    memset(L, 0, n * sizeof(int));
+    for (i = 0; i < n; i++) R[i] = n;
+
+    for (i = 0; i < m; ++i) {
+        int left = 0, right = n;
+        // calculate L(i, j) from left to right
+        for (j = 0; j < n; ++j) {
+            if (matrix[i][j] == 1) {
+                ++H[j];
+                L[j] = max(L[j], left);
+            } else {
+                left = j + 1;
+                H[j] = 0;
+                L[j] = 0;
+                R[j] = n;
+            }
+        }
+        // calculate R(i, j) from right to left
+        for (j = n - 1; j >= 0; --j) {
+            if (matrix[i][j] == 1) {
+                R[j] = min(R[j], right);
+                ret = max(ret, H[j] * (R[j] - L[j]));
+            } else {
+                right = j;
+            }
+        }
+    }
+
+    return ret;
+}
+
+int main() {
+    int m, n;
+    int i, j;
+    while (scanf("%d%d", &m, &n) > 0) {
+        for (i = 0; i < m; i++) {
+            for (j = 0; j < n; j++) {
+                scanf("%d", &matrix[i][j]);
+            }
+        }
+
+        printf("%d\n", lagest_rectangle(m, n));
+    }
+    return 0;
+}
+\end{Codex}
+
+\subsubsection{相关的题目}
+与本题相同的题目：
+\begindot
+\item POJ 3494 Largest Submatrix of All 1's, \myurl{http://poj.org/problem?id=3494}
+\item LeetCode Maximal Rectangle, \myurl{http://leetcode.com/onlinejudge\#question_85}，\\ 参考代码\myurl{https://gist.github.com/soulmachine/b20a15009450016038d9}
+\myenddot
+
+与本题相似的题目：
+\begindot
+\item Vijos 1055 奶牛浴场, \myurl{https://vijos.org/p/1055}
+\myenddot
