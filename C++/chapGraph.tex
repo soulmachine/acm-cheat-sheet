@@ -878,14 +878,19 @@ Prim算法和Kruskal算法是两个利用MST性质构造最小生成树的算法
 \hline
 adjvex & $v_0$ & $v_0$ & $v_0$ & & & $v_0$ & $\{v_1,v_2,v_3,v_4,v_5\}$ & \multirow{2}{*}{2} \\
 lowcost & 6 & 1 & 5 & & & & & \\
+\hline
 adjvex & $v_2$ & & $v_1$ & $v_2$ & $v_2$ & $\{v_0,v_2\}$ & $\{v_1,v_3,v_4,v_5\}$ & \multirow{2}{*}{5} \\
 lowcost & 5 & 0 & 5 & 6 & 4 & & & \\
+\hline
 adjvex & $v_2$ & & $v_6$ & $v_2$ & & $\{v_0,v_2,v_5\}$ & $\{v_1,v_3,v_4\}$ & \multirow{2}{*}{3} \\
 lowcost & 5 & 0 & 2 & 6 & 0 & & & \\
+\hline
 adjvex & $v_2$ & & & $v_2$ & & $\{v_0,v_2,v_5,v_3\}$ & $\{v_1,v_4\}$ & \multirow{2}{*}{1} \\
 lowcost & 5 & 0 & 0 & 6 & 0 & & & \\
+\hline
 adjvex & & & & $v_1$ & & $\{v_0,v_2,v_5,v_3,v_1\}$ & $\{v_4\}$ & \multirow{2}{*}{4} \\
 lowcost & 0 & 0 & 0 & 3 & 0 & & & \\
+\hline
 adjvex & & & & & & $\{v_0,v_2,v_5,v_3,v_1,v_4\}$ & $\{\}$ & \multirow{2}{*}{} \\
 lowcost & 0 & 0 & 0 & 0 & 0 & & & \\
 \hline
@@ -1157,56 +1162,262 @@ int mgraph_prim(const mgraph_t *g){
 }
 
 
-// test，输入数据与 mgraph_prim1.c 相同
-int main() {
-    int i, j, k, m, n;
-    char chx, chy;
-    int cost;
-
-    /* 读取节点和边的数目 */
-    scanf("%d%d", &m, &n);
-    getchar(); // 消耗回车键
-    g.vertices_num = m;
-    g.edges_num = n;
-    for (i = 0; i < m; i++) g.vertices[i] = 'A' + i;
-
-    /* 初始化图，所有节点间距离为无穷大 */
-    for (i = 0; i < m; i++) {
-        for (j = 0; j < m; j++) {
-            g.matrix[i][j] = INT_MAX;
-        }
-    }
-
-    /* 读取边信息 */
-    for (k = 0; k < n; k++) {
-        scanf("%c %c %d", &chx, &chy, &cost);
-        getchar();
-        i = chx - 'A';
-        j = chy - 'A';
-        g.matrix[i][j] = cost;
-        g.matrix[j][i] = cost;
-    }
-
-    /* 求解最小生成树 */
-    printf("Total:%d\n", mgraph_prim(&g));
-    return 0;
-}
+// test，输入数据和main()函数与 mgraph_prim1.c 相同
+// int main() {
+// ...
 \end{Codex}
 
 \subsubsection{算法分析}
 该算法迭代次数为$O(n)$，每次迭代将平均$e/n$条边插入最小堆中，$e$条边从堆中删除，堆的插入和删除操作时间复杂度均为$O(\log_2 e)$，则总的时间复杂度为 $O(e\log_2e)$。
 
 \subsection{Kruskal算法}
+假设连通网$N={V, E}$，则令最小生成树的初始状态为只有$n$个顶点而无边的非连通图$T=(V, {})$，图中每个顶点自成一个连通分量。在$E$中选择代价最小的边，若该边依附的顶点落在$T$中不同的连通分量上，则将此边加入到$T$中，否则舍去此边而选择下一条代价最小的边。依次类推，直至T中所有顶点都在同一连通分量上为止。
+
+图\ref{fig:kruskal}所示为Kruskal算法构造一棵最小生成树的过程。
+
+\begin{center}
+\includegraphics[width=240pt]{kruskal1.png}\\
+\includegraphics[width=240pt]{kruskal2.png}\\
+\figcaption{Kruskal算法构造最小生成树的过程}\label{fig:kruskal}
+\end{center}
+
+下面是Kruskal算法的C语言实现。
+
+\subsubsection{代码}
+
+\begin{Codex}[label=mgraph_kruskal.c]
+
+\end{Codex}
+
+\subsubsection{算法分析}
+如果采用邻接矩阵作为图的存储结构，则在建立小根堆时需要检测图的邻接矩阵，这需要$O(n^2)$的时间。此外，需要将$e$条边组成初始的小根堆。如果直接从空堆开始，依次插入各边，需要$O(e\log_2e)$的时间。在构造最小生成树的过程中，需要进行$O(e)$次出堆操作\fn{heap_remove()}、$2e$次并查集的\fn{ufs_find()}操作以及$n-1$次\fn{ufs_union()}操作，计算时间分别为$O(e\log_2e)$、$O(\log_2n)$和$O(n)$，所以总时间为$O(n^2+e\log_2e)$。
+
+如果采用邻接表作为图的存储结构，则在建立小根堆时需要检测图的邻接表，这需要$O(n+e)$的时间。为建成初始的小根堆，需要$O(e\log_2e)$的时间。在构造最小生成树的过程中，需要进行$O(e)$次出堆操作\fn{heap_remove()}、$2e$次并查集的\fn{ufs_find()}操作以及$n-1$次\fn{ufs_union()}操作，计算时间分别为$O(e\log_2e)$、$O(e\log_2n)$和$O(n)$，所以总时间为$O(n+e\log_2e)$。
 
 \section{最短路径} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\subsection{单源最短路径(Dijkstra算法)}
+\subsection{单源最短路径——Dijkstra算法}
+假设$S$为已求得最短路径的点的集合，则可证明：下一条最短路径（设其终点为$x$）或者是弧$(v, x)$，或者是中间只经过$S$中的顶点而最后到达顶点$x$的路径。
 
-\subsection{每点最短路径(Floyd算法)}
+Dijkstra算法流程如下：
+\begin{enumerate}
+\item $S$为已找到从$v$出发的最短路径的终点的集合，它的初始状态为空集。\fn{dist[i]}存放的是$v$到$v_i$的最短路径长度，根据前面所述性质，\fn{dist[i]=min\{dist[i],weight(v,$v_i$)\}}。\fn{path[i]}存放的是最短路径上指向$v_i$的弧尾顶点。那么从$v$出发到图上其余$v_i$的最短路径长度的初值为：
+$$
+\text{dist}[i] = \text{weight}(v, v_i), v_i \in V
+$$
+\item 选择$v_j$，使得
+$$
+\text{dist}[j]=\min\left\{\text{dist}[j], \text{weight}(v, v_j)|v_i \in V-S\right\}
+$$
+将$v_j$加入到$S$，
+$$
+S = S \cup {v_j}
+$$
+\item 修改从$v$出发到集合$V-S$上任一顶点$v_k$可达的最短路径长度，并记录下这条边。
+\begin{Code}
+if(dist[j] + weight(j, k) < dist[k]) {
+    dist[k] = dist[j] + weight(j, k);
+    path[k] = j; /* 修改到k的最短路径 */
+}
+\end{Code}
+\item 重复2，3共$n-1$次。
+\end{enumerate}
+
+例如，对图\ref{fig:dijkstra}所示的有向图及其邻接矩阵运行运行Dijkstra算法，
+
+\begin{center}
+\includegraphics[width=240pt]{dijkstra.png}\\
+\figcaption{有向图及其邻接矩阵}\label{fig:dijkstra}
+\end{center}
+
+运算过程中$v_0$到其余个顶点的最短路近，\fn{dist[]}向量的变化情况如表\ref{tab:dijkstra}所示（从一列到下一列只需要更新新加入点的邻接点）。
+
+\begin{center}
+\tabcaption{Dijkstra算法过程中dist[]向量的变化情况}
+\label{tab:dijkstra}
+\begin{tabular}{|c|ccccc|}
+\hline
+\textbf{\textbf{终点}} & \textbf{i=1} & \textbf{i=2} & \textbf{i=3} & \textbf{i=4} & \textbf{i=5}\\
+\hline
+$v_1$ & $\infty$ & $\infty$ & $\infty$ & $\infty$ & $\infty$\\
+\hline
+\multirow{2}{*}{$v_2$} & \textbf{10}          & & & & \\
+                       & $\mathbf{(v_0,v_2)}$ & & & & \\
+\hline
+\multirow{2}{*}{$v_3$} & $\infty$ &          60     &     \textbf{50}          & & \\
+                       &          & $(v_0,v_2,v_3)$ & $\mathbf{(v_0,v_4,v_5)}$ & & \\
+\hline
+\multirow{2}{*}{$v_4$} &     30      &      \textbf{30}     & & & \\
+                       & $(v_0,v_4)$ & $\mathbf{(v_0,v_4)}$ & & & \\
+\hline
+\multirow{2}{*}{$v_5$} &     100     &     100     &       90        &         \textbf{60}          & \\
+                       & $(v_0,v_5)$ & $(v_0,v_5)$ & $(v_0,v_4,v_5)$ & $\mathbf{(v_0,v_4,v_3,v_5)}$ & \\
+\hline
+$v_j$ & $v_2$ & $v_4$ & $v_3$ & $v_5$ & \\
+\hline
+$S$ & $(v_0,v_2)$ & $(v_0,v_2,v_4)$ & $(v_0,v_2,v_3,v_4)$ & $(v_0,v_2,v_3,v_4,v_5)$ & \\
+\hline
+\end{tabular}
+\end{center}
+
+Dijkstra算法的C语言实现如下。
+
+\subsubsection{代码}
+
+\begin{Codex}[label=mgraph_dijkstra.c]
+
+\end{Codex}
+
+\subsubsection{算法分析}
+该算法包含了两个并列的for循环，第一个for循环做辅助数组的初始化工作，计算时间为$O(n)$，第二个for循环是二重嵌套循环，进行最短路径的求解工作，由于对图中几乎每个顶点都要做计算，每个顶点的又要对集合S内的顶点进行检测，对集合$V-S$内中的顶点进行修改，所以运算时间复杂度为$O(n^2)$。算法总的时间复杂度为$O(n^2)$。
+
+
+\subsection{每点最短路径——Floyd算法}
+Floyd算法的基本思想是：假设求从定点$v_i$到$v_j$的最短路径。初始时，若$v_i$与$v_j$之间存在边，则最短路径长度为此边的权值；若不存在边，则最短路径长度为无穷大。以后逐步在路径中加入顶点$k(k=0,1,...,n-1)$作为中间顶点，如果加入中间顶点后，得到的路径比原来的路径长度减少了，则以新路径代替原路径。
+
+首先比较$(v_i,v_j)$和$(v_i,v_0,v_j)$的路径长度，取较短者为从$v_i$到$v_j$的中间顶点的序号不大于0的最短路径。如果$(v_i,v_0,v_j)$较短，则取$(v_i,v_0,v_j)$作为最短路径。假如在路径上再增加一个顶点$v_1$，也就是说，如果$(v_i,...,v_1)$和$(v_1,...,v_j)$分别是当前找到的中间定点的序号不大于0的最短路径，那么$(vi,...,v1,...,vj)$就有可能是从$v_i$到$v_j$的中间顶点的序号不大于1的最短路径，将它和已经得到的从$v_i$到$v_j$的中间顶点的序号不大于0的最短路径相比较，选出较短者作为从$v_i$到$v_j$的中间顶点的序号不大于1的最短路径。再增加一个顶点$v_2$，继续进行试探，依此类推。一般的，若$(v_i,...,v_k)$和$(v_k,...,v_j)$分别是从$v_i$到$v_k$和从$v_k$到$v_j$的中间定点的序号不大于$k-1$的最短路径，则将$(v_i,...,v_k,...,v_j)$和已经得到的从$v_i$到$v_j$的中间顶点的序号不大于$k-1$的最短路径相比，较短者便是从$v_i$到$v_j$的中间顶点的序号不大于$k$的最短路径。这样，在经过$n$次比较后，最后求得的必是从$v_i$到$v_j$的最短路径。
+
+现定义一个$n$阶方阵序列，
+$$
+D^{(-1)}, D^{(0)} , D^{(1)},..., , D^{(k)},..., , D^{(n-1)}
+$$
+其中，
+\begin{eqnarray}
+D^{(-1)}[i][j] &=& \text{g->matrix}[i][j],  \nonumber \\
+D^{(k)}[i][j] &=& \min\left\{D^{(k-1)}[i][j], D^{(k-1)}[i][k] + D^{(k-1)}[k][j]\right\},0 \leq k \leq n-1 \nonumber
+\end{eqnarray}
+
+上述公式中，$D^{(k)}[i][j]$是从$v_i$到$v_j$的中间顶点的序号不大于$k$的最短路径的长度；$D^{(n-1)}[i][j]$是从$v_i$到$v_j$的最短路径的长度。
+
+例如，对图\ref{fig:floyd}所示的有向图及其邻接矩阵运行Floyd算法，
+
+\begin{center}
+\includegraphics[width=180pt]{floyd.png}\\
+\figcaption{有向图及其邻接矩阵}\label{fig:floyd}
+\end{center}
+
+运算过程中矩阵D的变化如表\ref{tab:floyd}所示。
+
+\begin{center}
+\tabcaption{Floyd算法过程中方阵和最短路径的变化}
+\label{tab:floyd}
+\begin{tabular}{|c|ccc|ccc|ccc|ccc|}
+\hline
+\multirow{2}{*}{$\mathbf{D}$} & \multicolumn{3}{|c|}{$\mathbf{D^{(0)}}$} & \multicolumn{3}{|c|}{$\mathbf{D^{(1)}}$} & \multicolumn{3}{|c|}{$\mathbf{D^{(2)}}$} & \multicolumn{3}{|c|}{$\mathbf{D^{(3)}}$} \\
+ & 0 & 1 & 2 & 0 & 1 & 2 & 0 & 1 & 2 & 0 & 1 & 2 \\
+\hline
+0 & 0 & 4 & 11 & 0 & 4 & 11 & 0 & 4 & 6 & 0 & 4 & 6 \\
+1 & 6 & 0 & 2 & 6 & 0 & 2 & 6 & 0 & 2 & 5 & 0 & 2 \\
+2 & 3 & $\infty$ & 0 & 3 & 7 & 0 & 3 & 7 & 0 & 3 & 7 & 0 \\
+\hline
+\multirow{2}{*}{$\mathbf{P}$} & \multicolumn{3}{|c|}{$\mathbf{P^{(0)}}$} & \multicolumn{3}{|c|}{$\mathbf{P^{(1)}}$} & \multicolumn{3}{|c|}{$\mathbf{P^{(2)}}$} & \multicolumn{3}{|c|}{$\mathbf{P^{(3)}}$} \\
+ & 0 & 1 & 2 & 0 & 1 & 2 & 0 & 1 & 2 & 0 & 1 & 2 \\
+\hline
+\multirow{2}{*}{0} & & A & A & & AB & A & & AB & AB & & AB & AB \\
+                   & & B & C & & & C & & & C & & & C \\
+\hline
+\multirow{2}{*}{1} & B & & B & B & & B & B & & BC & BC & & BC \\
+                   & A & & C & A & & C & A & & & A & & \\
+\hline
+\multirow{2}{*}{2} & C & & & C & CA & & C & CA & & CA & CA & \\
+                   & A & & & A & B & & A & B & & & B & \\
+\hline
+\end{tabular}
+\end{center}
+
+Floyd算法的C语言实现如下。
+
+\subsubsection{代码}
+
+\begin{Codex}[label=mgraph_floyd.c]
+
+\end{Codex}
+
+\subsubsection{算法分析}
+该算法中有两个并列的for循环，第一个循环是个二重循环，用于初始化方阵$D$；第二个循环是个三重循环，逐步生成$D^{(0)}, D^{(1)} ,...,D^{(n-1)}$。所以算法总的时间复杂度为$O(n^3)$。
+
+Dijkstra算法权值不能为负，Floyd权值可以为负，但环路之和不能为负。
+
 
 \section{拓扑排序} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+由某个集合上的一个偏序得到该集合上的一个全序，这个操作称为\textbf{拓扑排序}。
 
+拓扑序列的特点是：若有向边$<V_i, V_j>$是途中的弧，则在序列中顶点$V_i$必须排在顶点$V_j$之前。
+
+如果用有向图表示一个工程，顶点表示活动，用有向边$<v_i,v_j>$表示活动必须先于活动进行。这种有向图叫做顶点表示活动的网络(Activity On Vertext Network)，简称\textbf{AOV网络}。
+
+检测AOV网络是否存在环的方法是对AOV网络构造其顶点的拓扑有序序列。拓扑排序的基本步骤是：
+\begin{enumerate}
+\item 在有向图中选一个没有前驱的顶点且输出之；
+\item 从图中删除该顶点和所有以它为尾的弧线。
+\end{enumerate}
+重复以上两步，直至全部顶点输出，或当前图中不存在无前驱的顶点为止（这种情况说明图中存在环）。
+
+拓扑排序的C语言实现如下。
+
+\subsubsection{代码}
+
+\begin{Codex}[label=mgraph_topological_sort.c]
+
+\end{Codex}
+
+\subsubsection{算法分析}
+对有$n$个顶点和$e$条边的AOV网络而言，求各顶点的入度所需时间为$O(e)$，建立零入度顶点栈所需时间为$O(n)$；在拓扑排序过程中，若有向图无环，每个顶进一次栈出一次栈，顶点入度减1的操作共执行了$e$次。所以总的时间复杂度为$O(n+e)$。
+
+当有向图中无环时，也可以利用深度优先搜索进行拓扑排序。因为图中无环，深度优先遍历不会死循环。进行深度优先遍历时，最先退出DFS函数的顶点即为出度为零的顶点，是拓扑有序序列的最后一个顶点。由此，按退出DFS函数的先后次序记录下来的顶点序列即为逆向的拓扑有序序列。
+
+	
 \section{关键路径} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+用有向边上的权值表示活动的持续时间，用顶点表示时间，这样的有向图叫做边表示的活动网络(Activity On Edge Network)，简称\textbf{AOE网络}。
+
+路径最长的路径叫做\textbf{关键路径}(Critical Path)。假设开始点为$v_1$，从$v_1$到$v_i$的最长路径长度叫做事件$v_i$的最早发生时间。这个事件决定了所有以$v_i$为尾的弧所表示的活动的最早开始时间。我们用$e(i)$表示活动$a_i$的最早开始时间。还可以定义一个活动的最迟开始时间$l(i)$，这是在不推迟整个工程完成的前提下，活动$a_i$最迟必须开始进行的时间。两者之差$l(i)-e(i)$意味着完成活动$a_i$的时间余量。我们把$l(i)=e(i)$的活动叫做关键活动。
+
+设活动$a_i$由弧$<j, k>$表示，为了求得活动的$e(i)$和$l(i)$，首先应求得事件的最早发生时间$ve(j)$和最迟发生时间$vl(j)$，其持续时间记为$dut(<j, k>)$，则有如下关系
+\begin{eqnarray}
+e(i) &=& ve(j) \nonumber \\
+l(i) &=& vl(k)-dut(<j, k>) \nonumber
+\end{eqnarray}
+
+求$ve(j)$和$vl(k)$需分两步进行：
+\begin{enumerate}
+\item 从$ve(0)=0$开始向前递推
+$$
+ve(j)=\max\left\{ve(i)+dut(<i, j>)\right\}, <i, j> \in T
+$$
+其中$T$是所有以顶点$j$为弧头的边的集合。
+\item 从$vl(n-1)=ve(n-1)$起向后递推
+$$
+vl(j)=\min\left\{vl(k)-dut(<j, k>)\right\}, <j, k> \in S
+$$
+其中$S$是所有以顶点$j$为弧尾的边的集合。
+\end{enumerate}
+
+例如，对图\ref{fig:criticalpath}(a)所示AOE网络的计算过程如表\ref{tab:criticalpath}所示，可见$a_2$、$a_5$和$a_7$为关键活动，组成一条从起点到终点的关键路径，如图\ref{fig:criticalpath}(b)所示。
+
+\begin{center}
+\includegraphics[width=180pt]{criticalpath.png}\\
+\figcaption{有向图及其邻接矩阵}\label{fig:criticalpath}
+\end{center}
+
+\begin{center}
+\tabcaption{图\ref{fig:criticalpath}(a)所示AOE网络的关键路径的计算过程}
+\label{tab:criticalpath}
+\begin{tabular}{|ccccc|cccc|}
+\hline
+\textbf{顶点} & & \textbf{ve} & & \textbf{vl} & \textbf{活动} & \textbf{e} & \textbf{l} & \textbf{l-e} \\
+\hline
+$v_1$ & \multirow{8}{*}{$\downarrow$} & 0 & \multirow{8}{*}{$\uparrow$} & 0 & $a_1$ & 0 & 1 & 1 \\
+$v_2$ &                               & 3 &                             & 4 & $a_2$ & 0 & 0 & 0 \\
+$v_3$ &                               & 2 &                             & 2 & $a_3$ & 3 & 4 & 1 \\
+$v_4$ &                               & 6 &                             & 6 & $a_4$ & 3 & 4 & 1 \\
+$v_5$ &                               & 6 &                             & 7 & $a_5$ & 2 & 2 & 0 \\
+$v_6$ &                               & 8 &                             & 8 & $a_6$ & 2 & 5 & 3 \\
+      &                               &   &                             &   & $a_7$ & 6 & 6 & 0 \\
+      &                               &   &                             &   & $a_8$ & 6 & 7 & 1 \\
+\hline
+\end{tabular}
+\end{center}
+
 
 \section{A*算法} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \label{sec:astar}
