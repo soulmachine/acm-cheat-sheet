@@ -398,9 +398,9 @@ void bigint_mul(const int x[], const int y[], int z[]) {
         for (j = 0; j < MAX_LEN; j++) { /*用y[i]，去乘以x的各位*/
             z[i + j] += y[i] * x[j]; /* 两数第i, j位相乘，累加到结果的第i+j位 */
 
-            if (z[i] >= BIGINT_MOD) { /* 看是否要进位 */
-                z[i + 1] += z[i] / BIGINT_MOD; /* 进位 */
-                z[i] %= BIGINT_MOD;
+            if (z[i + j] >= BIGINT_MOD) { /* 看是否要进位 */
+                z[i + j + 1] += z[i + j] / BIGINT_MOD; /* 进位 */
+                z[i + j] %= BIGINT_MOD;
             }
         }
     }
