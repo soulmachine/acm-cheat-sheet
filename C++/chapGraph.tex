@@ -1560,6 +1560,8 @@ int main() {
 \section{最短路径} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{单源最短路径——Dijkstra算法}
+\label{sec:dijkstra}
+
 假设$S$为已求得最短路径的点的集合，则可证明：下一条最短路径（设其终点为$x$）或者是弧$(v, x)$，或者是中间只经过$S$中的顶点而最后到达顶点$x$的路径。
 
 Dijkstra算法流程如下：
@@ -1767,27 +1769,25 @@ A->E
 A->E->F
 */
 int main() {
-    int i, j, k, m, n;
+    int i, j, k;
     char chx, chy;
     graph_weight_t cost;
 
     /* 读取节点和边的数目 */
-    scanf("%d%d", &m, &n);
-    getchar(); // 消耗回车键
-    g.vertices_num = m;
-    g.edges_num = n;
+    scanf("%d%d", &(g.vertices_num), &(g.edges_num));
     g.directed = 1;
-    for (i = 0; i < m; i++) g.vertices[i] = 'A' + i;
+    for (i = 0; i < g.vertices_num; i++) g.vertices[i] = 'A' + i;
 
     /* 初始化图，所有节点间距离为无穷大 */
-    for (i = 0; i < m; i++) {
-        for (j = 0; j < m; j++) {
+    for (i = 0; i < g.vertices_num; i++) {
+        for (j = 0; j < g.vertices_num; j++) {
             g.matrix[i][j] = GRAPH_INFINITY;
         }
     }
 
     /* 读取边信息 */
-    for (k = 0; k < n; k++) {
+    getchar(); // 消耗回车键
+    for (k = 0; k < g.edges_num; k++) {
         scanf("%c %c %d", &chx, &chy, &cost);
         getchar();
         i = chx - 'A';
@@ -1797,7 +1797,7 @@ int main() {
 
     /* 求 V0 到其他所有顶点的最短路径 */
     mgraph_dijkstra(&g, 0, dist, path);
-    print_path(path, m);
+    print_path(path, g.vertices_num);
     return 0;
 }
 \end{Codex}
@@ -1872,7 +1872,7 @@ Floyd算法的C语言实现如下。
 #define MAX_VERTICES_NUM 100
 /** 边的权值，对无权图，用0或1表示是否相邻；对有权图，则为权值. */
 typedef int graph_weight_t;
-#define GRAPH_INFINITY INT_MAX
+#define GRAPH_INFINITY (INT_MAX / 2)   /* 确保加法不溢出 */
 /** 顶点信息，例如顶点名字. */
 typedef char graph_vertex_t;
 
@@ -1893,7 +1893,7 @@ typedef struct mgraph_t {
 
 mgraph_t g;
 /** dist[i][j]是顶点i和j之间最短路径长度 */
-int dist[MAX_VERTICES_NUM][MAX_VERTICES_NUM];
+graph_weight_t dist[MAX_VERTICES_NUM][MAX_VERTICES_NUM];
 /** path[i][j]是最短路径上i和j之间的顶点 */
 int path[MAX_VERTICES_NUM][MAX_VERTICES_NUM];
 
@@ -1904,10 +1904,8 @@ int path[MAX_VERTICES_NUM][MAX_VERTICES_NUM];
   * @param[out] dist dist[i][j]是顶点i和j之间最短路径长度
   * @param[out] path path[i][j]是最短路径上i和j之间的顶点
   * @return 无
-  * @note 无
-  * @remarks 无
   */
-static void mgraph_floyd(const mgraph_t *g,
+void mgraph_floyd(const mgraph_t *g,
        int dist[][MAX_VERTICES_NUM],
        int path[][MAX_VERTICES_NUM]) {
     int i, j, k;
@@ -1915,7 +1913,7 @@ static void mgraph_floyd(const mgraph_t *g,
 
     for(i = 0; i < n; i++) {
         for(j = 0; j < n; j++) {
-            if(i != j && dist[i][j] < GRAPH_INFINITY) {
+            if(i != j) {
                 dist[i][j] = g->matrix[i][j];
                 path[i][j] = i;
             } else {
@@ -1963,9 +1961,12 @@ void print_path(const mgraph_t *g, const int path[][MAX_VERTICES_NUM]) {
     int i, j;
     for (i = 0; i < g->vertices_num; i++) {
         for (j = 0; j < g->vertices_num; j++) {
-            if (i != j) print_path_r(i, j, path);
-            printf("\n");
+            if (i != j) {
+                print_path_r(i, j, path);
+                printf("\n");
+            }
         }
+        printf("\n");
     }
 }
 
@@ -1983,33 +1984,35 @@ C A 3
 
 输出:
 
-A->C
-A->E->D
-A->E
-A->E->F
+A->B
+A->B->C
+
+B->C->A
+B->C
+
+C->A
+C->A->B
 */
 int main() {
-    int i, j, k, m, n;
+    int i, j, k;
     char chx, chy;
     graph_weight_t cost;
 
     /* 读取节点和边的数目 */
-    scanf("%d%d", &m, &n);
-    getchar(); // 消耗回车键
-    g.vertices_num = m;
-    g.edges_num = n;
+    scanf("%d%d", &(g.vertices_num), &(g.edges_num ));
     g.directed = 1;
-    for (i = 0; i < m; i++) g.vertices[i] = 'A' + i;
+    for (i = 0; i < g.vertices_num; i++) g.vertices[i] = 'A' + i;
 
     /* 初始化图，所有节点间距离为无穷大 */
-    for (i = 0; i < m; i++) {
-        for (j = 0; j < m; j++) {
+    for (i = 0; i < g.vertices_num; i++) {
+        for (j = 0; j < g.vertices_num; j++) {
             g.matrix[i][j] = GRAPH_INFINITY;
         }
     }
 
     /* 读取边信息 */
-    for (k = 0; k < n; k++) {
+    getchar(); // 消耗回车键
+    for (k = 0; k < g.edges_num ; k++) {
         scanf("%c %c %d", &chx, &chy, &cost);
         getchar();
         i = chx - 'A';
@@ -2028,6 +2031,384 @@ int main() {
 该算法中有两个并列的for循环，第一个循环是个二重循环，用于初始化方阵$D$；第二个循环是个三重循环，逐步生成$D^{(0)}, D^{(1)} ,...,D^{(n-1)}$。所以算法总的时间复杂度为$O(n^3)$。
 
 Dijkstra算法权值不能为负，Floyd权值可以为负，但环路之和不能为负。
+
+
+\subsection{例题：HDU 2544 最短路}
+\subsubsection{描述}
+在每年的校赛里，所有进入决赛的同学都会获得一件很漂亮的t-shirt。但是每当我们的工作人员把上百件的衣服从商店运回到赛场的时候，却是非常累的！所以现在他们想要寻找最短的从商店到赛场的路线，你可以帮助他们吗？
+
+\subsubsection{输入}
+输入包括多组数据。每组数据第一行是两个整数$N,M(N \leq 100,M \leq 10000)$，$N$表示成都的大街上有几个路口，标号为1的路口是商店所在地，标号为$N$的路口是赛场所在地，$M$则表示在成都有几条路。$N=M=0$表示输入结束。接下来$M$行，每行包括3个整数$A,B,C(1 \leq A,B \leq N,1 \leq C \leq 1000)$,表示在路口$A$与路口$B$之间有一条路，我们的工作人员需要$C$分钟的时间走过这条路。
+输入保证至少存在1条商店到赛场的路线。
+
+\subsubsection{输出}
+对于每组输入，输出一行，表示工作人员从商店走到赛场的最短时间
+
+\subsubsection{样例输入}
+\begin{Code}
+2 1
+1 2 3
+3 3
+1 2 5
+2 3 5
+3 1 2
+0 0
+\end{Code}
+
+\subsubsection{样例输出}
+\begin{Code}
+3
+2
+\end{Code}
+
+\subsubsection{分析}
+单源最短路径，用Dijkstra算法，将第\S\ref{sec:dijkstra}节中的代码稍加修改即可。
+
+注意，街道是双向的，所以给边赋值时要对称赋值。
+
+\subsubsection{代码}
+\begin{Codex}[label=hdu_2544.c]
+/* http://acm.hdu.edu.cn/showproblem.php?pid=2544 */
+#include <stdio.h>
+#include <stdlib.h>  /* for malloc() */
+#include <limits.h>  /* for INT_MAX */
+
+/** 顶点数的最大值*/
+#define MAX_VERTICES_NUM 100
+/** 边的权值，对无权图，用0或1表示是否相邻；对有权图，则为权值. */
+typedef int graph_weight_t;
+#define GRAPH_INFINITY INT_MAX
+/** 顶点信息，例如顶点名字. */
+typedef char graph_vertex_t;
+
+/**
+ *@struct
+ *@brief 邻接矩阵.
+ */
+typedef struct mgraph_t {
+    int vertices_num; /* 顶点数*/
+    int edges_num; /* 边数*/
+    /* 顶点表，存放顶点的信息，如名字等*/
+    graph_vertex_t vertices[MAX_VERTICES_NUM];
+    /* 邻接矩阵，存放边的信息，如权重等*/
+    graph_weight_t matrix[MAX_VERTICES_NUM][MAX_VERTICES_NUM];
+    int directed; /* 图(网)的种类，1表示有向，0表示无向*/
+} mgraph_t;
+
+mgraph_t g;
+
+/** path[i]存放的是最短路径上指向vi的弧尾顶点 */
+int path[MAX_VERTICES_NUM];
+/** dist[i]存放的是v到vi的最短路径长度 */
+int dist[MAX_VERTICES_NUM];
+
+
+/*
+  * @brief Dijkstra算法求单源最短路径.
+  * @param[in] g 图对象的指针
+  * @param[in] v 起点
+  * @param[out] dist dist[i]存放的是v到vi的最短路径长度
+  * @param[out] path path[i]存放的是最短路径上指向vi的弧尾顶点
+  * @return 无
+  */
+void mgraph_dijkstra(const mgraph_t *g, int v, int dist[], int path[]) {
+    int i, j;
+    const int n = g->vertices_num;
+
+    // 初始化S集合
+    int *S = (int*)malloc( n * sizeof(int));
+    for(i = 0; i < n; i++) S[i] = 0;
+    S[v] = 1; /* 初始化，顶点u加入S */
+
+    // 初始化dist和path
+    for(i = 0; i < n; i++) if (i !=v) {
+        dist[i] = g->matrix[v][i];
+        if(dist[i] < GRAPH_INFINITY) {
+            path[i] = v;
+        }  else {
+            path[i] = -1; /* 没有顶点指向i */
+        }
+    }
+    dist[v] = 0;
+    path[v] = -1;
+
+    for(i = 0; i < n; i++) if (i !=v) {
+        /* 选不在S中的最短路径顶点 u */
+        int u;
+        graph_weight_t min = GRAPH_INFINITY;
+        for(j = 0; j < n; j++) {
+            if(!S[j] && dist[j] < min) {
+                u = j;
+                min = dist[j];
+            }
+        }
+        S[u] = 1;
+        for(j = 0; j < n; j++) {
+            const graph_weight_t w = g->matrix[u][j];
+            /* 顶点j未就加入S，且经过u到j可缩短路径*/
+            if(!S[j] && w < GRAPH_INFINITY &&
+                dist[u] + w < dist[j]) {
+                dist[j] = dist[u] + w;
+                path[j] = u; /* 修改到j的最短路径*/
+            }
+        }
+    }
+    free(S);
+}
+
+int main() {
+    int i, j, k;
+    int x, y;
+    graph_weight_t cost;
+
+    /* 读取节点和边的数目 */
+    while(scanf("%d%d", &(g.vertices_num), &(g.edges_num)) > 0)
+        if (g.vertices_num > 0 && g.edges_num > 0){
+        g.directed = 1;
+        for (i = 0; i < g.vertices_num; i++) g.vertices[i] = '1' + i;
+
+        /* 初始化图，所有节点间距离为无穷大 */
+        for (i = 0; i < g.vertices_num; i++) {
+            for (j = 0; j < g.vertices_num; j++) {
+                g.matrix[i][j] = GRAPH_INFINITY;
+            }
+        }
+
+        /* 读取边信息 */
+        for (k = 0; k < g.edges_num; k++) {
+            scanf("%d %d %d", &x, &y, &cost);
+            i = x - 1;
+            j = y - 1;
+            g.matrix[i][j] = cost;
+            g.matrix[j][i] = cost;  // 注意，街道是双向的
+        }
+
+        /* 求 商店（即路口1） 到其他所有顶点的最短路径 */
+        mgraph_dijkstra(&g, 0, dist, path);
+        /* 打印商店（即路口1）到赛场（即路口N）的最短路径长度 */
+        printf("%d\n", dist[g.vertices_num-1]);
+    }
+    return 0;
+}
+\end{Codex}
+
+\subsubsection{相关的题目}
+与本题相同的题目：
+\begindot
+\item HDU 2544 最短路, \myurl{http://acm.hdu.edu.cn/showproblem.php?pid=2544}
+\myenddot
+
+与本题相似的题目：
+\begindot
+\item POJ 2253 Frogger, \myurl{http://poj.org/problem?id=2253}
+\item POJ 3268 Silver Cow Party, \myurl{http://poj.org/problem?id=3268}
+\item POJ 1797 Heavy Transportation, \myurl{http://poj.org/problem?id=1797}
+\item POJ 1847 Tram, \myurl{http://poj.org/problem?id=1847}
+\myenddot
+
+
+\subsection{例题：POJ 1125 Stockbroker Grapevine}
+\subsubsection{描述}
+Stockbrokers are known to overreact to rumours. You have been contracted to develop a method of spreading disinformation amongst the stockbrokers to give your employer the tactical edge in the stock market. For maximum effect, you have to spread the rumours in the fastest possible way. 
+
+Unfortunately for you, stockbrokers only trust information coming from their "Trusted sources" This means you have to take into account the structure of their contacts when starting a rumour. It takes a certain amount of time for a specific stockbroker to pass the rumour on to each of his colleagues. Your task will be to write a program that tells you which stockbroker to choose as your starting point for the rumour, as well as the time it will take for the rumour to spread throughout the stockbroker community. This duration is measured as the time needed for the last person to receive the information.
+
+\subsubsection{输入}
+Your program will input data for different sets of stockbrokers. Each set starts with a line with the number of stockbrokers. Following this is a line for each stockbroker which contains the number of people who they have contact with, who these people are, and the time taken for them to pass the message to each person. The format of each stockbroker line is as follows: The line starts with the number of contacts ($n$), followed by n pairs of integers, one pair for each contact. Each pair lists first a number referring to the contact (e.g. a '1' means person number one in the set), followed by the time in minutes taken to pass a message to that person. There are no special punctuation symbols or spacing rules. 
+
+Each person is numbered 1 through to the number of stockbrokers. The time taken to pass the message on will be between 1 and 10 minutes (inclusive), and the number of contacts will range between 0 and one less than the number of stockbrokers. The number of stockbrokers will range from 1 to 100. The input is terminated by a set of stockbrokers containing 0 (zero) people. 
+
+\subsubsection{输出}
+For each set of data, your program must output a single line containing the person who results in the fastest message transmission, and how long before the last person will receive any given message after you give it to this person, measured in integer minutes. 
+
+It is possible that your program will receive a network of connections that excludes some persons, i.e. some people may be unreachable. If your program detects such a broken network, simply output the message "disjoint". Note that the time taken to pass the message from person A to person B is not necessarily the same as the time taken to pass it from B to A, if such transmission is possible at all.
+
+\subsubsection{样例输入}
+\begin{Code}
+3
+2 2 4 3 5
+2 1 2 3 6
+2 1 2 2 2
+5
+3 4 4 2 8 5 3
+1 5 8
+4 1 6 4 10 2 7 5 2
+0
+2 2 5 1 5
+0
+\end{Code}
+
+\subsubsection{样例输出}
+\begin{Code}
+3 2
+3 10
+\end{Code}
+
+\subsubsection{分析}
+
+\subsubsection{代码}
+\begin{Codex}[label=poj_1125.c]
+/* http://poj.org/problem?id=1125 */
+#include <stdio.h>
+#include <stdlib.h>  /* for malloc() */
+#include <limits.h>  /* for INT_MAX */
+
+/** 顶点数的最大值*/
+#define MAX_VERTICES_NUM 100
+/** 边的权值，对无权图，用0或1表示是否相邻；对有权图，则为权值. */
+typedef int graph_weight_t;
+#define GRAPH_INFINITY (INT_MAX / 2)   /* 确保加法不溢出 */
+/** 顶点信息，例如顶点名字. */
+typedef char graph_vertex_t;
+
+/**
+ *@struct
+ *@brief 邻接矩阵.
+ */
+typedef struct mgraph_t {
+    int vertices_num; /* 顶点数*/
+    int edges_num; /* 边数*/
+    /* 顶点表，存放顶点的信息，如名字等*/
+    graph_vertex_t vertices[MAX_VERTICES_NUM];
+    /* 邻接矩阵，存放边的信息，如权重等*/
+    graph_weight_t matrix[MAX_VERTICES_NUM][MAX_VERTICES_NUM];
+    int directed; /* 图(网)的种类，1表示有向，0表示无向*/
+} mgraph_t;
+
+
+mgraph_t g;
+/** dist[i][j]是顶点i和j之间最短路径长度 */
+graph_weight_t dist[MAX_VERTICES_NUM][MAX_VERTICES_NUM];
+/** path[i][j]是最短路径上i和j之间的顶点 */
+int path[MAX_VERTICES_NUM][MAX_VERTICES_NUM];
+/** 存放每个点的最短路径的最长者 */
+graph_weight_t max_len[MAX_VERTICES_NUM];
+
+/*
+  * @brief Floyd算法求每点之间最短路径.
+  * @param[in] g 图对象的指针
+  * @param[out] dist dist[i][j]是顶点i和j之间最短路径长度
+  * @param[out] path path[i][j]是最短路径上i和j之间的顶点
+  * @return 无
+  */
+void mgraph_floyd(const mgraph_t *g,
+       int dist[][MAX_VERTICES_NUM],
+       int path[][MAX_VERTICES_NUM]) {
+    int i, j, k;
+    const int n = g->vertices_num;
+
+    for(i = 0; i < n; i++) {
+        for(j = 0; j < n; j++) {
+            if(i != j) {
+                dist[i][j] = g->matrix[i][j];
+                path[i][j] = i;
+            } else {
+                dist[i][j] = 0;
+                path[i][j] = -1;
+            }
+        }
+    }
+    for(k = 0; k < n; k++) {
+        for(i = 0; i < n; i++) {
+            for(j = 0; j < n; j++) {
+                /* i到j的路径上加入顶点k可以缩短路径长度*/
+                if(dist[i][k] + dist[k][j] < dist[i][j]) {
+                    dist[i][j] = dist[i][k] + dist[k][j];
+                    path[i][j] = k;
+                }
+            }
+        }
+    }
+}
+
+static int max_element(const graph_weight_t w[], int begin, int end) {
+    int i;
+    int max_value = INT_MIN;
+    int max_pos = -1;
+    for (i = begin; i < end; i++) {
+        if (max_value < w[i]) {
+            max_value = w[i];
+            max_pos = i;
+        }
+    }
+    return max_pos;
+}
+
+static int min_element(const graph_weight_t w[], int begin, int end) {
+    int i;
+    int min_value = INT_MAX;
+    int min_pos = -1;
+    for (i = begin; i < end; i++) {
+        if (min_value > w[i]) {
+            min_value = w[i];
+            min_pos = i;
+        }
+    }
+    return min_pos;
+}
+int main() {
+    int i, j;
+    int min_pos;
+
+    /* 读取顶点数 */
+    while (scanf("%d", &(g.vertices_num)) > 0 && g.vertices_num > 0) {
+        g.edges_num = 0;
+        g.directed = 1;
+        for (i = 0; i < g.vertices_num; i++) g.vertices[i] = '1' + i;
+
+        /* 初始化图，所有节点间距离为无穷大 */
+        for (i = 0; i < g.vertices_num; i++) {
+            for (j = 0; j < g.vertices_num; j++) {
+                g.matrix[i][j] = GRAPH_INFINITY;
+            }
+        }
+
+        /* 读取边信息 */
+        for (i = 0; i < g.vertices_num; i++) {
+            int m;
+            graph_weight_t cost;
+            scanf("%d", &m);
+            g.edges_num += m;
+            while (m--) {
+                scanf("%d %d", &j, &cost);
+                --j;
+                g.matrix[i][j] = cost;
+            }
+        }
+
+        /* 求两两之间的最短路径 */
+        mgraph_floyd(&g, dist, path);
+
+        /* 找最短路径的最长着 */
+        for (i = 0; i < g.vertices_num; i++) {
+            max_len[i] = dist[i][max_element(dist[i], 0, g.vertices_num)];
+        }
+        /* 找 max_len 的最小者　*/
+        min_pos = min_element(max_len, 0, g.vertices_num);
+
+        if (max_len[min_pos] == GRAPH_INFINITY) {
+            printf("disjoint\n");
+        } else {
+            printf("%d %d\n", min_pos+1, max_len[min_pos]);
+        }
+    }
+    return 0;
+}
+\end{Codex}
+
+\subsubsection{相关的题目}
+与本题相同的题目：
+\begindot
+\item POJ 1125 Stockbroker Grapevine, \myurl{http://poj.org/problem?id=1125}
+\myenddot
+
+与本题相似的题目：
+\begindot
+\item POJ 3615 Cow Hurdles, \myurl{http://poj.org/problem?id=3615}
+\item POJ 3660 Cow Contest, \myurl{http://poj.org/problem?id=3660}
+\item POJ 2502 Subway, \myurl{http://poj.org/problem?id=2502}
+\item HDU 3631 Shortest Path, \myurl{http://acm.hdu.edu.cn/showproblem.php?pid=3631}
+\myenddot
 
 
 \section{拓扑排序} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
