@@ -1109,7 +1109,8 @@ static int edge_cmp(const edge_t *e1, const edge_t *e2) {
 
 typedef edge_t heap_elem_t; // 元素的类型
 
-#include "heap.c"  // 等价于复制粘贴
+/* 等价于复制粘贴，这里为了节约篇幅，使用include，在OJ上提交时请用复制粘贴 */
+#include "heap.c"
 
 
 /**
@@ -1272,7 +1273,8 @@ static int edge_cmp(const edge_t *e1, const edge_t *e2) {
 
 typedef edge_t heap_elem_t; // 元素的类型
 
-#include "heap.c"  // 等价于复制粘贴
+/* 等价于复制粘贴，这里为了节约篇幅，使用include，在OJ上提交时请用复制粘贴 */
+#include "heap.c"
 
 
 /*
@@ -2235,13 +2237,31 @@ It is possible that your program will receive a network of connections that excl
 4 1 6 4 10 2 7 5 2
 0
 2 2 5 1 5
+7        
+2 2 6 7 1
+0  
+3 1 5 2 8 4 7
+0
+2 2 9 4 10
+2 3 8 4 7
+2 5 8 6 3
+7        
+2 2 6 7 8
+0  
+3 1 5 2 8 4 7
+0
+2 2 9 4 10
+2 3 8 4 7
+2 5 8 6 3
 0
 \end{Code}
 
 \subsubsection{样例输出}
 \begin{Code}
-3 2
+3 2  
 3 10
+1 12
+7 17
 \end{Code}
 
 \subsubsection{分析}
@@ -2284,7 +2304,7 @@ int path[MAX_VERTICES_NUM][MAX_VERTICES_NUM];
 /** 存放每个点的最短路径的最长者 */
 graph_weight_t max_len[MAX_VERTICES_NUM];
 
-/*
+/**
   * @brief Floyd算法求每点之间最短路径.
   * @param[in] g 图对象的指针
   * @param[out] dist dist[i][j]是顶点i和j之间最短路径长度
@@ -2346,6 +2366,7 @@ static int min_element(const graph_weight_t w[], int begin, int end) {
     }
     return min_pos;
 }
+
 int main() {
     int i, j;
     int min_pos;
@@ -2459,9 +2480,8 @@ typedef struct mgraph_t {
 mgraph_t g;
 int topological[MAX_VERTICES_NUM];
 
-
-#include "stack.c"    // 等价于复制粘贴
-
+// 等价于复制粘贴，这里为了节约篇幅，使用include，在OJ上提交时请用复制粘贴
+#include "stack.c"
 
 /*
   * @brief 拓扑排序.
@@ -2528,27 +2548,25 @@ E F 60
 B A E F C D
 */
 int main() {
-    int i, j, k, m, n;
+    int i, j, k;
     char chx, chy;
     graph_weight_t cost;
 
     /* 读取节点和边的数目 */
-    scanf("%d%d", &m, &n);
+    scanf("%d%d", &(g.vertices_num), &(g.edges_num));
     getchar(); // 消耗回车键
-    g.vertices_num = m;
-    g.edges_num = n;
     g.directed = 1;
-    for (i = 0; i < m; i++) g.vertices[i] = 'A' + i;
+    for (i = 0; i < g.vertices_num; i++) g.vertices[i] = 'A' + i;
 
     /* 初始化图，所有节点间距离为无穷大 */
-    for (i = 0; i < m; i++) {
-        for (j = 0; j < m; j++) {
+    for (i = 0; i < g.vertices_num; i++) {
+        for (j = 0; j < g.vertices_num; j++) {
             g.matrix[i][j] = GRAPH_INFINITY;
         }
     }
 
     /* 读取边信息 */
-    for (k = 0; k < n; k++) {
+    for (k = 0; k < g.edges_num; k++) {
         scanf("%c %c %d", &chx, &chy, &cost);
         getchar();
         i = chx - 'A';
@@ -2558,7 +2576,7 @@ int main() {
 
     /* 拓扑排序 */
     mgraph_topological_sort(&g, topological);
-    for (i = 0; i < m; i++) {
+    for (i = 0; i < g.vertices_num; i++) {
         printf("%c ", g.vertices[topological[i]]);
     }
     return 0;
@@ -2569,6 +2587,240 @@ int main() {
 对有$n$个顶点和$e$条边的AOV网络而言，求各顶点的入度所需时间为$O(e)$，建立零入度顶点栈所需时间为$O(n)$；在拓扑排序过程中，若有向图无环，每个顶进一次栈出一次栈，顶点入度减1的操作共执行了$e$次。所以总的时间复杂度为$O(n+e)$。
 
 当有向图中无环时，也可以利用深度优先搜索进行拓扑排序。因为图中无环，深度优先遍历不会死循环。进行深度优先遍历时，最先退出DFS函数的顶点即为出度为零的顶点，是拓扑有序序列的最后一个顶点。由此，按退出DFS函数的先后次序记录下来的顶点序列即为逆向的拓扑有序序列。
+
+
+\subsection{例题：POJ 1094 Sorting It All Out}
+\subsubsection{描述}
+An ascending sorted sequence of distinct values is one in which some form of a less-than operator is used to order the elements from smallest to largest. For example, the sorted sequence $A, B, C, D$ implies that $A < B, B < C$ and $C < D$. in this problem, we will give you a set of relations of the form $A < B$ and ask you to determine whether a sorted order has been specified or not.
+
+\subsubsection{输入}
+Input consists of multiple problem instances. Each instance starts with a line containing two positive integers $n$ and $m$. the first value indicated the number of objects to sort, where $2 \leq n \leq 26$. The objects to be sorted will be the first $n$ characters of the uppercase alphabet. The second value $m$ indicates the number of relations of the form $A < B$ which will be given in this problem instance. Next will be $m$ lines, each containing one such relation consisting of three characters: an uppercase letter, the character "<" and a second uppercase letter. No letter will be outside the range of the first $n$ letters of the alphabet. Values of $n = m = 0$ indicate end of input.
+
+\subsubsection{输出}
+For each problem instance, output consists of one line. This line should be one of the following three: 
+
+Sorted sequence determined after $xxx$ relations: $yyy...y$.
+
+Sorted sequence cannot be determined. 
+
+Inconsistency found after $xxx$ relations.
+
+where $xxx$ is the number of relations processed at the time either a sorted sequence is determined or an inconsistency is found, whichever comes first, and $yyy...y$ is the sorted, ascending sequence.
+
+\subsubsection{样例输入}
+\begin{Code}
+4 6
+A<B
+A<C
+B<C
+C<D
+B<D
+A<B
+3 2
+A<B
+B<A
+26 1
+A<Z
+6 6
+A<F
+B<D
+C<E
+F<D
+D<E
+E<F
+0 0
+\end{Code}
+
+\subsubsection{样例输出}
+\begin{Code}
+Sorted sequence determined after 4 relations: ABCD.
+Inconsistency found after 2 relations.
+Sorted sequence cannot be determined.
+Inconsistency found after 6 relations.
+\end{Code}
+
+\subsubsection{分析}
+根据题目的要求，我们要每输入一次就要进行一次拓扑排序\fn{topological_sort()}，这样才能做到不成功（即发现有环）时，能知道是哪步不成功，并且给出输出。
+
+还有要注意的就是如果我们可以提前判断结果了，但后面还有输入没完成，那么我们必须继续完成输入，不然剩下的输入会影响下一次case的输入。
+
+\subsubsection{代码}
+\begin{Codex}[label=poj_1094.c]
+#include <stdio.h>
+#include <stdlib.h>  /* for malloc() */
+#include <limits.h>  /* for INT_MAX */
+
+/** 顶点数的最大值*/
+#define MAX_VERTICES_NUM 26
+/** 边的权值，对无权图，用0或1表示是否相邻；对有权图，则为权值. */
+typedef int graph_weight_t;
+#define GRAPH_INFINITY INT_MAX
+/** 顶点信息，例如顶点名字. */
+typedef char graph_vertex_t;
+
+/**
+ *@struct
+ *@brief 邻接矩阵.
+ */
+typedef struct mgraph_t {
+    int vertices_num; /* 顶点数*/
+    int edges_num; /* 边数*/
+    /* 顶点表，存放顶点的信息，如名字等*/
+    graph_vertex_t vertices[MAX_VERTICES_NUM];
+    /* 邻接矩阵，存放边的信息，如权重等*/
+    graph_weight_t matrix[MAX_VERTICES_NUM][MAX_VERTICES_NUM];
+    int directed; /* 图(网)的种类，1表示有向，0表示无向*/
+} mgraph_t;
+
+mgraph_t g;
+int topological[MAX_VERTICES_NUM];
+
+// 等价于复制粘贴，这里为了节约篇幅，使用include，在OJ上提交时请用复制粘贴
+#include "stack.c"
+
+/**
+  * @brief 拓扑排序.
+  * @param[in] g 图对象的指针
+  * @param[out] topological 保存拓扑排序的结果
+  * @return 无环返回 1，有环返回 0
+  */
+int mgraph_topological_sort(const mgraph_t *g, int topological[]) {
+    int i, j, u;
+    int count = 0; /* 拓扑序列的元素个数*/
+    int insufficient = 0;  /* 条件不足 */
+    const int n = g->vertices_num;
+    /* in_degree[i]是顶点i的入度 */
+    int *in_degree = (int*)malloc(n * sizeof(int));
+    stack_t s;
+
+    memset(in_degree, 0, n * sizeof(int));
+    for (i = 0; i < n; i++) {
+        for (j = 0; j < n; j++) {
+            if (g->matrix[i][j] < GRAPH_INFINITY)
+                in_degree[j]++;
+        }
+    }
+
+    stack_init(&s, n * sizeof(int));
+    for(i = 0; i < n; i ++) {
+        if(in_degree[i] == 0) {
+            stack_push(&s, i);
+        }
+    }
+
+    while(!stack_empty(&s)) {
+        // 栈内应该始终只有一个元素
+        if (stack_size(&s) > 1) insufficient = 1;
+        // 删除顶点u
+        u = stack_top(&s); stack_pop(&s);
+        topological[count++] = u;
+        --in_degree[u];  // 变成 -1，表示已经输出
+        // 更新入度
+        for (i = 0; i < n; i++) if (g->matrix[u][i] < GRAPH_INFINITY) {
+            --in_degree[i];
+        }
+        // 选择入度为0的顶点
+        for (i = 0; i < n; i++) if (g->matrix[u][i] < GRAPH_INFINITY) {
+            if (in_degree[i] == 0) stack_push(&s, i);
+        }
+    }
+
+    free(in_degree);
+    if(count < n) { /* 有环*/
+        return 0;
+    } else { /* 无环*/
+        if (insufficient) {  /* 有孤立点，说明条件不足 */
+            return -1;
+        } else {
+            return 1;
+        }
+    }
+}
+
+
+/* test
+
+输入数据:
+
+6 8
+A C 10
+A E 30
+A F 100
+B C 5
+C D 50
+D 5 10
+E D 20
+E F 60
+
+输出:
+
+B A E F C D
+*/
+int main() {
+    int i, j, k, m;  // m不一定是边的数目，因为输入边可能有重复
+
+    /* 读取节点和边的数目 */
+    while (scanf("%d %d", &(g.vertices_num), &m)
+            && g.vertices_num > 0 && m > 0) {
+        char s[4];
+        int ok;  // 是否有环，0 表示有环
+        int finished = 0;  // 排序完成，结束，发现有环，可以提前结束
+
+        g.directed = 1;
+        for (i = 0; i < g.vertices_num; i++) g.vertices[i] = 'A' + i;
+
+        /* 初始化图，所有节点间距离为无穷大 */
+        for (i = 0; i < g.vertices_num; i++) {
+            for (j = 0; j < g.vertices_num; j++) {
+                g.matrix[i][j] = GRAPH_INFINITY;
+            }
+        }
+
+        /* 读取边信息 */
+        for (k = 0; k < m; k++) {
+            scanf("%s", s);
+            i = s[0] - 'A';
+            j = s[2] - 'A';
+            g.matrix[i][j] = 1;
+
+            if (finished) continue;    // 完成，则 continue，消耗输入
+
+            /* 拓扑排序 */
+            ok = mgraph_topological_sort(&g, topological);
+
+            if (ok == 0) {  // 有环存在
+                printf("Inconsistency found after %d relations.\n", k + 1);
+                finished = 1;  // 提前结束，记住要继续消耗输入
+            }
+            if (ok == 1 && k) {
+                printf("Sorted sequence determined after %d relations: ", k+1);
+                for (i = 0; i < g.vertices_num; i++) {
+                    printf("%c", g.vertices[topological[i]]);
+                }
+                printf(".\n");
+                finished = 1;
+            }
+            // ok==-1, continue
+        }
+        if (finished == 0) {
+            printf("Sorted sequence cannot be determined.\n");
+        }
+    }
+    return 0;
+}
+\end{Codex}
+
+\subsubsection{相关的题目}
+与本题相同的题目：
+\begindot
+\item POJ 1094 Sorting It All Out, \myurl{http://poj.org/problem?id=1094}
+\myenddot
+
+与本题相似的题目：
+\begindot
+\item POJ 3267 The Cow Lexicon, \myurl{http://poj.org/problem?id=3267}
+\item POJ 3687 Labeling Balls, \myurl{http://poj.org/problem?id=3687}
+\myenddot
 
 	
 \section{关键路径} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -2608,16 +2860,16 @@ $$
 \label{tab:criticalpath}
 \begin{tabular}{|ccccc|cccc|}
 \hline
-\textbf{顶点} & & \textbf{ve} & & \textbf{vl} & \textbf{活动} & \textbf{e} & \textbf{l} & \textbf{l-e} \\
+\textbf{顶点} & \textbf{ve} & & \textbf{vl} & & \textbf{活动} & \textbf{e} & \textbf{l} & \textbf{l-e} \\
 \hline
-$v_1$ & \multirow{8}{*}{$\downarrow$} & 0 & \multirow{8}{*}{$\uparrow$} & 0 & $a_1$ & 0 & 1 & 1 \\
-$v_2$ &                               & 3 &                             & 4 & $a_2$ & 0 & 0 & 0 \\
-$v_3$ &                               & 2 &                             & 2 & $a_3$ & 3 & 4 & 1 \\
-$v_4$ &                               & 6 &                             & 6 & $a_4$ & 3 & 4 & 1 \\
-$v_5$ &                               & 6 &                             & 7 & $a_5$ & 2 & 2 & 0 \\
-$v_6$ &                               & 8 &                             & 8 & $a_6$ & 2 & 5 & 3 \\
-      &                               &   &                             &   & $a_7$ & 6 & 6 & 0 \\
-      &                               &   &                             &   & $a_8$ & 6 & 7 & 1 \\
+$v_1$ & 0 & \multirow{8}{*}{$\downarrow$} & 0 & \multirow{8}{*}{$\uparrow$} & $a_1$ & 0 & 1 & 1 \\
+$v_2$ & 3 &                               & 4 &                             & $a_2$ & 0 & 0 & 0 \\
+$v_3$ & 2 &                               & 2 &                             & $a_3$ & 3 & 4 & 1 \\
+$v_4$ & 6 &                               & 6 &                             & $a_4$ & 3 & 4 & 1 \\
+$v_5$ & 6 &                               & 7 &                             & $a_5$ & 2 & 2 & 0 \\
+$v_6$ & 8 &                               & 8 &                             & $a_6$ & 2 & 5 & 3 \\
+      &   &                               &   &                             & $a_7$ & 6 & 6 & 0 \\
+      &   &                               &   &                             & $a_8$ & 6 & 7 & 1 \\
 \hline
 \end{tabular}
 \end{center}
@@ -2855,8 +3107,8 @@ void next(int s) {
     }
 }
 
-
-#include "heap.c" // 等价于复制粘贴
+/* 等价于复制粘贴，这里为了节约篇幅，使用include，在OJ上提交时请用复制粘贴 */
+#include "heap.c"
 heap_t heap;
 int heapIndex[MAX + 4]; // 状态 x 在heap中的下标
 
@@ -2910,7 +3162,8 @@ int astar(const int start) {
     return 0;
 }
 
-#include "stack.c" // 等价于复制粘贴
+/* 等价于复制粘贴，这里为了节约篇幅，使用include，在OJ上提交时请用复制粘贴 */
+#include "stack.c"
 /**
  * @brief 打印移动序列.
  * @return 无
