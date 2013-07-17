@@ -2450,7 +2450,7 @@ int main() {
 
 \subsubsection{代码}
 
-\begin{Codex}[label=mgraph_topological_sort.c]
+\begin{Codex}[label=mgraph_topo_sort.c]
 #include <stdio.h>
 #include <stdlib.h>  /* for malloc() */
 #include <limits.h>  /* for INT_MAX */
@@ -2478,6 +2478,7 @@ typedef struct mgraph_t {
 } mgraph_t;
 
 mgraph_t g;
+/** 拓扑排序的结果. */
 int topological[MAX_VERTICES_NUM];
 
 // 等价于复制粘贴，这里为了节约篇幅，使用include，在OJ上提交时请用复制粘贴
@@ -2489,7 +2490,7 @@ int topological[MAX_VERTICES_NUM];
   * @param[out] topological 保存拓扑排序的结果
   * @return 无环返回 1，有环返回 0
   */
-int mgraph_topological_sort(const mgraph_t *g, int topological[]) {
+int mgraph_topo_sort(const mgraph_t *g, int topological[]) {
     int i, j, u;
     int count = 0; /* 拓扑序列的元素个数*/
     const int n = g->vertices_num;
@@ -2515,8 +2516,7 @@ int mgraph_topological_sort(const mgraph_t *g, int topological[]) {
         u = stack_top(&s); stack_pop(&s);
         topological[count++] = u;
         for (i = 0; i < n; i++) if (g->matrix[u][i] < GRAPH_INFINITY) {
-                if(--in_degree[i] == 0)
-                    stack_push(&s, i);
+            if(--in_degree[i] == 0) stack_push(&s, i);
         }
     }
 
@@ -2575,7 +2575,7 @@ int main() {
     }
 
     /* 拓扑排序 */
-    mgraph_topological_sort(&g, topological);
+    mgraph_topo_sort(&g, topological);
     for (i = 0; i < g.vertices_num; i++) {
         printf("%c ", g.vertices[topological[i]]);
     }
@@ -2673,6 +2673,7 @@ typedef struct mgraph_t {
 } mgraph_t;
 
 mgraph_t g;
+/** 拓扑排序的结果. */
 int topological[MAX_VERTICES_NUM];
 
 // 等价于复制粘贴，这里为了节约篇幅，使用include，在OJ上提交时请用复制粘贴
@@ -2738,24 +2739,6 @@ int mgraph_topological_sort(const mgraph_t *g, int topological[]) {
 }
 
 
-/* test
-
-输入数据:
-
-6 8
-A C 10
-A E 30
-A F 100
-B C 5
-C D 50
-D 5 10
-E D 20
-E F 60
-
-输出:
-
-B A E F C D
-*/
 int main() {
     int i, j, k, m;  // m不一定是边的数目，因为输入边可能有重复
 
@@ -2851,7 +2834,7 @@ $$
 例如，对图\ref{fig:criticalpath}(a)所示AOE网络的计算过程如表\ref{tab:criticalpath}所示，可见$a_2$、$a_5$和$a_7$为关键活动，组成一条从起点到终点的关键路径，如图\ref{fig:criticalpath}(b)所示。
 
 \begin{center}
-\includegraphics[width=180pt]{criticalpath.png}\\
+\includegraphics[width=240pt]{criticalpath.png}\\
 \figcaption{有向图及其邻接矩阵}\label{fig:criticalpath}
 \end{center}
 
@@ -2873,6 +2856,218 @@ $v_6$ & 8 &                               & 8 &                             & $a
 \hline
 \end{tabular}
 \end{center}
+
+
+邻接矩阵上的关键路径的C语言实现如下。
+
+\subsubsection{代码}
+
+\begin{Codex}[label=mgraph_critical_path.c]
+#include <stdio.h>
+#include <stdlib.h>  /* for malloc() */
+#include <limits.h>  /* for INT_MAX */
+
+/** 顶点数的最大值*/
+#define MAX_VERTICES_NUM 100
+/** 边的权值，对无权图，用0或1表示是否相邻；对有权图，则为权值. */
+typedef int graph_weight_t;
+#define GRAPH_INFINITY INT_MAX
+/** 顶点信息，例如顶点名字. */
+typedef char graph_vertex_t;
+
+/**
+ *@struct
+ *@brief 邻接矩阵.
+ */
+typedef struct mgraph_t {
+    int vertices_num; /* 顶点数*/
+    int edges_num; /* 边数*/
+    /* 顶点表，存放顶点的信息，如名字等*/
+    graph_vertex_t vertices[MAX_VERTICES_NUM];
+    /* 邻接矩阵，存放边的信息，如权重等*/
+    graph_weight_t matrix[MAX_VERTICES_NUM][MAX_VERTICES_NUM];
+    int directed; /* 图(网)的种类，1表示有向，0表示无向*/
+} mgraph_t;
+
+mgraph_t g;
+/** 拓扑排序的结果. */
+int topological[MAX_VERTICES_NUM];
+/** 关键路径，其余顶点为-1. */
+int path[MAX_VERTICES_NUM];
+
+
+/* 等价于复制粘贴，这里为了节约篇幅，使用include，在OJ上提交时请用复制粘贴 */
+#include "stack.c"
+
+
+/*
+  * @brief 按照拓扑排序的顺序，计算所有顶点的最早发生时间 ve.
+  * @param[in] g 图对象的指针
+  * @param[out] topological 保存拓扑排序的结果
+  * @param[out] ve 所有事件的最早发生时间
+  * @return 无环返回 1，有环返回 0
+  */
+static int mgraph_toposort_ve(const mgraph_t *g, int topological[],
+        graph_weight_t ve[]) {
+    int i, j, u;
+    int count = 0; /* 拓扑序列的元素个数*/
+    const int n = g->vertices_num;
+    /* in_degree[i]是顶点i的入度 */
+    int *in_degree = (int*)malloc(n * sizeof(int));
+    stack_t s;
+
+    memset(in_degree, 0, n * sizeof(int));
+    for (i = 0; i < n; i++) {
+        for (j = 0; j < n; j++) {
+            if (g->matrix[i][j] < GRAPH_INFINITY)
+                in_degree[j]++;
+        }
+    }
+
+    stack_init(&s, n * sizeof(int));
+    for(i = 0; i < n; i ++) {
+        if(in_degree[i] == 0) {
+            stack_push(&s, i);
+        }
+    }
+
+    memset(ve, 0, n * sizeof(graph_weight_t));
+
+    while(!stack_empty(&s)) {
+        // 删除顶点u
+        u = stack_top(&s); stack_pop(&s);
+        topological[count++] = u;
+        --in_degree[u];  // 变成 -1，表示已经输出
+        // 更新入度
+        for (i = 0; i < n; i++) if (g->matrix[u][i] < GRAPH_INFINITY) {
+            --in_degree[i];
+        }
+        // 更新邻接点的 ve
+        for (i = 0; i < n; i++) if (g->matrix[u][i] < GRAPH_INFINITY) {
+            if (ve[i] < ve[u] + g->matrix[u][i])
+                ve[i] = ve[u] + g->matrix[u][i];
+        }
+        // 选择入度为0的顶点
+        for (i = 0; i < n; i++) if (g->matrix[u][i] < GRAPH_INFINITY) {
+            if (in_degree[i] == 0) stack_push(&s, i);
+        }
+    }
+
+    free(in_degree);
+    if(count < n) { /* 有环*/
+        return 0;
+    } else { /* 无环*/
+        return 1;
+    }
+}
+
+/**
+  * @brief 求关键路径，第一个顶点为起点，最后一个顶点为终点.
+  * @param[in] g 图对象的指针
+  * @param[out] ve 所有事件的最早发生时间
+  * @param[inout] path 关键路径
+  * @return 无环返回关键路径的顶点个数，有环返回 0
+  */
+int mgraph_critical_path(const mgraph_t *g, int path[MAX_VERTICES_NUM]) {
+    int i, j;
+    int count = 0;    // 关键路径的顶点个数
+    graph_weight_t *ve = (graph_weight_t*) malloc(
+            g->vertices_num * sizeof(graph_weight_t));
+    graph_weight_t *vl = (graph_weight_t*) malloc(
+            g->vertices_num * sizeof(graph_weight_t));
+
+    if (!mgraph_toposort_ve(g, topological, ve)) return 0;  // 有环
+
+    for (i = 0; i < MAX_VERTICES_NUM; i++) path[i] = -1;
+    // 初始化 vl 为最大
+    for (i = 0; i < g->vertices_num; i++) vl[i] = ve[g->vertices_num-1];
+
+    // 逆序计算vl
+    for (i = g->vertices_num-1; i >=0; i--) {
+        int k = topological[i];
+        for (j = 0; j < g->vertices_num; j++) {
+            if (g->matrix[j][k] < GRAPH_INFINITY) {
+                if (vl[j] > vl[k] - g->matrix[j][k])
+                    vl[j] = vl[k] - g->matrix[j][k];
+            }
+        }
+    }
+    for (i = 0; i < g->vertices_num; i++) {
+        for (j = 0; j < g->vertices_num; j++) {
+            int e = ve[i];
+            int l = vl[j] - g->matrix[i][j];
+            if (e == l) {
+                if (i == 0) {
+                    path[count++] = i;
+                    path[count++] = j;
+                } else {
+                    path[count++] = j;
+                }
+            }
+        }
+    }
+
+    free(ve);
+    free(vl);
+    return count;
+}
+
+
+/* test
+
+输入数据:
+6 8
+A B 3
+A C 2
+C D 4
+B D 2
+C F 3
+B E 3
+E F 1
+D F 2
+
+输出: A C D F
+
+*/
+int main() {
+    int i, j, k;
+    char chx, chy;
+    graph_weight_t cost;
+    int count;
+
+    /* 读取节点和边的数目 */
+    scanf("%d%d", &(g.vertices_num), &(g.edges_num));
+    g.directed = 1;
+    for (i = 0; i < g.vertices_num; i++) g.vertices[i] = 'A' + i;
+
+    /* 初始化图，所有节点间距离为无穷大 */
+    for (i = 0; i < g.vertices_num; i++) {
+        for (j = 0; j < g.vertices_num; j++) {
+            g.matrix[i][j] = GRAPH_INFINITY;
+        }
+    }
+
+    /* 读取边信息 */
+    getchar(); // 消耗回车键
+    for (k = 0; k < g.edges_num; k++) {
+        scanf("%c %c %d", &chx, &chy, &cost);
+        getchar();
+        i = chx - 'A';
+        j = chy - 'A';
+        g.matrix[i][j] = cost;
+    }
+
+    /* 拓扑排序 */
+    count = mgraph_critical_path(&g, path);
+    for (i = 0; i < count; i++) {
+        printf("%c ", g.vertices[path[i]]);
+    }
+    return 0;
+}
+\end{Codex}
+
+\subsubsection{算法分析}
+一次正向，复杂度为$O(n^2)$，一次逆向，复杂度为$O(n^2)$，因此，该算法的复杂度为$O(n^2)$。
 
 
 \section{A*算法} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
