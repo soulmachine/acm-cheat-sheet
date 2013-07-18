@@ -39,12 +39,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define QUEENS 8 // 皇后的个数，也是棋盘的长和宽
+#define N 8 // 皇后的个数，也是棋盘的长和宽
 
-int total = 0;	// 可行解的总数
-int C[QUEENS];	// C[i]表示第i行皇后所在的列编号
+int total = 0;  // 可行解的总数
+int C[N];  // C[i]表示第i行皇后所在的列编号
 
-/** 
+/**
  * @brief 输出所有可行的棋局，按列打印.
  *
  * http://poj.grids.cn/practice/2698/ , 这题需要按列打印
@@ -54,8 +54,8 @@ int C[QUEENS];	// C[i]表示第i行皇后所在的列编号
 void output() {
     int i, j;
     printf("No. %d\n", total);
-    for (j = 0; j < QUEENS; ++j) {
-        for (i = 0; i < QUEENS; ++i) {
+    for (j = 0; j < N; ++j) {
+        for (i = 0; i < N; ++i) {
             if (C[i] != j) {
                 printf("0 ");
             } else {
@@ -66,15 +66,15 @@ void output() {
     }
 }
 
-/** 
+/**
  * @brief 输出所有可行的棋局，按行打印.
  * @return 无
  */
 void output1() {
     int i, j;
     printf("No. %d\n", total);
-    for (i = 0; i < QUEENS; ++i) {
-        for (j = 0; j < QUEENS; ++j) {
+    for (i = 0; i < N; ++i) {
+        for (j = 0; j < N; ++j) {
             if (j != C[i]) {
                 printf("0 ");
             } else {
@@ -85,7 +85,7 @@ void output1() {
     }
 }
 
-/** 
+/**
  * @brief 检查当前位置(row, column)能否放置皇后.
  *
  * @param[in] row 当前行
@@ -97,7 +97,7 @@ int check(const int row, const int column) {
     for(i = 0; i < row; ++i) {
         // 两个点的坐标为(row, column), (i, C[i])
         // 检查是否在同一列，或对角线上
-        if(column == C[i] || row - i == column - C[i] || 
+        if(column == C[i] || row - i == column - C[i] ||
             row - i == C[i] - column) {
             ok = 0;
             break;
@@ -106,19 +106,19 @@ int check(const int row, const int column) {
     return ok;
 }
 
-/** 
+/**
  * @brief 八皇后，回溯法
  *
  * @param[in] row 搜索当前行，该在哪一列上放一个皇后
- * @return 无
+ * @return 可行解的个数
  */
-void search(const int row) {
-    if(row == QUEENS) {  // 递归边界，只要走到了这里，意味着找到了一个可行解
+int search(const int row) {
+    if(row == N) {  // 递归边界，只要走到了这里，意味着找到了一个可行解
         ++total;
         output();
     } else {
         int j;
-        for(j = 0; j < QUEENS; ++j) {  // 一列一列的试
+        for(j = 0; j < N; ++j) {  // 一列一列的试
             const int ok = check(row, j);
             if(ok) {  // 如果合法，继续递归
                 C[row] = j;
@@ -126,52 +126,54 @@ void search(const int row) {
             }
         }
     }
+    return total;
 }
 
 // 表示已经放置的皇后
 // 占据了哪些列
-int columns[QUEENS];
+int columns[N];
 // 占据了哪些主对角线
-int principal_diagonals[2 * QUEENS];
+int principal_diagonals[2 * N];
 // 占据了哪些副对角线
-int counter_diagonals[2 * QUEENS];
+int counter_diagonals[2 * N];
 
-/** 
+/**
  * @brief 检查当前位置(row, column)能否放置皇后.
  *
  * @param[in] row, 当前行
  * @return 能则返回1，不能则返回0
  */
 int check2(const int row, const int column) {
-    return columns[column] == 0 && principal_diagonals[row + column] == 0 
-        && counter_diagonals[row - column + QUEENS] == 0;
+    return columns[column] == 0 && principal_diagonals[row + column] == 0
+        && counter_diagonals[row - column + N] == 0;
 }
 
-/** 
+/**
  * @brief 八皇后，回溯法，更优化的版本，用空间换时间
  *
  * @param[in] row 搜索当前行，该在哪一列上放一个皇后
- * @return 无
+ * @return 可行解的个数
  */
-void search2(const int row) {
-    if(row == QUEENS) {  // 递归边界，只要走到了这里，意味着找到了一个可行解
+int search2(const int row) {
+    if(row == N) {  // 递归边界，只要走到了这里，意味着找到了一个可行解
         ++total;
         output();
     } else {
         int j;
-        for(j = 0; j < QUEENS; ++j) {  // 一列一列的试
+        for(j = 0; j < N; ++j) {  // 一列一列的试
             const int ok = check2(row, j);
             if(ok) {  // 如果合法，继续递归
                 C[row] = j;
-                columns[j] = principal_diagonals[row + j] = 
-                    counter_diagonals[row - j + QUEENS] = 1;
+                columns[j] = principal_diagonals[row + j] =
+                    counter_diagonals[row - j + N] = 1;
                 search2(row + 1);
                 // 恢复环境
-                columns[j] = principal_diagonals[row + j] = 
-                    counter_diagonals[row - j + QUEENS] = 0;
+                columns[j] = principal_diagonals[row + j] =
+                    counter_diagonals[row - j + N] = 0;
             }
         }
     }
+    return total;
 }
 
 int main() {
@@ -185,7 +187,8 @@ int main() {
 与本题相同的题目：
 \begindot
 \item 《算法竞赛入门经典》\footnote{刘汝佳,算法竞赛入门经典，清华大学出版社，2009} 第123页7.4.1节
-\item  百练 2698 八皇后问题, \myurl{http://poj.grids.cn/practice/2698/}
+\item 百练 2698 八皇后问题, \myurl{http://poj.grids.cn/practice/2698/}
+\item wikioi 1295 N皇后问题, \myurl{http://www.wikioi.com/problem/1295/}
 \myenddot
 
 与本题相似的题目：

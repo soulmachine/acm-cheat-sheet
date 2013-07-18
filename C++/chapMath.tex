@@ -1,0 +1,230 @@
+\chapter{数学方法与常见模型}
+数学对于算法很重要。没有好的数学基础，很难在算法上达到一定高度。本章介绍算法竞赛中常用的数学方法和模型。
+
+\section{数论} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{欧几里德算法}
+
+求最大公约数(greates common divisor)有很多方法，最经典的方法是欧几里德算法(Euclidean algorithm\footnote{\myurl{http://en.wikipedia.org/wiki/Euclid_algorithm}})，又称辗转相除法。
+
+\begin{Codex}[label=gcd.c]
+/**
+ * @brief 求最大公约数，欧几里德算法，也即辗转相除法
+ *
+ * @param[in] a a, a > b > 0
+ * @param[in] b b
+ * @return a和b的最大公约数
+ */
+int gcd(int a, int b) {
+    if (b == 0) return a;
+    return gcd(b, a % b);
+}
+
+/**
+ * @brief 求最大公约数，欧几里德算法，迭代版本
+ *
+ * @param[in] a a, a > b > 0
+ * @param[in] b b
+ * @return a和b的最大公约数
+ */
+int gcd1(int a, int b) {
+    while (b != 0) {
+        int tmp = b;
+        b = a % b;
+        a = tmp;
+    }
+    return a;
+}
+
+/**
+ * @brief 求最大公约数，欧几里德算法，迭代版本，基于减法
+ *
+ * @param[in] a a, a > b > 0
+ * @param[in] b b
+ * @return a和b的最大公约数
+ */
+int gcd2(int a, int b) {
+    while (a != b) {
+        if (a > b) {
+            a -= b;
+        } else {
+            b -= a;
+        }
+    }
+    return a;
+}
+\end{Codex}
+
+求出了最大公约数，可以利用它来求最小公倍数(least common multiple), $\text{lcm}(a,b)=a \times b / \text{gcd}(a,b)$。
+
+\subsubsection{例题}
+\begindot
+\item wikioi 1212 最大公约数 ，\myurl{http://www.wikioi.com/problem/1212/}
+\myenddot
+
+
+\subsection{扩展欧几里德算法}
+定理：对于不完全为$0$的非负整数$a,b$，必然存在整数对 $x,y$ ，使得 $gcd(a,b)=ax+by$。
+
+这里$x$和$y$不一定是正数。扩展欧几里德算法(Extended Euclidean algorithm\footnote{\myurl{http://en.wikipedia.org/wiki/Extended_Euclidean_algorithm}})就是用来求$x$和$y$的。
+
+\begin{Codex}[label=ex_gcd.c]
+/**
+ * @brief 扩展欧几里德算法
+ * @param[in] a a, a > b > 0
+ * @param[in] b b
+ * @param[out] d d=gcd(a,b)
+ * @param[out] x
+ * @param[out] y
+ * @return 无
+ */
+void ex_gcd(int a, int b, int *d, int *x, int *y) {
+    if(b == 0) {
+        *d = a; *x = 1; *y = 0;
+    } else {
+        ex_gcd(b, a % b, d, y, x); *y -= (*x)*(a/b);
+    }
+}
+\end{Codex}
+
+扩展欧几里德算法的应用主要有以下三个：
+\begindot
+\item 求解不定方程；
+\item 求解模线性方程（线性同余方程）；
+\item 求解模的逆元；
+\myenddot
+
+\subsection{素数判定}
+素数判定，又称素数测试(Primality test\footnote{\myurl{http://en.wikipedia.org/wiki/Primality_test}})，即给定一个正整数$n$，判断它是否是素数。
+
+\subsubsection{暴力枚举法}
+从2到$n$，依次作为除数，让$n$除以它们，只要有一个能整除$n$，则$n$不是素数。
+
+\begin{Code}
+/**
+ * @brief 判断正整数n是否是素数
+ * @param[in] n 正整数
+ * @return 是，返回1，否，返回0
+ */
+int is_prime(int n) {
+    int i;
+    if (n < 2) return 0;
+    for (i = 2; i < n; i++) {
+        if (n % i == 0) return 0;
+    }
+    return 1;
+}
+\end{Code}
+
+可以稍微做一点改进，从1到$\sqrt n$，依次作为除数。
+
+\begin{Code}
+/**
+ * @brief 判断正整数n是否是素数，上界改为sqrt(n)
+ * @param[in] n 正整数
+ * @return 是，返回1，否，返回0
+ */
+int is_prime(int n) {
+    int i;
+    if (n < 2) return 0;
+    const int upper = sqrt(n);
+
+    for (i = 2; i <= upper; i++) {
+        if (n % i == 0) return 0;
+    }
+    return 1;
+}
+
+/**
+ * @brief 判断正整数n是否是素数，上界改为sqrt(n)，但不使用sqrt()函数
+ * @param[in] n 正整数
+ * @return 是，返回1，否，返回0
+ */
+int is_prime1(int n) {
+    int i;
+    if (n < 2) return 0;
+    for (i = 2; i*i <= n; i++) {
+        if (n % i == 0) return 0;
+    }
+    return 1;
+}
+\end{Code}
+
+\subsubsection{Eratosthenes筛法}
+更高效的素数判定方法应该是预先计算出一张素数表，当判断一个数是否是素数时，直接查表即可。
+
+怎样计算？用Eratosthenes筛法(Sieve of Eratosthenes\footnote{\myurl{http://en.wikipedia.org/wiki/Sieve_of_Eratosthenes}})
+
+给出要筛数值的范围$n$，找出$\sqrt{n}$以内的素数$p_{1},p_{2},\dots,p_{k}$。先用2去筛，即把2留下，把2的倍数剔除掉；再用下一个质数，也就是3筛，把3留下，把3的倍数剔除掉；接下去用下一个质数5筛，把5留下，把5的倍数剔除掉；不断重复下去......。
+
+\begin{Code}
+/******** Eratosthenes筛法 ********/
+#define MAXN 30000
+/** prime_table[i]==1表示i是素数，等于0则不是素数 */
+int prime_table[MAXN+1];
+
+void compute_prime_table() {
+    int i, j;
+    const int upper = sqrt(MAXN);
+
+    for (i = 2; i <= MAXN; i++) prime_table[i] = 1;
+    prime_table[0] = 0;
+    prime_table[1] = 0;
+
+    for (i = 2; i < upper; i++) if(prime_table[i]) {
+        for (j = 2; j * i <= MAXN; j++) prime_table[j*i] = 0;
+    }
+}
+
+int is_prime(int n) {
+    return prime_table[n];
+}
+\end{Code}
+
+\subsubsection{暴力枚举法优化版}
+来源未知。
+
+\begin{Code}
+int is_prime(unsigned long int n) {
+    unsigned long int q, r, d;
+
+    if (n < 32)
+        return (0xa08a28acUL >> n) & 1;
+    if ((n & 1) == 0)
+        return 0;
+
+    if (n % 3 == 0)
+        return 0;
+    if (n % 5 == 0)
+        return 0;
+    if (n % 7 == 0)
+        return 0;
+
+    for (d = 11;;) {
+        q = n / d;
+        r = n - q * d;
+        if (q < d)
+            return 1;
+        if (r == 0)
+            break;
+        d += 2;
+        q = n / d;
+        r = n - q * d;
+        if (q < d)
+            return 1;
+        if (r == 0)
+            break;
+        d += 4;
+    }
+    return 0;
+}
+\end{Code}
+
+
+\subsubsection{例题}
+\begindot
+\item wikioi 1430 素数判定，\myurl{http://www.wikioi.com/problem/1430/}
+\myenddot
+
+\section{组合数学} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
