@@ -61,7 +61,7 @@ void bigint_print(const int x[], const int n) {
 /**
  * @brief 将输入的字符串转化为大整数.
  * @param[in] s 输入的字符串
- * @param[out] x 大整数
+ * @param[out] x 大整数，用数组表示，低位在低地址
  * @return 无
  */
 void bigint_input(const char s[], int x[]) {
@@ -197,7 +197,7 @@ void bigint_print(const int x[], const int n) {
 /**
  * @brief 将输入的字符串转化为大整数.
  * @param[in] s 输入的字符串
- * @param[out] x 大整数
+ * @param[out] x 大整数，用数组表示，低位在低地址
  * @return 无
  */
 void bigint_input(const char s[], int x[]) {
@@ -362,7 +362,7 @@ void bigint_print(const int x[], const int n) {
 /**
  * @brief 将输入的字符串转化为大整数.
  * @param[in] s 输入的字符串
- * @param[out] x 大整数
+ * @param[out] x 大整数，用数组表示，低位在低地址
  * @return 无
  */
 void bigint_input(const char s[], int x[]) {
@@ -508,7 +508,7 @@ void bigint_print(const int x[], const int n) {
 /**
  * @brief 将输入的字符串转化为大整数.
  * @param[in] s 输入的字符串
- * @param[out] x 大整数
+ * @param[out] x 大整数，用数组表示，低位在低地址
  * @return 无
  */
 void bigint_input(const char s[], int x[]) {
@@ -659,6 +659,200 @@ int main() {
 \begindot
 \item 《程序设计导引及在线实践》\footnote{李文新,程序设计导引及在线实践, 清华大学出版社, 2007}第149页7.3节
 \item 百练 2737 大整数除法, \myurl{http://poj.grids.cn/practice/2737/}
+\myenddot
+
+与本题相似的题目：
+\begindot
+\item  TODO
+\myenddot
+
+
+\section{大数阶乘} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{大数阶乘的位数} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{描述}
+求$n!$的位数， $0 \leq n \leq 10^7$。
+
+\subsubsection{输入}
+第一行是一个正整数$T$，表示测试用例的个数。接下来的$T$行，每行一个正整数$n$。
+
+\subsubsection{输出}
+对每个$n$，每行输出$n!$的位数
+
+\subsubsection{样例输入}
+\begin{Code}
+2
+10
+20
+\end{Code}
+
+\subsubsection{样例输出}
+\begin{Code}
+7
+19
+\end{Code}
+
+\subsubsection{分析}
+最简单的办法，是老老实实计算出$n!$，然后就知道它的位数了。但这个方法很慢，会超时(TLE)。
+
+组合数学里有个Stirling公式(Stirling's formula\footnote{\myurl{http://en.wikipedia.org/wiki/Stirling's_approximation}})：
+$$
+\lim_{n \to \infty}{\dfrac{n!}{\sqrt{2\pi n}\left(\frac{n}{e} \right)^n}}=1
+$$
+
+可以用这个公式来计算$n!$的位数，它等于
+$$
+n\log{\dfrac{n}{e}}+\dfrac{1}{2}\log{2\pi n}+1
+$$
+
+\subsubsection{代码}
+\begin{Codex}[label=bigint_factorial_digits.c]
+#include <stdio.h>
+#include <math.h>
+
+/**
+ * @brief 计算n的阶乘的位数，用Stirling公式
+ * @param[in] n n>=0
+ * @return n的阶乘的位数
+ */
+int factorial_digits(unsigned int n) {
+    const double PI = 3.14159265358979323846;
+    const double E = 2.7182818284590452354;
+    if (n == 0) return 1;
+    return (int)(n * log10(n/E) + 0.5 * log10(2*PI*n)) + 1;
+}
+
+int main() {
+    int i, T, n;
+
+    scanf("%d", &T);
+    for (i = 0; i < T; i++) {
+        scanf("%d", &n);
+        printf("%d\n", factorial_digits(n));
+    }
+    return 0;
+}
+\end{Codex}
+
+\subsubsection{相关的题目}
+与本题相同的题目：
+\begindot
+\item POJ 1423 Big Number, \myurl{http://poj.org/problem?id=1423}
+\myenddot
+
+与本题相似的题目：
+\begindot
+\item  TODO
+\myenddot
+
+
+\subsection{大数阶乘} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{描述}
+计算$n!, 0 \leq n \leq 10000)$。
+
+\subsubsection{输入}
+每行一个整数$n$
+
+\subsubsection{输出}
+对每个$n$，每行输出$n!$
+
+\subsubsection{样例输入}
+\begin{Code}
+1
+2
+3
+\end{Code}
+
+\subsubsection{样例输出}
+\begin{Code}
+1
+2
+6
+\end{Code}
+
+\subsubsection{代码}
+\begin{Codex}[label=bigint_factorial.c]
+#include<stdio.h>
+#include<string.h>
+
+/* 一个数组元素表示4个十进制位，即数组是万进制的 */
+#define BIGINT_MOD 10000
+#define MOD_LEN 4
+/* 10000! 有 35660 位 */
+#define MAX_LEN (35660/MOD_LEN+1)  /* 整数的最大位数 */
+
+int     x[MAX_LEN + 1];
+
+/**
+ * @brief 打印大整数.
+ * @param[in] x 大整数，用数组表示，低位在低地址
+ * @param[in] n 数组x的长度
+ * @return 无
+ */
+void bigint_print(const int x[], const int n) {
+    int i;
+    int start_output = 0;  /* 用于跳过前导0 */
+    for (i = n - 1; i >= 0; --i) {
+        if (start_output) {  /* 如果多余的0已经都跳过，则输出 */
+            printf("%04d", x[i]);
+        } else if (x[i] > 0) {
+            printf("%d", x[i]);
+            start_output = 1; /* 碰到第一个非0的值，就说明多余的0已经都跳过 */
+        }
+    }
+
+    if(!start_output) printf("0");  /* 当x全为0时 */
+}
+
+/**
+ * @brief 大整数乘法, x = x*y.
+ * @param[inout] x x
+ * @param[in] y y
+ * @return 无
+ */
+void bigint_mul(int x[], const int y) {
+    int i;
+    int c = 0; /* 保存进位 */
+
+    for (i = 0; i < MAX_LEN; i++) { /*用y，去乘以x的各位*/
+        const int tmp = x[i] * y + c;
+        x[i] = tmp % BIGINT_MOD;
+        c = tmp / BIGINT_MOD;
+    }
+}
+
+/**
+ * @brief 计算n的阶乘
+ * @param[in] n
+ * @param[out] x 存放结果
+ * @return 无
+ */
+void bigint_factorial(int n, int x[]) {
+    int i;
+    memset(x, 0, sizeof(int) * (MAX_LEN + 1));
+    x[0] = 1;
+
+    for (i = 2; i <= n; i++) {
+        bigint_mul(x, i);
+    }
+}
+
+
+int main() {
+    int n;
+    while (scanf("%d", &n) != EOF) {
+        bigint_factorial(n, x);
+        bigint_print(x, MAX_LEN + 1);
+        printf("\n");
+    }
+    return 0;
+}
+\end{Codex}
+
+\subsubsection{相关的题目}
+与本题相同的题目：
+\begindot
+\item HDU 1042 N!, \myurl{http://acm.hdu.edu.cn/showproblem.php?pid=1042}
 \myenddot
 
 与本题相似的题目：
