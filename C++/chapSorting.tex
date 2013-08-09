@@ -318,8 +318,11 @@ void heap_sort(heap_elem_t *a, const int n,
 \end{center}
 
 二路归并排序的C语言实现如下。
-\begin{Codex}[label=heap_sort.c]
+\begin{Codex}[label=merge_sort.c]
 /** 数组元素的类型 */
+typedef int elem_t;
+
+ /** 数组元素的类型 */
 typedef int elem_t;
 
  /*
@@ -331,7 +334,8 @@ typedef int elem_t;
   * @param[in] end a[mid]~a[end-1]为第二个有序表
   * @return 无
   */
-static void merge(elem_t a[], elem_t tmp[], const int start, const int mid, const int end) {
+static void merge(elem_t a[], elem_t tmp[], const int start, 
+        const int mid, const int end) {
     int i, j, k;
     for (i = 0; i < end; i++) tmp[i] = a[i];
 
@@ -349,7 +353,7 @@ static void merge(elem_t a[], elem_t tmp[], const int start, const int mid, cons
     while (j < end) a[k++] = tmp[j++];
 }
 
- /*
+/**
   * @brief 归并排序.
   * @param[inout] a 待排序元素序列
   * @param[in] tmp 与a等长的辅助数组

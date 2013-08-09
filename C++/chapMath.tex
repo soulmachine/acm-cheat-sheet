@@ -241,38 +241,31 @@ int is_prime(unsigned int n) {
 \end{Code}
 
 \subsubsection{暴力枚举法优化版}
-来源未知。
+下面这段代码是从 GNU GMP(\myurl{http://gmplib.org/})的源代码中抠出来的。
 
 \begin{Code}
-int is_prime(unsigned long int n) {
-    unsigned long int q, r, d;
+int is_prime(unsigned int n) {
+    unsigned int q, r, d;    /* 商，余数，除数 */
 
-    if (n < 32)
-        return (0xa08a28acUL >> n) & 1;
-    if ((n & 1) == 0)
-        return 0;
-
-    if (n % 3 == 0)
-        return 0;
-    if (n % 5 == 0)
-        return 0;
-    if (n % 7 == 0)
-        return 0;
+    /* 把这个常数展开成二进制就容易理解了 */
+    if (n < 32) return (0xa08a28acUL >> n) & 1;
+    if ((n & 1) == 0) return 0;
+    if (n % 3 == 0) return 0;
+    if (n % 5 == 0) return 0;
+    if (n % 7 == 0) return 0;
 
     for (d = 11;;) {
         q = n / d;
         r = n - q * d;
-        if (q < d)
-            return 1;
-        if (r == 0)
-            break;
+        if (q < d) return 1;    /* 保证 d 不超过 sqrt(n) */
+        if (r == 0) break;
+
         d += 2;
         q = n / d;
         r = n - q * d;
-        if (q < d)
-            return 1;
-        if (r == 0)
-            break;
+        if (q < d) return 1;
+        if (r == 0) break;
+
         d += 4;
     }
     return 0;
@@ -374,7 +367,7 @@ int main() {
 \subsubsection{相关的题目}
 与本题相同的题目：
 \begindot
-\item hust 求大数mod, \myurl{http://acm.hust.edu.cn/vjudge/contest/view.action?cid=25808\#problem/C}
+\item HDU 1212 Big Number, \myurl{http://acm.hdu.edu.cn/showproblem.php?pid=1212}
 \myenddot
 
 与本题相似的题目：

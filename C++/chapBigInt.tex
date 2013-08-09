@@ -30,11 +30,11 @@
 #include<string.h>
 
 /* 一个数组元素表示4个十进制位，即数组是万进制的 */
-#define BIGINT_MOD 10000
-#define MOD_LEN 4
-#define MAX_LEN (200/MOD_LEN+1)  /* 整数的最大位数 */
+#define BIGINT_RADIX 10000
+#define RADIX_LEN 4
+#define MAX_LEN (200/RADIX_LEN+1)  /* 整数的最大位数 */
 
-char    a[MAX_LEN * MOD_LEN], b[MAX_LEN * MOD_LEN];
+char    a[MAX_LEN * RADIX_LEN], b[MAX_LEN * RADIX_LEN];
 int     x[MAX_LEN], y[MAX_LEN], z[MAX_LEN + 1];
 
 /**
@@ -70,10 +70,10 @@ void bigint_input(const char s[], int x[]) {
     for (i = 0; i < MAX_LEN; i++) x[i] = 0;
 
     // for (i = len - 1; i >= 0; i--) a[j++] = s[i] - '0';
-    for (i = len; i > 0; i -= MOD_LEN) {  /* [i-MOD_LEN, i) */
+    for (i = len; i > 0; i -= RADIX_LEN) {  /* [i-RADIX_LEN, i) */
         int temp = 0;
         int k;
-        const int low = i-MOD_LEN > 0 ? i-MOD_LEN : 0;
+        const int low = i-RADIX_LEN > 0 ? i-RADIX_LEN : 0;
         for (k = low; k < i; k++) {
             temp = temp * 10 + s[k] - '0';
         }
@@ -95,8 +95,8 @@ void bigint_add(const int x[], const int y[], int z[]) {
 
     for (i = 0; i < MAX_LEN; i++) {  /* 逐位相加 */
         z[i] += x[i] + y[i];
-        if (z[i] >= BIGINT_MOD) {  /* 看是否要进位 */
-            z[i] -= BIGINT_MOD;
+        if (z[i] >= BIGINT_RADIX) {  /* 看是否要进位 */
+            z[i] -= BIGINT_RADIX;
             z[i+1] ++;  /* 进位 */
         }
     }
@@ -166,11 +166,11 @@ int main() {
 #include<string.h>
 
 /* 一个数组元素表示4个十进制位，即数组是万进制的 */
-#define BIGINT_MOD 10000
-#define MOD_LEN 4
-#define MAX_LEN (100/MOD_LEN+1)  /* 整数的最大位数 */
+#define BIGINT_RADIX 10000
+#define RADIX_LEN 4
+#define MAX_LEN (100/RADIX_LEN+1)  /* 整数的最大位数 */
 
-char    a[MAX_LEN * MOD_LEN], b[MAX_LEN * MOD_LEN];
+char    a[MAX_LEN * RADIX_LEN], b[MAX_LEN * RADIX_LEN];
 int     x[MAX_LEN], y[MAX_LEN], z[MAX_LEN];
 
 /**
@@ -206,10 +206,10 @@ void bigint_input(const char s[], int x[]) {
     for (i = 0; i < MAX_LEN; i++) x[i] = 0;
 
     // for (i = len - 1; i >= 0; i--) a[j++] = s[i] - '0';
-    for (i = len; i > 0; i -= MOD_LEN) {  /* [i-MOD_LEN, i) */
+    for (i = len; i > 0; i -= RADIX_LEN) {  /* [i-RADIX_LEN, i) */
         int temp = 0;
         int k;
-        const int low = i-MOD_LEN > 0 ? i-MOD_LEN : 0;
+        const int low = i-RADIX_LEN > 0 ? i-RADIX_LEN : 0;
         for (k = low; k < i; k++) {
             temp = temp * 10 + s[k] - '0';
         }
@@ -233,7 +233,7 @@ void bigint_sub(const int x[], const int y[], int z[]) {
     for (i = 0; i < MAX_LEN; i++) {  /* 逐位相减 */
         z[i] += x[i] - y[i];
         if (z[i] < 0) {  /* 看是否要借位 */
-            z[i] += BIGINT_MOD;
+            z[i] += BIGINT_RADIX;
             z[i+1] --;  /* 借位 */
         }
     }
@@ -331,11 +331,11 @@ int main() {
 #include<string.h>
 
 /* 一个数组元素表示4个十进制位，即数组是万进制的 */
-#define BIGINT_MOD 10000
-#define MOD_LEN 4
-#define MAX_LEN (200/MOD_LEN+1)  /* 整数的最大位数 */
+#define BIGINT_RADIX 10000
+#define RADIX_LEN 4
+#define MAX_LEN (200/RADIX_LEN+1)  /* 整数的最大位数 */
 
-char    a[MAX_LEN * MOD_LEN], b[MAX_LEN * MOD_LEN];
+char    a[MAX_LEN * RADIX_LEN], b[MAX_LEN * RADIX_LEN];
 int     x[MAX_LEN], y[MAX_LEN], z[MAX_LEN * 2];
 
 /**
@@ -371,10 +371,10 @@ void bigint_input(const char s[], int x[]) {
     for (i = 0; i < MAX_LEN; i++) x[i] = 0;
 
     // for (i = len - 1; i >= 0; i--) a[j++] = s[i] - '0';
-    for (i = len; i > 0; i -= MOD_LEN) {  /* [i-MOD_LEN, i) */
+    for (i = len; i > 0; i -= RADIX_LEN) {  /* [i-RADIX_LEN, i) */
         int temp = 0;
         int k;
-        const int low = i-MOD_LEN > 0 ? i-MOD_LEN : 0;
+        const int low = i-RADIX_LEN > 0 ? i-RADIX_LEN : 0;
         for (k = low; k < i; k++) {
             temp = temp * 10 + s[k] - '0';
         }
@@ -398,9 +398,9 @@ void bigint_mul(const int x[], const int y[], int z[]) {
         for (j = 0; j < MAX_LEN; j++) { /*用y[i]，去乘以x的各位*/
             z[i + j] += y[i] * x[j]; /* 两数第i, j位相乘，累加到结果的第i+j位 */
 
-            if (z[i + j] >= BIGINT_MOD) { /* 看是否要进位 */
-                z[i + j + 1] += z[i + j] / BIGINT_MOD; /* 进位 */
-                z[i + j] %= BIGINT_MOD;
+            if (z[i + j] >= BIGINT_RADIX) { /* 看是否要进位 */
+                z[i + j + 1] += z[i + j] / BIGINT_RADIX; /* 进位 */
+                z[i + j] %= BIGINT_RADIX;
             }
         }
     }
@@ -477,11 +477,11 @@ int main() {
 #include <string.h>
 
 /* 一个数组元素表示4个十进制位，即数组是万进制的 */
-#define BIGINT_MOD 10000
-#define MOD_LEN 4
-#define MAX_LEN (100/MOD_LEN+1)  /* 整数的最大位数 */
+#define BIGINT_RADIX 10000
+#define RADIX_LEN 4
+#define MAX_LEN (100/RADIX_LEN+1)  /* 整数的最大位数 */
 
-char    a[MAX_LEN * MOD_LEN], b[MAX_LEN * MOD_LEN];
+char    a[MAX_LEN * RADIX_LEN], b[MAX_LEN * RADIX_LEN];
 int     x[MAX_LEN], y[MAX_LEN], z[MAX_LEN];
 
 /**
@@ -517,10 +517,10 @@ void bigint_input(const char s[], int x[]) {
     for (i = 0; i < MAX_LEN; i++) x[i] = 0;
 
     // for (i = len - 1; i >= 0; i--) a[j++] = s[i] - '0';
-    for (i = len; i > 0; i -= MOD_LEN) {  /* [i-MOD_LEN, i) */
+    for (i = len; i > 0; i -= RADIX_LEN) {  /* [i-RADIX_LEN, i) */
         int temp = 0;
         int k;
-        const int low = i-MOD_LEN > 0 ? i-MOD_LEN : 0;
+        const int low = i-RADIX_LEN > 0 ? i-RADIX_LEN : 0;
         for (k = low; k < i; k++) {
             temp = temp * 10 + s[k] - '0';
         }
@@ -573,7 +573,7 @@ static int bigint_sub(int x[], const int y[]) {
     for (i = 0; i < MAX_LEN; i++) {  /* 逐位相减 */
         x[i] -= y[i];
         if (x[i] < 0) {  /* 看是否要借位 */
-            x[i] += BIGINT_MOD;
+            x[i] += BIGINT_RADIX;
             x[i+1] --;  /* 借位 */
         }
     }
@@ -619,7 +619,7 @@ void bigint_div(int x[], const int y[], int z[]) {
             z[times - i]++;
         }
 
-        /* yy 除以BIGINT_MOD，即左移一位 */
+        /* yy 除以BIGINT_RADIX，即左移一位 */
         for (j = 1; j < ylen; j++) {
             yy[j - 1] = yy[j];
         }
@@ -628,9 +628,9 @@ void bigint_div(int x[], const int y[], int z[]) {
 
     /* 下面的循环统一处理进位 */
     for (i = 0; i < MAX_LEN - 1; i++) {
-        if (z[i] >= BIGINT_MOD) {  /* 看是否要进位 */
-            z[i+1] += z[i] / BIGINT_MOD;  /* 进位 */
-            z[i] %= BIGINT_MOD;
+        if (z[i] >= BIGINT_RADIX) {  /* 看是否要进位 */
+            z[i+1] += z[i] / BIGINT_RADIX;  /* 进位 */
+            z[i] %= BIGINT_RADIX;
         }
     }
     free(yy);
@@ -776,10 +776,10 @@ int main() {
 #include<string.h>
 
 /* 一个数组元素表示4个十进制位，即数组是万进制的 */
-#define BIGINT_MOD 10000
-#define MOD_LEN 4
+#define BIGINT_RADIX 10000
+#define RADIX_LEN 4
 /* 10000! 有 35660 位 */
-#define MAX_LEN (35660/MOD_LEN+1)  /* 整数的最大位数 */
+#define MAX_LEN (35660/RADIX_LEN+1)  /* 整数的最大位数 */
 
 int     x[MAX_LEN + 1];
 
@@ -816,8 +816,8 @@ void bigint_mul(int x[], const int y) {
 
     for (i = 0; i < MAX_LEN; i++) { /*用y，去乘以x的各位*/
         const int tmp = x[i] * y + c;
-        x[i] = tmp % BIGINT_MOD;
-        c = tmp / BIGINT_MOD;
+        x[i] = tmp % BIGINT_RADIX;
+        c = tmp / BIGINT_RADIX;
     }
 }
 
