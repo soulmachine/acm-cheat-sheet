@@ -1712,8 +1712,7 @@ int main() {
 \myenddot
 
 
-\section{递归结构中的动态规划} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-本节介绍一些递归结构中的动态规划。递归结构是指可以递归定义的数据结构，例如单链表，凸多边形、树和表达式等。
+\section{区间型动态规划} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 \subsection{最优矩阵链乘}
@@ -1786,15 +1785,15 @@ int s[MAXN][MAXN]; /** 子问题Ai~Aj 应该在s[i][j]处断开 */
  * @return 无
  */
 void print(const int i, const int j) {
-	if (i == j) {
-		printf("A%d",i);
-	} else {  /* i < j */
-		printf("(");
-		print(i, s[i][j]);
-		printf(" x ");
-		print(s[i][j]+1, j);
-		printf(")");
-	}
+    if (i == j) {
+        printf("A%d",i);
+    } else {  /* i < j */
+        printf("(");
+        print(i, s[i][j]);
+        printf(" x ");
+        print(s[i][j]+1, j);
+        printf(")");
+    }
 }
 
 void dp() {
@@ -1817,18 +1816,18 @@ void dp() {
 
 int main() {
     int i;
-	int cas = 1;
-	while (scanf("%d", &N) && N > 0) {
-		memset(s, 0, sizeof(s));
-		for (i = 0; i < N; ++i)  scanf("%d %d",&p[i],&p[i+1]);
+    int cas = 1;
+    while (scanf("%d", &N) && N > 0) {
+        memset(s, 0, sizeof(s));
+        for (i = 0; i < N; ++i)  scanf("%d %d",&p[i],&p[i+1]);
 
-		dp();
+        dp();
 
-		printf("Case %d: ", cas++);
-		print(1, N);
-		printf("\n");
-	}
-	return 0;
+        printf("Case %d: ", cas++);
+        print(1, N);
+        printf("\n");
+    }
+    return 0;
 }
 \end{Codex}
 
@@ -1842,6 +1841,127 @@ int main() {
 与本题相似的题目：
 \begindot
 \item Matrix67 - 十个利用矩阵乘法解决的经典题目，\myurl{http://www.matrix67.com/blog/archives/276}
+\myenddot
+
+
+\subsection{石子合并}
+\subsubsection{描述}
+在一条直线上摆着$N$堆石子。现要将石子有次序地合并成一堆。规定每次只能选相邻的2堆石子合并成新的一堆，并将新的一堆石子数记为该次合并的得分。
+
+试设计一个算法，计算出将$N$堆石子合并成一堆的最小得分。
+
+\subsubsection{输入}
+第一行是一个数$N, 1 \leq N \leq 40000$，表示堆数。
+
+接下来的N行每行一个数，表示该堆的石子数目。
+
+\subsubsection{输出}
+一个整数，即$N$堆石子合并成一堆的最小得分。
+
+\subsubsection{样例输入}
+\begin{Code}
+4
+1
+1
+1
+1
+\end{Code}
+
+\subsubsection{样例输出}
+\begin{Code}
+8
+\end{Code}
+
+\subsubsection{分析}
+这题与前面的矩阵链乘非常相似，只是计算代价的方式不同。设状态为$d(i,j)$，表示子问题第$i$堆到第$j$堆石子的最优解，状态转移方程如下：
+$$d(i,j)=\min\left\{d(i,k)+d(k+1,j) + \text{sum}(i,j)\right\}$$
+sum$(i,j)$表示从第$i$堆到第$j$堆的石子总数。代码见\myurl{https://gist.github.com/soulmachine/6195139}
+
+上面的动规算法可以用四边形不等式进行优化，将时间复杂度从$O(N^3)$下降到$O(N^2)$。代码见\myurl{https://TODO}
+
+无论如何，时间复杂度都是$O(N^2)$，本题中$N$范围特别大，开不了这么大的二维数组。所以动规算法只能处理小规模的情况。下面介绍第三种解法，Garsia-Wachs算法\footnote{Donald E. Knuth, The art of computer programming, volume 3, 2nd ed, p446}。
+
+假设我们只对3堆石子a,b,c进行合并, 先合并哪两堆, 能使得得分最小？有两种方案：\\
+score1 = (a+b) + ((a+b)+c)\\
+score2 = (b+c) + ((b+c)+a)\\
+假设score1 <= score2, 可以推导出 a <= c，反过来，只要a和c的关系确定，合并的顺序也确定。这就是\textbf{2-递减性质}。
+
+Garsia-Wachs算法，就是基于这个性质，找出序列中满足A[i-1] <= A[i+1]最小的i，合并temp = A[i]+A[i-1]，接着往前面找是否有满足A[j] > temp，把temp值插入A[j]的后面(数组的右边)。循环这个过程一直到只剩下一堆石子结束。
+
+例如,\\
+13 9 5 7 8 6 14\\
+首先，找第一个满足A[i-1] <= A[i+1]的三个连续点，本例中就是 5 7 8，5和7合并得到12，12不是丢在原来的位置，而是将它插入到第一个比它大的元素的后面，得到\\
+13 12 9 8 6 14
+
+接着来，从左到右搜索三个连续点，找到 8 6 14，合并8和6的到14，将14插入到适当位置，得到 14 13 12 9 14
+
+找到12 9 14，合并12和9得到21，将21插入到适当位置，得到21 14 13 14
+
+找到 14 13 14，合并14 和 13 得到 27，将27插入到适当位置，得到27 21 14
+
+因为27<14，先合并21和14，得到35，最后合并27和35，得到62，就是最终答案。
+
+为什么要将temp插入A[j]的后面, 可以理解为是为了保持2-递减性质。从A[j+1]到A[i-2]看成一个整体 A[mid]，现在A[j], A[mid], temp(A[i-1]+A[i])，因为temp < A[j]，因此不管怎样都是A[mid]和temp先合并, 所以将temp值插入A[j]的后面不会影响结果。
+
+
+\subsubsection{代码}
+\begin{Codex}[label=stone_merge.c]
+#include <stdio.h> 
+#define MAXN 55555
+
+int N, A[MAXN];  /* 堆数，每堆的石头个数 */
+int num, result;  /* 数组实际长度，结果 */
+
+void combine(int k) {  /* 前提 A[k-1] < A[k+1] */
+    int i, j;
+
+    /* 合并 k-1和k */
+    int temp=A[k] + A[k-1];
+    result += temp;
+    /* 紧缩 */
+    for(i = k; i < num - 1; i++) A[i] = A[i+1];
+    num--;
+    /* 插入temp到合适位置 */
+    for(j = k-1; j > 0 && A[j-1] < temp; j--) A[j] = A[j-1];
+    A[j] = temp;
+
+    /* why? */
+    while(j >= 2 && A[j] >= A[j-2]) {
+        int d = num - j;
+        combine(j - 1);
+        j = num - d;
+    }
+}
+
+int main() {
+    int i;
+
+    scanf("%d",&N);
+    if(N == 0)    return 0;
+    for(i = 0; i < N; i++) scanf("%d", &A[i]);
+
+    num=2;
+    result=0;
+    for(i = 2; i < N; i++) {
+        A[num++] = A[i];
+        while(num >= 3 && A[num-3] <= A[num-1]) combine(num-2);
+    }
+    while(num > 1) combine(num-1);
+    printf("%d\n",result);
+    return 0;
+}
+\end{Codex}
+
+\subsubsection{相关的题目}
+与本题相同的题目：
+\begindot
+\item WIKIOI 2298 石子合并, \myurl{http://www.wikioi.com/problem/2298/}
+\item POJ 1738 An old Stone Game, \myurl{http://poj.org/problem?id=1738}
+\myenddot
+
+与本题相似的题目：
+\begindot
+\item TODO
 \myenddot
 
 
@@ -1966,8 +2086,7 @@ int max_submatrix(const int L, const int W,
     // 计算 v矩阵
     v = (int**) malloc(la * sizeof(int*));
     for (i = 0; i < la; i++) {
-        v[i] = (int*) malloc(lb * sizeof(int));
-        memset(v[i], 0, lb * sizeof(int));
+        v[i] = (int*) calloc(lb, sizeof(int));
     }
     for (i = 0; i < n; i++) {
         int ia, ib;
