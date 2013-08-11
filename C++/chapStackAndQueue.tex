@@ -161,61 +161,83 @@ void hanoi(int n, char x, char y, char z)
 }
 \end{Codex}
 
-\subsection{数制转换}
+\subsection{进制转换}
 \begin{Codex}[label=convert_base.cpp]
 #include <stack>
 #include <stdio.h>
 
  /**
-  * @brief 数制转换，将一个整数转化为 d进制，d<=16.
+  * @brief 进制转换，将一个10进制整数转化为 d进制，d<=16.
   * @param[in] n 整数n
   * @param[in] d d进制
   * @return 无
   */
 void convert_base(int n, const int d) {
-	std::stack<int> s;
-	int e;
+    std::stack<int> s;
+    int e;
 
-	while(n != 0) {
-		e = n % d;
-		s.push(e);
-		n /= d;
-	}
-	while(!s.empty()) {
-		e = s.top();
-		s.pop();
-		printf("%x", e);
-	}
-	return;
+    while(n != 0) {
+        e = n % d;
+        s.push(e);
+        n /= d;
+    }
+    while(!s.empty()) {
+        e = s.top();
+        s.pop();
+        printf("%X", e);
+    }
+    return;
 }
 
 #define MAX 64 // 栈的最大长度
 int stack[MAX];
 int top = -1;
- /**
-  * @brief 数制转换，将一个整数转化为 d进制，d<=16，更优化的版本.
-  *
-  * 如果可以预估栈的最大空间，则用数组来模拟栈，这时常用的一个技巧。
-  * 这里，栈的最大长度是多少？假设CPU是64位，最大的整数则是2^64，由于
-  * 数制最小为2，在这个进制下，数的位数最长，这就是栈的最大长度，最长为64。
-  *
-  * @param[in] n 整数n
-  * @param[in] d d进制
-  * @return 无
-  */
+/**
+ * @brief 进制转换，将一个10进制整数转化为 d进制，d<=16，更优化的版本.
+ *
+ * 如果可以预估栈的最大空间，则用数组来模拟栈，这时常用的一个技巧。
+ * 这里，栈的最大长度是多少？假设CPU是64位，最大的整数则是2^64，由于
+ * 数制最小为2，在这个进制下，数的位数最长，这就是栈的最大长度，最长为64。
+ *
+ * @param[in] n 整数n
+ * @param[in] d d进制
+ * @return 无
+ */
 void convert_base2(int n, const int d) {
-	int e;
+    int e;
 
-	while(n != 0) {
-		e = n % d;
-		stack[++top] = e; // push
-		n /= d;
-	}
-	while(top >= 0) {
-		e = stack[top--]; // pop
-		printf("%x", e);
-	}
-	return;
+    while(n != 0) {
+        e = n % d;
+        stack[++top] = e; // push
+        n /= d;
+    }
+    while(top >= 0) {
+        e = stack[top--]; // pop
+        printf("%X", e);
+    }
+    return;
+}
+
+
+/**
+ * @brief 进制转换，将一个d进制整数转化为10进制，d<=16.
+ * @param[in] s d进制整数
+ * @param[in] d d进制
+ * @return 10进制整数
+ */
+int restore(const char s[MAX], const int d) {
+    int i;
+    int result = 0;
+    int one;
+
+    for (i = 0; s[i] != '\0'; i++) {
+        if (s[i] >= '0' && s[i] <= '9') one = s[i] - '0';
+        else if (s[i] >= 'A' && s[i] <= 'F') one = s[i] - 'A' + 10;
+        else one = s[i] - 'a' + 10; /* (s[i] >= 'a' && s[i] <= 'f') */
+        
+        result = result * d + one;
+    }
+    return result;
 }
 \end{Codex}
 
@@ -381,7 +403,7 @@ void yanghui_triangle(const int n) {
     /* 预先放入第一行的1 */
     q.push(i);
 
-    for(i = 0; i <= n; i++) {	 /* 逐行处理*/
+    for(i = 0; i <= n; i++) {     /* 逐行处理*/
         int j;
         int s = 0;
         q.push(s);      /* 在各行间插入一个0*/

@@ -236,7 +236,7 @@ static tbt_node_t *next(const tbt_node_t *p);
   */
 void create_in_thread(tbt_node_t *root) {
     /* 前驱结点指针*/
-	tbt_node_t *pre=NULL;
+    tbt_node_t *pre=NULL;
     if(root != NULL) { /* 非空二叉树，线索化*/
         /* 中序遍历线索化二叉树*/
         in_thread(root, &pre);
@@ -254,7 +254,7 @@ void create_in_thread(tbt_node_t *root) {
   * @return 无
   */
 void in_order(tbt_node_t *root, int(*visit)(elem_t*)) {
-	tbt_node_t *p;
+    tbt_node_t *p;
     for(p = first(root); p != NULL; p = next(p)) {
         (void)visit(&(p->data));
     }

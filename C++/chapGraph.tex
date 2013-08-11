@@ -411,7 +411,7 @@ void bfs(int x, int y) {
     q[rear++] = u;
     while (front < rear) {
         u = q[front++];
-        x = u / m;	y = u % m;
+        x = u / m;    y = u % m;
         for(d = 0; d < 4; d++) { // 代表四个方向
             const int nx = x + dx[d];
             const int ny = y + dy[d];
@@ -496,7 +496,7 @@ int main(void) {
     }
 
     printf("从入口到出口迷宫路径：\n");
-    bfs(0, 0);	// (0, 0)是入口
+    bfs(0, 0);    // (0, 0)是入口
     print_path(0, 4); // (0, 4) 是出口
     printf("\n");
     return 0;
@@ -2805,7 +2805,7 @@ int main() {
 \item POJ 3687 Labeling Balls, \myurl{http://poj.org/problem?id=3687}
 \myenddot
 
-	
+
 \section{关键路径} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 用有向边上的权值表示活动的持续时间，用顶点表示时间，这样的有向图叫做边表示的活动网络(Activity On Edge Network)，简称\textbf{AOE网络}。
 
