@@ -427,6 +427,7 @@ int main() {
 
 
 \section{DAG上的动态规划} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+对于所有动规题目，如果把状态转移图画出来，一定是一个邮箱有向无环图(DAG)。再进一步细分类别，有序列型，棋盘型，树型等等。
 
 \subsection{数字三角形}
 
@@ -1007,6 +1008,7 @@ void print_path(const int *d, int j) {
 \item  TODO
 \myenddot
 
+
 \subsection{最长上升子序列}
 
 \subsubsection{描述}
@@ -1092,6 +1094,306 @@ int main() {
 \begindot
 \item  wikioi 1044 拦截导弹，\myurl{http://www.wikioi.com/problem/1044/}, \\
 参考代码 \myurl{https://gist.github.com/soulmachine/6248489}
+\myenddot
+
+
+\subsection{过河卒}
+
+\subsubsection{描述}
+如图，A点有一个过河卒，需要走到目标B点。卒行走规则：可以向下、或者向右。同时在棋盘上的任一点有一个对方的马（如上图的C点），该马所在的点和所有跳跃一步可达的点称为对方马的控制点。例如上图C点上的马可以控制9个点（图中的P1，P2 … P8 和 C）。卒不能通过对方马的控制点。
+
+\begin{center}
+\includegraphics[width=300pt]{river.png}\\
+\figcaption{过河卒}\label{fig:river}
+\end{center}
+
+棋盘用坐标表示，A点（0，0）、B点（n,m）(n,m 为不超过20的整数，并由键盘输入)，同样马的位置坐标是需要给出的（约定: C不等于A，同时C不等于B）。现在要求你计算出卒从A点能够到达B点的路径的条数。
+
+\subsubsection{输入}
+B点的坐标（n,m）以及对方马的坐标（X,Y）
+
+\subsubsection{输出}
+一个整数（路径的条数）
+
+\subsubsection{样例输入}
+\begin{Code}
+6 6 3 2
+\end{Code}
+
+\subsubsection{样例输出}
+\begin{Code}
+17
+\end{Code}
+
+\subsubsection{分析}
+这是一个棋盘形动态规划。
+
+设状态为f[i][j]，表示从(0,0)到(i,j)的路径的条数，状态转移方程为
+$$
+f[i][j] = f[i-1][j] + f[i][j-1]
+$$
+
+\subsubsection{代码}
+
+\begin{Codex}[label=river.c]
+#include <stdio.h>
+#include <memory.h>
+
+#define MAX 21
+
+int n, m;
+int x, y; /* 马儿的坐标 */
+
+/* 八个控制点，顺时针方向 */
+int dx[] = {-2, -1, 1, 2, 2, 1, -1, -2};
+int dy[] = {1, 2, 2, 1, -1, -2, -2, -1};
+
+int g[MAX][MAX];  /* 棋盘，马儿以及马儿的控制点为1，其余为0 */
+int f[MAX][MAX];  /* f[i][j] = f[i-1][j] + f[i][j-1] */
+
+void dp() {
+    int i, j;
+    memset(g, 0, sizeof(g));
+    memset(f, 0, sizeof(f));
+
+    g[x][y] = 1;
+    for (i = 0; i < 8; i++) if(x+dx[i] >=0 && x+dx[i] <= n &&
+            y+dy[i] >= 0 && y+dy[i] <= n){
+        g[x+dx[i]][y+dy[i]] = 1;
+    }
+
+    f[0][0] = 1;  /* 起点 */
+    /* 初始化边界 */
+    for (i = 1; i <= n; i++) if (!g[i][0]) f[i][0] = f[i-1][0];
+    for (j = 1; j <= m; j++) if (!g[0][j]) f[0][j] = f[0][j-1];
+
+    for (i = 1; i <= n; i++) {
+        for (j = 1; j <= m; j++) {
+            if (!g[i][j]) f[i][j] = f[i-1][j] + f[i][j-1];
+        }
+    }
+}
+
+int main() {
+    scanf("%d%d%d%d", &n, &m, &x, &y);
+    dp();
+    printf("%d\n", f[n][m]);
+    return 0;
+}
+\end{Codex}
+
+\subsubsection{相关的题目}
+与本题相同的题目：
+\begindot
+\item wikioi 1010, 过河卒, \myurl{http://www.wikioi.com/problem/1010/}
+\myenddot
+
+与本题相似的题目：
+\begindot
+\item  null
+\myenddot
+
+
+\subsection{传纸条}
+
+\subsubsection{描述}
+小渊和小轩是好朋友也是同班同学，他们在一起总有谈不完的话题。一次素质拓展活动中，班上同学安排做成一个$m$行$n$列的矩阵，而小渊和小轩被安排在矩阵对角线的两端，因此，他们就无法直接交谈了。幸运的是，他们可以通过传纸条来进行交流。纸条要经由许多同学传到对方手里，小渊坐在矩阵的左上角，坐标$(1,1)$，小轩坐在矩阵的右下角，坐标$(m,n)$。从小渊传到小轩的纸条只可以向下或者向右传递，从小轩传给小渊的纸条只可以向上或者向左传递。
+
+在活动进行中，小渊希望给小轩传递一张纸条，同时希望小轩给他回复。班里每个同学都可以帮他们传递，但只会帮他们一次，也就是说如果此人在小渊递给小轩纸条的时候帮忙，那么在小轩递给小渊的时候就不会再帮忙。反之亦然。
+
+还有一件事情需要注意，全班每个同学愿意帮忙的好感度有高有低（注意：小渊和小轩的好心程度没有定义，输入时用0表示），可以用一个$0 \sim 100$的自然数来表示，数越大表示越好心。小渊和小轩希望尽可能找好心程度高的同学来帮忙传纸条，即找到来回两条传递路径，使得这两条路径上同学的好心程度只和最大。现在，请你帮助小渊和小轩找到这样的两条路径。
+
+\subsubsection{输入}
+输入的第一行有2个用空格隔开的整数$m$和$n$，表示班里有$m$行$n$列$(1 \leq m,n \leq 50)$。接下来的$m$行是一个$m*n$的矩阵，矩阵中第$i$行$j$列的整数表示坐在第$i$行$j$列的学生的好心程度。每行的$n$个整数之间用空格隔开
+
+\subsubsection{输出}
+输出共一行，包含一个整数，表示来回两条路上参与传递纸条的学生的好心程度之和的最大值。
+
+\subsubsection{样例输入}
+\begin{Code}
+3 3
+0 3 9
+2 8 5
+5 7 0
+\end{Code}
+
+\subsubsection{样例输出}
+\begin{Code}
+34
+\end{Code}
+
+\subsubsection{分析}
+这是一个棋盘形动态规划。用矩阵\fn{int g[MAX][MAX]}存储输入数据，即每个学生的好心值。
+
+题目等价为为从$(1,1)$传两张纸条到$(m,n)$。每个纸条都是由上面或左边传递过来的， 所以有四种情况。设状态为$f[i][j][k][l]$，表示纸条一在$(i,j)$,纸条二在$(k,l)$的好心程度之和，状态转移方程为
+
+\begin{eqnarray}
+f[i][j][k][l] = \max\{ & f[i-1][j][k-1][l], & \nonumber \\
+                            & f[i-1][j][k][l-1], & \nonumber \\
+							& f[i][j-1][k][l-1], & \nonumber \\
+                            & f[i][j-1][k-1][l]\} & +g[i][j]+g[k][l] \nonumber
+\end{eqnarray}
+
+\subsubsection{代码}
+
+\begin{Codex}[label=deliver_note.c]
+#include <stdio.h>
+#include <memory.h>
+
+#define MAX 51  /* m,n的最大值是50，应该有笔误，实际是51 */
+
+int m, n;           /* 行，列 */
+int g[MAX][MAX];    /* 好心值 */
+/** 题目等价为为从(1，1)传两张纸条到(m,n)，
+ * f[i][j][k][l]表示纸条一在(i,j),纸条二在(k,l）的好心程度之和
+ */
+int f[MAX][MAX][MAX][MAX];
+
+int max(const int a, const int b) {
+    return a > b ? a : b;
+}
+
+void dp() {
+    int i, j, k, l;
+    memset(f, 0, sizeof(f));
+    /* 每个纸条都是由上面或左边传递过来的， 所以有四种情况 */
+    for (i = 0; i < m; i++) {
+        for (j = 0; j < n; j++) {
+            for (k = 0; k < m; k++) {
+                for (l = 0; l < n; l++) {
+                    if(i > 0 && k > 0 && (i != k || j != l))
+                        f[i][j][k][l] = max(f[i][j][k][l],
+                                f[i-1][j][k-1][l] + g[i][j]+g[k][l]);
+                    if(i > 0 && l < n && (i-1 != k || j != l-1))
+                        f[i][j][k][l] = max(f[i][j][k][l],
+                                f[i-1][j][k][l-1] + g[i][j]+g[k][l]);
+                    if(j < n && l < n && (i != k || j != l))
+                        f[i][j][k][l] = max(f[i][j][k][l],
+                                f[i][j-1][k][l-1] + g[i][j]+g[k][l]);
+                    if(j < n && k > 0 && (i != k-1 || j-1 != l))
+                        f[i][j][k][l] = max(f[i][j][k][l],
+                                f[i][j-1][k-1][l] + g[i][j]+g[k][l]);
+                }
+            }
+        }
+    }
+}
+
+int main() {
+    int i, j;
+    scanf("%d%d", &m, &n);
+    for (i = 0; i < m; i++) {
+        for (j = 0; j < n; j++) {
+            scanf("%d", &g[i][j]);
+        }
+    }
+    dp();
+    printf("%d\n", f[m-1][n-1][m-1][n-1]);
+    return 0;
+}
+\end{Codex}
+
+TODO: 本题可以优化为三维
+
+\subsubsection{相关的题目}
+与本题相同的题目：
+\begindot
+\item wikioi 1169, 传纸条, \myurl{http://www.wikioi.com/problem/1169/}
+\myenddot
+
+与本题相似的题目：
+\begindot
+\item  null
+\myenddot
+
+
+\subsection{骑士游历}
+
+\subsubsection{描述}
+设有一个$n*m$的棋盘($2 \leq n \leq 50, 2 \leq m \leq 50$)，如图~\ref{fig:horse}所示，在棋盘上有一个中国象棋马。规定：
+\begindot
+\item 马只能走日字
+\item 马只能向右跳
+\myenddot
+
+\begin{center}
+\includegraphics{horse.png} \\
+\figcaption{骑士游历}\label{fig:horse}
+\end{center}
+
+问给定起点(x1,y1)和终点(x2,y2)，求出马从(x1,y1)出发到(x2,y2)的合法路径条数。
+
+\subsubsection{输入}
+第一行2个整数n和m，第二行4个整数x1,y1,x2,y2
+
+\subsubsection{输出}
+合法路径条数
+
+\subsubsection{样例输入}
+\begin{Code}
+30 30
+1 15 3 15
+\end{Code}
+
+\subsubsection{样例输出}
+\begin{Code}
+2
+\end{Code}
+
+\subsubsection{分析}
+这是一道棋盘型动态规划。
+
+设状态为f[i][j]，表示从起点(x1,y1)到(i,j)的合法路径条数，状态转移方程为
+$$
+f[i][j] = f[i-1][j-2] + f[i-1][j+2] + f[i-2][j-1] + f[i-2][j+1]
+$$
+
+注意，合法路径条数有可能非常大，32位整数存不下，需要用64位整数。
+
+\subsubsection{代码}
+
+\begin{Codex}[label=horse.c]
+#include <stdio.h>
+#include <memory.h>
+#include <stdint.h>
+
+#define MAX  51  /* n,m最大值，本题范围又有笔误，应该是51 */
+
+int n, m;
+int x1, y1, x2, y2;
+/*f[i][j]表示从(x1,y1)到(i,j)的合法路径的条数*/
+int64_t f[MAX+1][MAX+1];
+
+void dp() {
+    int i, j;
+    memset(f, 0, sizeof(f));
+    f[x1][y1] = 1;
+    for (i = x1+1; i <= x2; i++) {
+        for (j = 1; j <= m; j++) {
+            f[i][j] = f[i-1][j-2] + f[i-1][j+2] + f[i-2][j-1] + f[i-2][j+1];
+        }
+    }
+
+}
+
+int main() {
+    scanf("%d%d", &n, &m);
+    scanf("%d%d%d%d", &x1, &y1, &x2, &y2);
+    dp();
+    printf("%lld\n", f[x2][y2]);
+    return 0;
+}
+\end{Codex}
+
+\subsubsection{相关的题目}
+与本题相同的题目：
+\begindot
+\item wikioi 1219, 骑士游历, \myurl{http://www.wikioi.com/problem/1219/}
+\myenddot
+
+与本题相似的题目：
+\begindot
+\item  null
 \myenddot
 
 \section{背包问题} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1964,6 +2266,264 @@ int main() {
 \item WIKIOI 1048 石子归并（数据规模很小）, \myurl{http://www.wikioi.com/problem/1048/}
 \item WIKIOI 2298 石子合并（数据规模很大）, \myurl{http://www.wikioi.com/problem/2298/}
 \item POJ 1738 An old Stone Game, \myurl{http://poj.org/problem?id=1738}
+\myenddot
+
+与本题相似的题目：
+\begindot
+\item TODO
+\myenddot
+
+
+\subsection{矩阵取数游戏}
+\subsubsection{描述}
+帅帅经常跟同学玩一个矩阵取数游戏：对于一个给定的$n*m$的矩阵，矩阵中的每个元素$a_{ij}$均为非负整数。游戏规则如下：
+\begindot
+\item 每次取数时须从每行各取走一个元素，共$n$个，$m$次后取完矩阵所有元素；
+\item 每次取数时须从每行各取走一个元素，共$n$个，$m$次后取完矩阵所有元素；每次取走的各个元素只能是该元素所在行的行首或行尾；
+\item 每次取数时须从每行各取走一个元素，共$n$个，$m$次后取完矩阵所有元素；每次取数都有一个得分值，为每行取数的得分之和，每行取数的得分= 被取走的元素值$*2i$，其中$i$表示第$i$次取数（从1开始编号）；
+\item 每次取数时须从每行各取走一个元素，共$n$个，$m$次后取完矩阵所有元素；游戏结束总得分为$m$次取数得分之和。
+\myenddot
+
+帅帅想请你帮忙写一个程序，对于任意矩阵，可以求出取数后的最大得分。
+
+\subsubsection{输入}
+第1行为两个用空格隔开的整数$n$和$m, 1 \leq n,m \leq 90$。
+第$2 \sim n+1$ 行为$n*m$矩阵，其中每行有$m$个用单个空格隔开的非负整数$a_{ij}, 0 \leq a_{ij} \leq 1000$。
+
+\subsubsection{输出}
+输出仅包含1行，为一个整数，即输入矩阵取数后的最大得分。
+
+\subsubsection{样例输入}
+\begin{Code}
+2 3
+1 2 3
+3 4 2
+\end{Code}
+
+\subsubsection{样例输出}
+\begin{Code}
+82
+\end{Code}
+
+\subsubsection{样例解释}
+第1次：第1行取行首元素，第2行取行尾元素，本次得分为1*21+2*21=6
+
+第2次：两行均取行首元素，本次得分为2*22+3*22=20
+
+第3次：得分为3*23+4*23=56。总得分为6+20+56=82
+
+
+\subsubsection{分析}
+首先，每行之间是互相独立的，因此可以分别求出每行的最大得分，最后相加起来。
+
+设状态为f(i,j)，表示单行的区间[i,j]的最大值，转移方程为
+$$
+f(i,j) = \max\left\{f(i+1,j)+a(i)*2^x, f(i,j-1)+a(j)*2^x\right\}, 1 \leq x \leq m
+$$
+等价于
+$$
+f(i,j) = 2*\max\left\{f(i+1,j)+a(i), f(i,j-1)+a(j)\right\}
+$$
+
+同时，注意到，最大得分可能会非常大，因此需要用到大整数运算。预估一下最大得分，大概是 $1000*2^{80}$，用计算器算一下，有28位。
+
+\subsubsection{代码}
+\begin{Codex}[label=wikioi1166_matrix_game.c]
+#include <stdio.h>
+#include <memory.h>
+#include <limits.h>
+
+/* 一个数组元素表示4个十进制位，即数组是万进制的 */
+#define BIGINT_RADIX 10000
+#define RADIX_LEN 4
+/* 1000*2^80 有 28 位 */
+#define MAX_LEN (28/RADIX_LEN+1)  /* 整数的最大位数 */
+
+/**
+ * @brief 打印大整数.
+ * @param[in] x 大整数，用数组表示，低位在低地址
+ * @param[in] n 数组x的长度
+ * @return 无
+ */
+void bigint_print(const int x[], const int n) {
+    int i;
+    int start_output = 0;  /* 用于跳过前导0 */
+    for (i = n - 1; i >= 0; --i) {
+        if (start_output) {  /* 如果多余的0已经都跳过，则输出 */
+            printf("%04d", x[i]);
+        } else if (x[i] > 0) {
+            printf("%d", x[i]);
+            start_output = 1; /* 碰到第一个非0的值，就说明多余的0已经都跳过 */
+        }
+    }
+
+    if(!start_output) printf("0");  /* 当x全为0时 */
+}
+
+/**
+ * @brief 一个32位整数转化为大整数bigint.
+ * @param[in] n 32位整数
+ * @param[out] x 大整数
+ * @return 大整数
+ */
+int* int_to_bigint(int n, int x[]) {
+    int i = 0;
+    memset(x, 0, MAX_LEN * sizeof(int));
+    while (n > 0) {
+        x[i++] = n % BIGINT_RADIX;
+        n /= BIGINT_RADIX;
+    }
+    return x;
+}
+
+
+/**
+ * @brief 大整数比较.
+ * @param[in] x x
+ * @param[in] y y
+ * @return x<y，返回-1，相等于返回0，大于返回1.
+ */
+int bigint_cmp(const int x[], const int y[]) {
+    int i, lenx = 0, leny = 0;
+    for (i = 0; i < MAX_LEN; i++) {
+        if (x[i] != 0) lenx++;
+        else break;
+    }
+    for (i = 0; i < MAX_LEN; i++) {
+        if (y[i] != 0) leny++;
+        else break;
+    }
+    if (lenx < leny) return -1;
+    else if (lenx > leny) return 1;
+    else {
+        for (i = lenx - 1; i >= 0; i--) {
+            if (x[i] == y[i]) continue;
+            else if (x[i] > y[i]) return 1;
+            else return -1;
+        }
+        return 0;
+    }
+}
+
+/**
+ * @brief 大整数加上普通整数.
+ * @param[inout] x 大整数
+ * @param[in] y 32位整数
+ * @return 大整数
+ */
+int* bigint_add(int x[], const int y) {
+    int i;
+
+    x[0] += y;
+    for (i = 0; i < MAX_LEN; i++) {
+        if (x[i] >= BIGINT_RADIX) {
+            x[i+1] += x[i] / BIGINT_RADIX;
+            x[i] %= BIGINT_RADIX;
+        }
+    }
+    return x;
+}
+
+
+/**
+ * @brief 两个大整数相加, in place.
+ * @param[inout] x x=x+y
+ * @param[in] y y
+ * @return 无
+ */
+void bigint_add1(int x[], const int y[]) {
+    int i;
+    int c = 0;
+
+    for (i = 0; i < MAX_LEN; i++) {  /* 逐位相加 */
+        const int tmp = x[i] + y[i] + c;
+        x[i] = tmp % BIGINT_RADIX;
+        c = tmp / BIGINT_RADIX;
+    }
+}
+
+/**
+ * @brief 大整数乘法, x = x*y.
+ * @param[inout] x x
+ * @param[in] y y
+ * @return 无
+ */
+void bigint_mul(int x[], const int y) {
+    int i;
+    int c = 0; /* 保存进位 */
+
+    for (i = 0; i < MAX_LEN; i++) { /*用y，去乘以x的各位*/
+        const int tmp = x[i] * y + c;
+        x[i] = tmp % BIGINT_RADIX;
+        c = tmp / BIGINT_RADIX;
+    }
+}
+
+
+#define MAX 80   /* n,m的最大值 */
+
+int n, m;
+int matrix[MAX][MAX];  /* 输入矩阵 */
+/* f[i][j] 表示某一行区间[i,j]的最大值，转移方程
+ * f[i][j] = f[i+1][j]+a[i]*2^x, f[i][j-1]+a[j]*2^x, 1<=x<=m
+ * 等价于 f[i][j] = 2*max(f[i+1][j]+a[i], f[i][j-1]+a[j])
+ */
+int f[MAX][MAX][MAX_LEN];
+int tmp[MAX_LEN];
+
+/**
+ * @brief 计算单行.
+ * @param[in] a 某一行
+ * @return 此行能获得的最大得分
+ */
+int* dp(int a[MAX], int l, int r) {
+    if (l == r) {
+        int_to_bigint(a[l] * 2, f[l][r]);
+        return f[l][r];
+    }
+    if (f[l][r][0] >= 0) return f[l][r];
+
+    if (l < r) {
+        memcpy(f[l][r], dp(a, l+1, r), sizeof(f[l][r]));
+        bigint_mul(bigint_add(f[l][r], a[l]), 2);
+        memcpy(tmp, dp(a, l, r-1), sizeof(tmp));
+        bigint_mul(bigint_add(tmp, a[r]), 2);
+
+        if (bigint_cmp(f[l][r], tmp) < 0) memcpy(f[l][r], tmp, sizeof(tmp));
+    }
+    return f[l][r];
+}
+
+int main() {
+    int i, j, result[MAX_LEN];
+    scanf("%d%d", &n, &m);
+
+    for (i = 0; i < n; i++) {
+        for (j = 0; j < m; j++) {
+            scanf("%d", &matrix[i][j]);
+        }
+    }
+
+    memset(result, 0, sizeof(result));
+    for (i = 0; i < n; i++) {
+        memset(f, 0, sizeof(f));
+        for (j = 0; j < m; j++) {
+            int k;
+            for (k = 0; k < m; k++) {
+                f[j][k][0] = -1;
+            }
+        }
+        bigint_add1(result, dp(matrix[i], 0, m-1));
+    }
+    bigint_print(result, MAX_LEN);
+    return 0;
+}
+\end{Codex}
+
+\subsubsection{相关的题目}
+与本题相同的题目：
+\begindot
+\item WIKIOI 1166 矩阵取数游戏, \myurl{http://www.wikioi.com/problem/1166/}
 \myenddot
 
 与本题相似的题目：
