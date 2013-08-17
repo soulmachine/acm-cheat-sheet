@@ -426,142 +426,78 @@ int main() {
 \myenddot
 
 
-\section{DAG上的动态规划} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-对于所有动规题目，如果把状态转移图画出来，一定是一个邮箱有向无环图(DAG)。再进一步细分类别，有序列型，棋盘型，树型等等。
+\section{序列型动态规划} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+对于所有动规题目，如果把状态转移图画出来，一定是一个有向无环图(DAG)。再进一步细分类别，有序列型动态规划，棋盘型动态规划，树型动态规划等等。
 
-\subsection{数字三角形}
+
+\subsection{最长上升子序列}
 
 \subsubsection{描述}
-有一个由非负整数组成的三角形，第一行只有一个数，除了最下一行之外每个数的左下角和右下
-角各有一个数，如图~\ref{fig:numbersTriangle}所示。
+当一个序列严格递增时，我们称这个序列是上升的。
+对于一个给定的序列$(a_1, a_2, ..., a_N)$，我们可以得到一些上升的子序列$(a_{i1}, a_{i2}, ..., a_{iK})$，
+这里$1 \leq i1 < i2 < ... < iK \leq N$。例如，对于序列(1, 7, 3, 5, 9, 4, 8)，
+有它的一些上升子序列，如(1, 7), (3, 4, 8)等等，这些子序列中最长的长度是4，比如子序列(1, 3, 5, 8)。
 
-\begin{center}
-\includegraphics[width=360pt]{numbers-triangle.png}\\
-\figcaption{数字三角形问题}\label{fig:numbersTriangle}
-\end{center}
-
-从第一行的数开始，每次可以往左下或右下走一格，直到走到最下行，把沿途经过的数全部加起来。
-如何走才能使得这个和最大？
+对于给定的序列，求\textbf{最长上升子序列}(longest increasing subsequence)的长度。
 
 \subsubsection{输入}
-第一行是一个整数$N (1 \le N \leq 100)$，给出三角形的行数。接下来的N行给出数字三角形。三
-角形中的数全部是整数，范围在0到100之间。
+第一行是序列的长度$N (1 \leq N \leq 1000)$。
+第二行给出序列中的N个整数，这些整数的取值范围都在0到10000。
 
 \subsubsection{输出}
-输出最大的和。
+最长上升子序列的长度。
 
 \subsubsection{样例输入}
 \begin{Code}
-5
 7
-3 8 
-8 1 0  
-2 7 4 4 
-4 5 2 6 5
+1 7 3 5 9 4 8
 \end{Code}
 
 \subsubsection{样例输出}
 \begin{Code}
-30
+4
 \end{Code}
 
 \subsubsection{分析}
-这是一个动态决策问题，在每层有两种选择，左下或右下，因此一个n层的数字三角形有$2^n$条路线。
-
-可以用回溯法，用回溯法求出所有可能的路线，就可以从中选出最优路线。但是由于有$2^n$条路线，
-回溯法很慢。
-
-本题可以用动态规划来求解(具有最有子结构和重叠子问题两个要素，后面会看到)。把当前位置(i,j)看
-成一个状态，然后定义状态d[i][j]为从位置(i,j)出发时能得到的最大和（包括格子(i,j)本
-身的值a[i][j]）。在这个状态定义下，原问题的解是d[0][0]。
-
-下面来看看不同状态之间是怎样转移的。从位置(i,j)出发有两种决策，如果往左走，则走到(i+1,j)后需要求
-“从(i+1,j)出发后能得到的最大和”这一子问题，即d[i+1][j]，类似地，往右走之后需要求d[i+1][j+1]。应该
-选择d[i+1][j]和d[i+1][j+1]中较大的一个，因此可以得到如下的状态转移方程：
-$$d[i][j]=a[i][j]+\max\left\{d[i+1][j], d[i+1][j+1]\right\}$$
+设状态为d[j]，表示以$a_j$为终点的最长上升子序列的长度。状态转移方程如下；
+$$
+d[j]=\begin{cases}
+1 & j=1\\
+\max\left\{d[i]\right\}+1 & 1<i<j,a_i<a_j
+\end{cases}
+$$
 
 \subsubsection{代码}
-版本1，自顶向下。
 
-\begin{Codex}[label=numbers_triangle1.c]
+\begin{Codex}[label=lis.c]
 #include<stdio.h>
-#include<string.h>
+#define MAXN 1001 // a[0]未用
 
-#define MAXN 100
+int N;
+int a[MAXN];
+int d[MAXN];
 
-int n, a[MAXN][MAXN], d[MAXN][MAXN];
-
-int max(const int x, const int y) {
-    return x > y ? x : y;
-}
-
-/**
- * @brief 求从位置(i,j)出发时能得到的最大和
- * @param[in] i 行
- * @param[in] j 列
- * @return 最大和
- */
-int dp(const int i, const int j) {
-    if(d[i][j] >= 0) {
-        return d[i][j];
-    } else {
-        return d[i][j] = a[i][j] + (i == n-1 ? 0 : max(dp(i+1, j+1), dp(i+1, j)));
-    }
-}
-
-int main() {
-    int i, j;
-    memset(d, -1, sizeof(d));
-
-    scanf("%d", &n);
-    for(i = 0; i < n; i++)
-      for (j = 0; j <= i; j++) scanf("%d", &a[i][j]);
-    
-    printf("%d\n", dp(0, 0));
-    return 0;
-}
-\end{Codex}
-
-版本2，自底向上。
-
-\begin{Codex}[label=numbers_triangle2.c]
-#include<stdio.h>
-#include<string.h>
-
-#define MAXN 100
-
-int n, a[MAXN][MAXN], d[MAXN][MAXN];
-
-int max(const int x, const int y) {
-    return x > y ? x : y;
-}
-
-/**
- * @brief 自底向上计算所有子问题的最优解
- * @return 无
- */
 void dp() {
     int i, j;
-    for (i = 0; i < n; ++i) {
-        d[n-1][i] = a[n-1][i];
+    d[1] = 1;
+ 
+    for (j = 2; j <= N; j++) { // 每次求以aj为终点的最长上升子序列的长度
+        int max = 0;  // 记录aj左边的上升子序列的最大长度 
+        for (i = 1; i < j; i++)  if (a[i] <a[j] && max < d[i]) max = d[i];
+        d[j] = max + 1;
     }
-    for (i = n-2; i >= 0; --i)
-      for (j = 0; j <= i; ++j)
-        d[i][j] = a[i][j] + max(d[i+1][j], d[i+1][j+1]);
 }
 
 int main() {
-    int i, j;
-    memset(d, -1, sizeof(d));
-
-    scanf("%d", &n);
-    for(i = 0; i < n; i++)
-      for (j = 0; j <= i; j++) 
-          scanf("%d", &a[i][j]);
-
-    dp();
+    int i, max;
+    scanf("%d",&N);
+    for (i = 1; i <= N;i++) scanf("%d",&a[i]);
     
-    printf("%d\n", d[0][0]);
+    dp();
+
+    max = 0;
+    for(i = 1; i <= N;i++) if (d[i] > max) max = d[i];
+    printf("%d\n",max);
     return 0;
 }
 \end{Codex}
@@ -569,16 +505,18 @@ int main() {
 \subsubsection{相关的题目}
 与本题相同的题目：
 \begindot
-\item 《算法竞赛入门经典》\footnote{刘汝佳,算法竞赛入门经典，清华大学出版社，2009}第159页9.1.1节
-\item POJ 1163 The Triangle, \myurl{http://poj.org/problem?id=1163}
-\item 百练 2760 数字三角形, \myurl{http://poj.grids.cn/practice/2760/}
-\item wikioi 1220 数字三角形, \myurl{http://www.wikioi.com/problem/1220/}
+\item 《程序设计导引及在线实践》\footnote{李文新,程序设计导引及在线实践,清华大学出版社,2007}第198页例题10.3
+\item 百练 2757 最长上升子序列, \myurl{http://poj.grids.cn/practice/2757/}
+\item POJ 2533 Longest Ordered Subsequence, \myurl{http://poj.org/problem?id=2533}
+\item wikioi 1576, 最长严格上升子序列, \myurl{http://www.wikioi.com/problem/1576/}
 \myenddot
 
 与本题相似的题目：
 \begindot
-\item  TODO
+\item  wikioi 1044 拦截导弹，\myurl{http://www.wikioi.com/problem/1044/}, \\
+参考代码 \myurl{https://gist.github.com/soulmachine/6248489}
 \myenddot
+
 
 \subsection{嵌套矩形}
 
@@ -713,6 +651,7 @@ int main() {
 \begindot
 \item  TODO
 \myenddot
+
 
 \subsection{硬币问题}
 
@@ -1009,74 +948,141 @@ void print_path(const int *d, int j) {
 \myenddot
 
 
-\subsection{最长上升子序列}
+\section{棋盘型动态规划} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{数字三角形}
 
 \subsubsection{描述}
-当一个序列严格递增时，我们称这个序列是上升的。
-对于一个给定的序列$(a_1, a_2, ..., a_N)$，我们可以得到一些上升的子序列$(a_{i1}, a_{i2}, ..., a_{iK})$，
-这里$1 \leq i1 < i2 < ... < iK \leq N$。例如，对于序列(1, 7, 3, 5, 9, 4, 8)，
-有它的一些上升子序列，如(1, 7), (3, 4, 8)等等，这些子序列中最长的长度是4，比如子序列(1, 3, 5, 8)。
+有一个由非负整数组成的三角形，第一行只有一个数，除了最下一行之外每个数的左下角和右下
+角各有一个数，如图~\ref{fig:numbersTriangle}所示。
 
-对于给定的序列，求\textbf{最长上升子序列}(longest increasing subsequence)的长度。
+\begin{center}
+\includegraphics[width=360pt]{numbers-triangle.png}\\
+\figcaption{数字三角形问题}\label{fig:numbersTriangle}
+\end{center}
+
+从第一行的数开始，每次可以往左下或右下走一格，直到走到最下行，把沿途经过的数全部加起来。
+如何走才能使得这个和最大？
 
 \subsubsection{输入}
-第一行是序列的长度$N (1 \leq N \leq 1000)$。
-第二行给出序列中的N个整数，这些整数的取值范围都在0到10000。
+第一行是一个整数$N (1 \le N \leq 100)$，给出三角形的行数。接下来的N行给出数字三角形。三
+角形中的数全部是整数，范围在0到100之间。
 
 \subsubsection{输出}
-最长上升子序列的长度。
+输出最大的和。
 
 \subsubsection{样例输入}
 \begin{Code}
+5
 7
-1 7 3 5 9 4 8
+3 8 
+8 1 0  
+2 7 4 4 
+4 5 2 6 5
 \end{Code}
 
 \subsubsection{样例输出}
 \begin{Code}
-4
+30
 \end{Code}
 
 \subsubsection{分析}
-设状态为d[j]，表示以$a_j$为终点的最长上升子序列的长度。状态转移方程如下；
-$$
-d[j]=\begin{cases}
-1 & j=1\\
-\max\left\{d[i]\right\}+1 & 1<i<j,a_i<a_j
-\end{cases}
-$$
+这是一个动态决策问题，在每层有两种选择，左下或右下，因此一个n层的数字三角形有$2^n$条路线。
+
+可以用回溯法，用回溯法求出所有可能的路线，就可以从中选出最优路线。但是由于有$2^n$条路线，
+回溯法很慢。
+
+本题可以用动态规划来求解(具有最有子结构和重叠子问题两个要素，后面会看到)。把当前位置(i,j)看
+成一个状态，然后定义状态d[i][j]为从位置(i,j)出发时能得到的最大和（包括格子(i,j)本
+身的值a[i][j]）。在这个状态定义下，原问题的解是d[0][0]。
+
+下面来看看不同状态之间是怎样转移的。从位置(i,j)出发有两种决策，如果往左走，则走到(i+1,j)后需要求
+“从(i+1,j)出发后能得到的最大和”这一子问题，即d[i+1][j]，类似地，往右走之后需要求d[i+1][j+1]。应该
+选择d[i+1][j]和d[i+1][j+1]中较大的一个，因此可以得到如下的状态转移方程：
+$$d[i][j]=a[i][j]+\max\left\{d[i+1][j], d[i+1][j+1]\right\}$$
 
 \subsubsection{代码}
+版本1，自顶向下。
 
-\begin{Codex}[label=lis.c]
+\begin{Codex}[label=numbers_triangle1.c]
 #include<stdio.h>
-#define MAXN 1001 // a[0]未用
+#include<string.h>
 
-int N;
-int a[MAXN];
-int d[MAXN];
+#define MAXN 100
 
-void dp() {
-    int i, j;
-    d[1] = 1;
- 
-    for (j = 2; j <= N; j++) { // 每次求以aj为终点的最长上升子序列的长度
-        int max = 0;  // 记录aj左边的上升子序列的最大长度 
-        for (i = 1; i < j; i++)  if (a[i] <a[j] && max < d[i]) max = d[i];
-        d[j] = max + 1;
+int n, a[MAXN][MAXN], d[MAXN][MAXN];
+
+int max(const int x, const int y) {
+    return x > y ? x : y;
+}
+
+/**
+ * @brief 求从位置(i,j)出发时能得到的最大和
+ * @param[in] i 行
+ * @param[in] j 列
+ * @return 最大和
+ */
+int dp(const int i, const int j) {
+    if(d[i][j] >= 0) {
+        return d[i][j];
+    } else {
+        return d[i][j] = a[i][j] + (i == n-1 ? 0 : max(dp(i+1, j+1), dp(i+1, j)));
     }
 }
 
 int main() {
-    int i, max;
-    scanf("%d",&N);
-    for (i = 1; i <= N;i++) scanf("%d",&a[i]);
-    
-    dp();
+    int i, j;
+    memset(d, -1, sizeof(d));
 
-    max = 0;
-    for(i = 1; i <= N;i++) if (d[i] > max) max = d[i];
-    printf("%d\n",max);
+    scanf("%d", &n);
+    for(i = 0; i < n; i++)
+      for (j = 0; j <= i; j++) scanf("%d", &a[i][j]);
+    
+    printf("%d\n", dp(0, 0));
+    return 0;
+}
+\end{Codex}
+
+版本2，自底向上。
+
+\begin{Codex}[label=numbers_triangle2.c]
+#include<stdio.h>
+#include<string.h>
+
+#define MAXN 100
+
+int n, a[MAXN][MAXN], d[MAXN][MAXN];
+
+int max(const int x, const int y) {
+    return x > y ? x : y;
+}
+
+/**
+ * @brief 自底向上计算所有子问题的最优解
+ * @return 无
+ */
+void dp() {
+    int i, j;
+    for (i = 0; i < n; ++i) {
+        d[n-1][i] = a[n-1][i];
+    }
+    for (i = n-2; i >= 0; --i)
+      for (j = 0; j <= i; ++j)
+        d[i][j] = a[i][j] + max(d[i+1][j], d[i+1][j+1]);
+}
+
+int main() {
+    int i, j;
+    memset(d, -1, sizeof(d));
+
+    scanf("%d", &n);
+    for(i = 0; i < n; i++)
+      for (j = 0; j <= i; j++) 
+          scanf("%d", &a[i][j]);
+
+    dp();
+    
+    printf("%d\n", d[0][0]);
     return 0;
 }
 \end{Codex}
@@ -1084,16 +1090,15 @@ int main() {
 \subsubsection{相关的题目}
 与本题相同的题目：
 \begindot
-\item 《程序设计导引及在线实践》\footnote{李文新,程序设计导引及在线实践,清华大学出版社,2007}第198页例题10.3
-\item 百练 2757 最长上升子序列, \myurl{http://poj.grids.cn/practice/2757/}
-\item POJ 2533 Longest Ordered Subsequence, \myurl{http://poj.org/problem?id=2533}
-\item wikioi 1576, 最长严格上升子序列, \myurl{http://www.wikioi.com/problem/1576/}
+\item 《算法竞赛入门经典》\footnote{刘汝佳,算法竞赛入门经典，清华大学出版社，2009}第159页9.1.1节
+\item POJ 1163 The Triangle, \myurl{http://poj.org/problem?id=1163}
+\item 百练 2760 数字三角形, \myurl{http://poj.grids.cn/practice/2760/}
+\item wikioi 1220 数字三角形, \myurl{http://www.wikioi.com/problem/1220/}
 \myenddot
 
 与本题相似的题目：
 \begindot
-\item  wikioi 1044 拦截导弹，\myurl{http://www.wikioi.com/problem/1044/}, \\
-参考代码 \myurl{https://gist.github.com/soulmachine/6248489}
+\item  TODO
 \myenddot
 
 
