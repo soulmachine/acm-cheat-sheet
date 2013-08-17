@@ -653,6 +653,120 @@ int main() {
 \myenddot
 
 
+\subsection{线段覆盖 2}
+
+\subsubsection{描述}
+数轴上有$n(n \leq 1000)$条线段，线段的两端都是整数坐标，坐标范围在$0 \sim 1000000$，每条线段有一个价值，请从$n$条线段中挑出若干条线段，使得这些线段两两不覆盖（端点可以重合）且线段价值之和最大。
+
+\subsubsection{输入}
+第一行一个整数$n$，表示有多少条线段。
+
+接下来$n$行每行三个整数, $a_i,b_i,c_i$，分别代表第$i$条线段的左端点$a_i$，右端点$b_i$（保证左端点<右端点）和价值$c_i$。
+
+\subsubsection{输出}
+输出能够获得的最大价值
+
+\subsubsection{样例输入}
+\begin{Code}
+3
+1 2 1
+2 3 2
+1 3 4
+\end{Code}
+
+\subsubsection{样例输出}
+\begin{Code}
+4
+\end{Code}
+
+\subsubsection{分析}
+先将线段排序。按照右端点从小到大排序。原因是循环结构中是$i$从$1$到$n$, $i$比较小的时候尽可能选右端点比较小的，这样才可以为后面的线段留下更大的空间。
+
+设状态为f[i]，表示前i条线段时，选上第i条线段，能获得的最大价值。状态转移方程如下：
+$$
+f[i]=\max\left\{f[j]\right\}+c[i], 2 \leq i \leq n, 1 \leq j \leq i-1,\text{且b[j]<=a[i]}
+$$
+b[j]<=a[i]表示j的右端点在i的左端点左边，即不重合。
+
+输出f[i]数组中的最大值。
+
+\subsubsection{代码}
+
+\begin{Codex}[label=lines_cover.c]
+/* http://www.wikioi.com/problem/3027/ */
+#include <stdio.h>
+#include <stdlib.h>
+#include <limits.h>
+
+#define MAXN 1000
+
+typedef struct line_t {
+    int a, b, c;
+} line_t;
+
+int line_cmp(const void *a, const void *b) {
+    line_t *la = (line_t*)a;
+    line_t *lb = (line_t*)b;
+    return la->b - lb->b;
+}
+
+int n;
+line_t line[MAXN];
+int f[MAXN];
+
+void dp() {
+    int i, j;
+    qsort(line, n, sizeof(line_t), line_cmp);
+    f[0] = line[0].c;
+
+    for (i = 1; i < n; i++) {
+        int max = 0;
+        for (j = 0; j < i; j++) {
+            if (line[j].b <= line[i].a) max = max > f[j] ? max : f[j];
+        }
+        f[i] = max + line[i].c;
+    }
+}
+
+
+static int max_element(const int a[], int begin, int end) {
+    int i;
+    int max_value = INT_MIN;
+    int max_pos = -1;
+    for (i = begin; i < end; i++) {
+        if (max_value < a[i]) {
+            max_value = a[i];
+            max_pos = i;
+        }
+    }
+    return max_pos;
+}
+
+
+int main() {
+    int i;
+    scanf("%d", &n);
+    for (i = 0; i < n; i++) scanf("%d%d%d", &line[i].a, &line[i].b, &line[i].c);
+
+    dp();
+
+    printf("%d\n", f[max_element(f, 0, n)]);
+    return 0;
+}
+\end{Codex}
+
+\subsubsection{相关的题目}
+与本题相同的题目：
+\begindot
+\item  wikioi 3027 线段覆盖 2, \myurl{http://www.wikioi.com/problem/3027/}
+\myenddot
+
+与本题相似的题目：
+\begindot
+\item  TODO
+\myenddot
+
+
 \subsection{硬币问题}
 
 \subsubsection{描述}
