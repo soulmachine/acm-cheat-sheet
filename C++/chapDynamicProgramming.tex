@@ -426,6 +426,628 @@ int main() {
 \myenddot
 
 
+\section{背包问题} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+背包问题(Knapsack problem\footnote{Knapsack problem, \myurl{http://en.wikipedia.org/wiki/Knapsack_problem}})
+有很多种版本，常见的是以下三种：
+\begindot
+\item 0-1背包问题(0-1 knapsack problem)：每种物品只有一个
+\item 完全背包问题(UKP, unbounded knapsack problem)：每种物品都有无限个可用
+\item 多重背包问题(BKP, bounded knapsack problem)：第i种物品有c[i]个可用
+\myenddot
+
+其他版本的背包问题请参考“背包问题九讲”，\myurl{https://github.com/tianyicui/pack}
+
+背包问题是一种“多阶段决策问题”。
+
+\subsection{0-1背包问题}
+
+\subsubsection{描述}
+有$N$种物品，第$i$种物品的重量为$w_i$，价值为$v_i$，每种物品只有一个。背包能承受的重量为$W$。
+将哪些物品装入背包可使这些物品的总重量不超过背包容量，且价值总和最大？
+
+\subsubsection{输入}
+第1行包含一个整数T，表示有T组测试用例。
+每组测试用例有3行，第1行包含两个整数$N, W(N \leq 1000 , W \leq 1000)$分别表示
+物品的种数和背包的容量，第2行包含N个整数表示每种物品的价值，第3行包含N个整数表示每种物品的重量。
+
+\subsubsection{输出}
+每行一个整数，表示价值总和的最大值。
+
+\subsubsection{样例输入}
+\begin{Code}
+1
+5 10
+1 2 3 4 5
+5 4 3 2 1
+\end{Code}
+
+\subsubsection{样例输出}
+\begin{Code}
+14
+\end{Code}
+
+\subsubsection{分析}
+由于每种物品仅有一个，可以选择装或者不装。
+
+定义状态f[i][j]，表示“把前i个物品装进容量为j的背包可以获得的最大价值”，
+则其状态转移方程便是：
+$$f[i][j]=\max\left\{f[i-1][j], f[i-1][j-w[i]+v[i]\right\}$$
+
+这个方程理解如下，把前i个物品装进容量为j的背包时，有两种情况：
+\begindot
+\item 第i个不装进去，这时所得价值为：$f[i-1][j]$
+\item 第i个装进去，这时所得价值为：$f[i-1][j-w[i]]+v[i]$
+\myenddot
+
+动规过程的伪代码如下：
+\begin{Code}
+f[0..N][0..W] = 0
+for i=1..N
+    for j=0..W
+        f[i][j]=max{f[i-1][j],f[i-1][j-w[i]]+v[i]};
+\end{Code}
+
+内循环从右向左也可以：
+\begin{Code}
+f[0..N][0..W] = 0
+for i=1..N
+    for j=W..0
+        f[i][j]=max{f[i-1][j],f[i-1][j-w[i]]+v[i]};
+\end{Code}
+
+内循环从右向左时，可以把二维数组优化成一维数组。伪代码如下：
+\begin{Code}
+for i=1..N
+    for j=W..0
+        d[j]=max{d[j],d[j-w[i]]+v[i]};
+\end{Code}
+
+为什么呢？举个例子，测试数据如下：
+\begin{Code}
+1
+3 10
+4 5 6
+3 4 5
+\end{Code}
+
+f是从上到下、从右到左计算的，如图~\ref{fig:01knapsack}所示。
+\begin{center}
+\includegraphics[width=360pt]{01knapsack.gif}\\
+\figcaption{0-1背包问题的计算顺序}\label{fig:01knapsack}
+\end{center}
+
+当内循环是逆序时，且动规是用自底向上方式实现时，就可以保证同一行可以从右向左更新。
+
+设一维数组为d（又称为滚动数组\footnote{刘汝佳,算法竞赛入门经典，清华大学出版社，2009，第169页9.3.3节}），
+在更新d[j]之前，d[j]里保存的f[i-1][j]，更新之后，d[j]里保存的是f[i][j]。
+
+事实上，使用一维数组解0-1背包问题的程序在后面会被多次用到，所以这里抽象出一
+个处理单个物品的函数，以后的代码中直接调用不加说明。
+\begin{Code}
+def ZeroOneKnapsack(d[], i)
+    for j = W..w[i]
+        d[j] = max(d[j], d[j-w[i]] + v[i])
+\end{Code}
+
+有了这个函数以后，0-1背包问题的伪代码就可以这样写：
+\begin{Code}
+d[0..W] = 0
+for i = 1..N
+    ZeroOneKnapsack(d[], i)
+\end{Code}
+
+\subsubsection{代码}
+版本1，自底向上。
+
+\begin{Codex}[label=01knapsack.c]
+#include <stdio.h>
+#include <string.h>
+
+#define MAXN 1000
+#define MAXW 1000
+
+int N, W;
+int w[MAXN+1], v[MAXN+1]; /* 0 没有用 */
+
+int f[MAXN + 1][MAXW + 1];
+
+void dp() {
+    int i, j;
+    memset(f, 0, sizeof(f)); /* 背包不一定要装满 */
+    for(i = 1; i <= N; ++i) {
+        /* for(j = W; j >= 0; --j) { /* 也可以 */
+        for(j = 0; j <= W; ++j) {
+            f[i][j] = f[i-1][j];
+            if(j >= w[i]) {
+                const int tmp = f[i-1][j-w[i]] + v[i];
+                if(tmp > f[i][j]) f[i][j] = tmp;
+            }
+        }
+    }
+}
+
+int main() {
+    int i, T;
+    scanf("%d", &T);
+    while(T--) {
+        scanf("%d %d", &N, &W);
+        for(i = 1; i <= N; ++i) scanf("%d", &v[i]);
+        for(i = 1; i <= N; ++i) scanf("%d", &w[i]);
+
+        dp();
+        printf("%d\n", f[N][W]);
+    }
+    return 0;
+}
+\end{Codex}
+
+版本2，自底向上，滚动数组。
+
+\begin{Codex}[label=01knapsack2.c]
+#include <stdio.h>
+#include <string.h>
+
+#define MAXN 1000
+#define MAXW 1000
+
+int N, W;
+int w[MAXN], v[MAXN];
+
+int d[MAXW + 1]; /* 滚动数组 */
+
+/**
+ * @brief 0-1背包问题中，处理单个物品.
+ * @param[in] d 滚动数组
+ * @param[in] i 该物品的下标
+ * @return 无
+ */
+void zero_one_knapsack(int d[], const int i) {
+    int j;
+    for(j = W; j >= w[i]; --j) {
+        const int tmp = d[j - w[i]] + v[i];
+        if(tmp > d[j]) d[j] = tmp; /* 求最小用 <，求最大用 > */
+    }
+}
+
+void dp() {
+    int i;
+    memset(d, 0, sizeof(d)); /* 背包不一定要装满 */
+
+    for(i = 0; i < N; ++i) zero_one_knapsack(d, i);
+}
+
+int main() {
+    int i, T;
+    scanf("%d", &T);
+    while(T--) {
+        scanf("%d %d", &N, &W);
+        for(i = 0; i < N; ++i) scanf("%d", &v[i]);
+        for(i = 0; i < N; ++i) scanf("%d", &w[i]);
+
+        dp();
+        printf("%d\n", d[W]);
+    }
+    return 0;
+}
+\end{Codex}
+
+\subsubsection{相关的题目}
+与本题相同的题目：
+\begindot
+\item 《算法竞赛入门经典》\footnote{刘汝佳,算法竞赛入门经典，清华大学出版社，2009}第167页例题9-5
+\item  HDOJ 2602 Bone Collector, \myurl{http://acm.hdu.edu.cn/showproblem.php?pid=2602}
+\myenddot
+
+与本题相似的题目：
+\begindot
+\item  wikioi 1014 装箱问题, \myurl{http://www.wikioi.com/problem/1014/}, \\
+参考代码 \myurl{https://gist.github.com/soulmachine/6248518}
+\myenddot
+
+\subsection{完全背包问题}
+\label{sec:ukp}
+
+\subsubsection{描述}
+给你一个储钱罐(piggy bank)，往里面存硬币。存入的过程是不可逆的，要想把钱拿出来只能摔碎
+储钱罐。因此，你想知道里面是否有足够多的钱，把它摔碎是值得的。
+
+你可以通过储钱罐的重量来推测里面至少有多少钱。已知储钱罐空的时候的重量和装了硬币后的重量，
+还有每种硬币的重量和面值，每种硬币的数量不限。求在最坏情况下，储钱罐里最少有多少钱。
+
+\subsubsection{输入}
+第1行包含一个整数T，表示有T组测试用例。
+每组测试用例，第一行是两个整数E和F，分别表示空储钱罐的重量和装了硬币后的重量，以克(gram)为单位，
+储钱罐的重量不会超过10kg，即$1 \leq E \leq F \leq 10000$。第二行是一个整数$N(1 \leq N \leq 500)$，表示
+硬币的种类数目。接下来是N行，每行包含两个整数v和w($1 \leq v \leq 50000, 1 \leq w \leq 10000$)，分别
+表示硬币的面值和重量。
+
+\subsubsection{输出}
+每个案例打印一行。内容是"The minimum amount of money in the piggy-bank is X."，其中
+X表示储钱罐里最少有多少钱。如果不能精确地达到给定的重量，则打印"This is impossible."。
+
+\subsubsection{样例输入}
+\begin{Code}
+3
+10 110
+2
+1 1
+30 50
+10 110
+2
+1 1
+50 30
+1 6
+2
+10 3
+20 4
+\end{Code}
+
+\subsubsection{样例输出}
+\begin{Code}
+The minimum amount of money in the piggy-bank is 60.
+The minimum amount of money in the piggy-bank is 100.
+This is impossible.
+\end{Code}
+
+\subsubsection{分析}
+每种物品有无限个可用，这是完全背包问题。
+
+本题没有给出储钱罐的容量，但每个案例给出了，初始为空时的重量E和装了硬币后的重量F，
+因此可以把储钱罐看作一个容量为F-E的背包，背包必须要装满。
+
+这个问题非常类似于0-1背包问题，所不同的是每种物品有无限个。也就是从每种
+物品的角度考虑，与它相关的策略已并非取或不取两种，而是取0个、取1个、取2
+个……直至取$W/w[i]$个。
+
+一种好想好写的基本方法是转化为0-1背包问题：把第i种物品换成$W/w[i]$个0-1
+背包问题中的物品，则得到了物品数为$\sum \dfrac{W}{w[i]}$的0-1背包问题。
+时间复杂度是$O(NW\sum \dfrac{W}{w[i]})$。
+
+按照该思路，状态转移方程为：
+$$f[i][j]=\max\left\{f[i-1][j-k*w[i]]+k*v[i], 0 \leq k*w[i] \leq j\right\}$$
+
+伪代码如下：
+\begin{Code}
+for i = 1..N
+    for j = W..w[i]
+        for k = 1..j/w[i]
+            d[j] = max{d[j], d[j-k*w[i]] + k*v[i]};
+\end{Code}
+
+也可以写成：
+\begin{Code}
+for i = 1..N
+    for k = 1..W/w[i]
+        ZeroOneKnapsack(d[], w, v)
+\end{Code}
+
+“拆分物品”还有更高效的拆分方法：把第i种物品拆分成重量为$2^k*w[i]$、价值为$2^k*v[i]$的
+若干物品，其中k取所有满足$2^k*w[i] \leq W$的非负整数。这是二进制的思想，因为闭区间[1, W/w[i]]中
+的任何整数都可以表示为$1, 2, 4, ..., 2^k$中若干个的和。
+
+这样处理单个物品的复杂度由$O\left(\dfrac{W}{w[i]}\right)$降到了$O\left(\log \dfrac{W}{w[i]}\right)$，伪代码如下：
+\begin{Code}
+def UnboundedKnapsack(d[], i)
+    k=1
+    while k*w[i] <= W
+        ZeroOneKnapsack(d[], k*w[i], k*v[i])
+        k=2*k
+\end{Code}
+
+还存在更优化的算法，复杂度为$O(NW)$，伪代码如下：
+\begin{Code}
+for i = 1..N
+    for j = 0..W
+        d[j] = max{d[j], d[j-w[i]] + v[i]};
+\end{Code}
+
+与0-1背包问题相比，仅有一行代码不同，这里内循环是顺序的，而0-1背包是逆序的（在使用滚动数组的情况下）。
+
+为什么这个算法可行呢？首先想想为什么0-1背包中内循环要逆序，逆序是为了保证每个物品只选一次，保证在
+“选择第i件物品”时，依赖的是一个没有选择第i件物品的子结果$f[i-1][j-w[i]]$。而现在完全背
+包的特点却是每种物品可选无限个，没有了每个物品只选一次的限制，所以就可以并且必须采用j递增
+的顺序循环。
+
+根据上面的伪代码，状态转移方程也可以写成这种形式：
+$$f[i][j]=\max\left\{f[i-1][j], f[i][j-w[i]+v[i]\right\}$$
+
+抽象出处理单个物品的函数：
+\begin{Code}
+def UnboundedKnapsack(d[], i)
+    for j = w[i]..W
+        d[j] = max(d[j], d[j-w[i]] + v[i])
+\end{Code}
+
+\subsubsection{代码}
+\begin{Codex}[label=piggy_bank.c]
+#include <stdio.h>
+
+#define MAXN 500
+#define MAXW 10000
+ /* 无效值，不要用0x7FFFFFFF，执行加运算后会变成负数 */
+const int INF = 0x0FFFFFFF;
+
+int N, W;
+int w[MAXN], v[MAXN];
+
+int d[MAXW + 1]; /* 滚动数组 */
+
+/**
+ * @brief 完全背包问题中，处理单个物品.
+ * @param[in] d 滚动数组
+ * @param[in] i 该物品的下标
+ * @return 无
+ */
+void unbounded_knapsack(int d[], const int i) {
+    int j;
+    for(j = w[i]; j <= W; ++j) {
+        const int tmp = d[j - w[i]] + v[i];
+        if(tmp < d[j]) d[j] = tmp; /* 求最小用 <，求最大用 > */
+    }
+}
+/** c，物品的系数 */
+void zero_one_knapsack(int d[], const int i, const int c) {
+    int j;
+    const int neww = c * w[i];
+    const int newv = c * v[i];
+    for(j = W; j >= neww; --j) {
+        const int tmp = d[j - neww] + newv;
+        if(tmp < d[j]) d[j] = tmp;  /* 求最小用 <，求最大用 > */
+    }
+}
+
+void unbounded_knapsack1(int d[], const int i) {
+    int k = 1;
+    while(k * w[i] <= W) {
+        zero_one_knapsack(d, i, k);
+        k *= 2;
+    }
+}
+
+void dp() {
+    int i;
+    for(i = 0; i <= W; ++i) d[i] = INF; /* 背包要装满 */
+    d[0] = 0;
+
+    for(i = 0; i < N; ++i) unbounded_knapsack(d, i);
+}
+
+int main() {    
+    int i, T;
+    int E, F;
+ 
+    scanf("%d", &T);
+    while(T--) {
+        scanf("%d %d", &E, &F);
+        W = F - E;
+        scanf("%d", &N);
+        for(i = 0; i < N; ++i) scanf("%d %d", &v[i], &w[i]);
+
+        dp();
+        if(d[W] == INF) {
+            printf("This is impossible.\n");
+        } else {
+            printf("The minimum amount of money in the piggy-bank is %d.\n",
+                    d[W]);
+        }
+    }
+    return 0;
+}
+
+/* 将第i种物品取0个，1个，...，W/w[i]个，该版本不能AC，会TLE */
+void unbounded_knapsack2(int d[], const int w, const int v) {
+    int j, k;
+    for(j = W; j >= w; --j) {
+        const int K = j / w;
+        for(k = 1; k <= K; ++k) {
+            const int tmp = d[j - k * w] + k * v;
+            if(tmp < d[j]) d[j] = tmp; /* 求最小用 <，求最大用 > */
+        }
+    }
+}
+
+/* 将第i种物品取0个，1个，...，W/w[i]个，该版本不能AC，会TLE */
+void unbounded_knapsack3(int d[], const int w, const int v) {
+    int k;
+    const int K = W / w;
+    for(k = 0; k < K; ++k){
+        zero_one_knapsack(d, w, v);
+    }
+}
+\end{Codex}
+
+\subsubsection{相关的题目}
+与本题相同的题目：
+\begindot
+\item 《算法竞赛入门经典》\footnote{刘汝佳,算法竞赛入门经典，清华大学出版社，2009}第167页例题9-4
+\item POJ 1384 Piggy-Bank, \myurl{http://poj.org/problem?id=1384}
+\item HDOJ 1114 Piggy-Bank, \myurl{http://t.cn/zWXbXIn}
+\myenddot
+
+与本题相似的题目：
+\begindot
+\item POJ 2063 Investment, \myurl{http://poj.org/problem?id=2063}
+\myenddot
+
+\subsection{多重背包问题}
+
+\subsubsection{描述}
+某地发生地震，为了挽救灾区同胞的生命，心系灾区同胞的你准备自己采购一些粮食
+支援灾区，现在假设你一共有资金W元，而市场有N种大米，每种大米都是袋装产品，
+其价格不等，并且只能整袋购买。
+
+请问：你用有限的资金最多能采购多少公斤粮食呢？
+
+\subsubsection{输入}
+第1行包含一个整数T，表示有T组测试用例。
+每组测试用例的第一行是两个整数W和N($1 \leq W \leq 100, 1 \leq N \leq 100$),分别表示经费的金
+额和大米的种类，然后是N行数据，每行包含3个整数w，v和c
+($1 \leq w \leq 20,1 \leq v \leq 200,1 \leq c \leq 20$)，
+分别表示每袋的价格、每袋的重量以及对应种类大米的袋数。
+
+\subsubsection{输出}
+对于每组测试用例，输出能够购买大米的最大重量，你可以假设经费买不光所有的大米，
+并且经费你可以不用完。每个实例的输出占一行。
+
+\subsubsection{样例输入}
+\begin{Code}
+1
+8 2
+2 100 4
+4 100 2
+\end{Code}
+
+\subsubsection{样例输出}
+\begin{Code}
+400
+\end{Code}
+
+\subsubsection{分析}
+第i种物品有c[i]个可用，这是多重背包问题。
+
+与完全背包问题类似，也可以用“拆分物品”的思想把本问题转化为0-1背包问题：把
+第i种物品换成$c[i]$个0-1背包问题中的物品，则得到了物品数为$\sum c[i]$的0-1背包问题。
+时间复杂度是$O(NW\sum c[i])$。状态转移方程为：
+$$f[i][j]=\max\left\{f[i-1][j-k*w[i]]+k*v[i], 0 \leq k \leq c[i], 0 \leq k*w[i] \leq j\right\}$$
+
+伪代码如下：
+\begin{Code}
+for i = 1..N
+    for j = W..w[i]
+        K = min{j/w[i], c[i]}
+        for k = 1..K
+            d[j] = max{d[j], d[j-k*w[i]] + k*v[i]};
+\end{Code}
+
+也可以写成：
+\begin{Code}
+for i = 1..N
+    for k = 1..c[i]
+        ZeroOneKnapsack(d[], i)
+\end{Code}
+
+拆分物品也可以使用二进制的技巧，把第i种物品拆分成若干物品，其中每件物品都有一个
+系数，这个新物品的重量和价值均是原来的重量和价值乘以这个系数。系数分别为
+$1,2,2^2,...,2^{k-1},c[i]-2^k+1$，其中k是满足$2^k-1<c[i]$的最大整数。例如，某种物品
+有13个，即c[i]=13，则相应的k=3，这种物品应该被拆分成系数分别1,2,4,6的四个物品。
+
+这样处理单个物品的复杂度由$O(c[i])$降到了$O(\log c[i])$，伪代码如下：
+\begin{Code}
+// c, 物品系数
+def ZeroOneKnapsack(d[], i, c)
+    for j = W..w[i]
+        d[j] = max(d[j], d[j-c*w[i]] + c*v[i])
+def BoundedKnapsack(d[], i)
+    if c[i]*w[i] >= W
+        unbounded_knapsack(d[], i);
+        return;
+
+    k = 1;
+    while k < c[i]
+        zero_one_knapsack(d[], i, k);
+        c[i] -= k;
+        k *= 2;
+
+    zero_one_knapsack(d[], i, c);
+\end{Code}
+
+\subsubsection{代码}
+\begin{Codex}[label=bkp.c]
+#include <stdio.h>
+#include <string.h>
+
+#define MAXN 100
+#define MAXW 100
+
+int N, W;
+int w[MAXN], v[MAXN], c[MAXN];
+
+int d[MAXW + 1]; /* 滚动数组 */
+
+/** c，物品的系数 */
+void zero_one_knapsack(int d[], const int i, const int c) {
+    int j;
+    const int neww = c * w[i];
+    const int newv = c * v[i];
+    for(j = W; j >= neww; --j) {
+        const int tmp = d[j - neww] + newv;
+        if(tmp > d[j]) d[j] = tmp;  /* 求最小用 <，求最大用 > */
+    }
+}
+
+void unbounded_knapsack(int d[], const int i) {
+    int j;
+    for(j = w[i]; j <= W; ++j) {
+        const int tmp = d[j - w[i]] + v[i];
+        if(tmp > d[j]) d[j] = tmp; /* 求最小用 <，求最大用 > */
+    }
+}
+
+/**
+ * @brief 多重背包问题中，处理单个物品.
+ * @param[in] d 滚动数组
+ * @param[in] i 该物品的下标
+ * @param[in] c 该物品的数量
+ * @return 无
+ */
+void bounded_knapsack(int d[], const int i) {
+    int k;
+    for(k = 0; k < c[i]; ++k) {
+        zero_one_knapsack(d, i, 1);
+    }
+}
+
+/* 另一个版本，拆分物品更加优化 */
+void bounded_knapsack1(int d[], const int i) {
+    int k;
+    if(c[i] * w[i] >= W) {
+        unbounded_knapsack(d, i);
+        return;
+    }
+
+    k = 1;
+    while(k < c[i]) {
+        zero_one_knapsack(d, i, k);
+        c[i] -= k;
+        k *= 2;
+    }
+    zero_one_knapsack(d, i, c[i]);
+}
+
+void dp() {
+    int i;
+    memset(d, 0, sizeof(d)); /* 背包不一定要装满 */
+
+    for(i = 0; i < N; ++i) bounded_knapsack1(d, i);
+}
+ 
+int main() {
+    int i;
+    int T;
+    scanf("%d", &T);
+    while(T--) {
+        scanf("%d %d", &W, &N);
+        for(i = 0; i < N; ++i) scanf("%d %d %d", &w[i], &v[i], &c[i]);
+
+        dp();
+        printf("%d\n", d[W]);
+    }
+    return 0;
+}
+\end{Codex}
+
+\subsubsection{相关的题目}
+与本题相同的题目：
+\begindot
+\item HDOJ 2191 买大米, \myurl{http://acm.hdu.edu.cn/showproblem.php?pid=2191}
+\myenddot
+
+与本题相似的题目：
+\begindot
+\item TODO
+\myenddot
+
+
 \section{序列型动态规划} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 对于所有动规题目，如果把状态转移图画出来，一定是一个有向无环图(DAG)。再进一步细分类别，有序列型动态规划，棋盘型动态规划，树型动态规划等等。
 
@@ -1062,1081 +1684,6 @@ void print_path(const int *d, int j) {
 \myenddot
 
 
-\section{棋盘型动态规划} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\subsection{数字三角形}
-
-\subsubsection{描述}
-有一个由非负整数组成的三角形，第一行只有一个数，除了最下一行之外每个数的左下角和右下
-角各有一个数，如图~\ref{fig:numbersTriangle}所示。
-
-\begin{center}
-\includegraphics[width=360pt]{numbers-triangle.png}\\
-\figcaption{数字三角形问题}\label{fig:numbersTriangle}
-\end{center}
-
-从第一行的数开始，每次可以往左下或右下走一格，直到走到最下行，把沿途经过的数全部加起来。
-如何走才能使得这个和最大？
-
-\subsubsection{输入}
-第一行是一个整数$N (1 \le N \leq 100)$，给出三角形的行数。接下来的N行给出数字三角形。三
-角形中的数全部是整数，范围在0到100之间。
-
-\subsubsection{输出}
-输出最大的和。
-
-\subsubsection{样例输入}
-\begin{Code}
-5
-7
-3 8 
-8 1 0  
-2 7 4 4 
-4 5 2 6 5
-\end{Code}
-
-\subsubsection{样例输出}
-\begin{Code}
-30
-\end{Code}
-
-\subsubsection{分析}
-这是一个动态决策问题，在每层有两种选择，左下或右下，因此一个n层的数字三角形有$2^n$条路线。
-
-可以用回溯法，用回溯法求出所有可能的路线，就可以从中选出最优路线。但是由于有$2^n$条路线，
-回溯法很慢。
-
-本题可以用动态规划来求解(具有最有子结构和重叠子问题两个要素，后面会看到)。把当前位置(i,j)看
-成一个状态，然后定义状态d[i][j]为从位置(i,j)出发时能得到的最大和（包括格子(i,j)本
-身的值a[i][j]）。在这个状态定义下，原问题的解是d[0][0]。
-
-下面来看看不同状态之间是怎样转移的。从位置(i,j)出发有两种决策，如果往左走，则走到(i+1,j)后需要求
-“从(i+1,j)出发后能得到的最大和”这一子问题，即d[i+1][j]，类似地，往右走之后需要求d[i+1][j+1]。应该
-选择d[i+1][j]和d[i+1][j+1]中较大的一个，因此可以得到如下的状态转移方程：
-$$d[i][j]=a[i][j]+\max\left\{d[i+1][j], d[i+1][j+1]\right\}$$
-
-\subsubsection{代码}
-版本1，自顶向下。
-
-\begin{Codex}[label=numbers_triangle1.c]
-#include<stdio.h>
-#include<string.h>
-
-#define MAXN 100
-
-int n, a[MAXN][MAXN], d[MAXN][MAXN];
-
-int max(const int x, const int y) {
-    return x > y ? x : y;
-}
-
-/**
- * @brief 求从位置(i,j)出发时能得到的最大和
- * @param[in] i 行
- * @param[in] j 列
- * @return 最大和
- */
-int dp(const int i, const int j) {
-    if(d[i][j] >= 0) {
-        return d[i][j];
-    } else {
-        return d[i][j] = a[i][j] + (i == n-1 ? 0 : max(dp(i+1, j+1), dp(i+1, j)));
-    }
-}
-
-int main() {
-    int i, j;
-    memset(d, -1, sizeof(d));
-
-    scanf("%d", &n);
-    for(i = 0; i < n; i++)
-      for (j = 0; j <= i; j++) scanf("%d", &a[i][j]);
-    
-    printf("%d\n", dp(0, 0));
-    return 0;
-}
-\end{Codex}
-
-版本2，自底向上。
-
-\begin{Codex}[label=numbers_triangle2.c]
-#include<stdio.h>
-#include<string.h>
-
-#define MAXN 100
-
-int n, a[MAXN][MAXN], d[MAXN][MAXN];
-
-int max(const int x, const int y) {
-    return x > y ? x : y;
-}
-
-/**
- * @brief 自底向上计算所有子问题的最优解
- * @return 无
- */
-void dp() {
-    int i, j;
-    for (i = 0; i < n; ++i) {
-        d[n-1][i] = a[n-1][i];
-    }
-    for (i = n-2; i >= 0; --i)
-      for (j = 0; j <= i; ++j)
-        d[i][j] = a[i][j] + max(d[i+1][j], d[i+1][j+1]);
-}
-
-int main() {
-    int i, j;
-    memset(d, -1, sizeof(d));
-
-    scanf("%d", &n);
-    for(i = 0; i < n; i++)
-      for (j = 0; j <= i; j++) 
-          scanf("%d", &a[i][j]);
-
-    dp();
-    
-    printf("%d\n", d[0][0]);
-    return 0;
-}
-\end{Codex}
-
-\subsubsection{相关的题目}
-与本题相同的题目：
-\begindot
-\item 《算法竞赛入门经典》\footnote{刘汝佳,算法竞赛入门经典，清华大学出版社，2009}第159页9.1.1节
-\item POJ 1163 The Triangle, \myurl{http://poj.org/problem?id=1163}
-\item 百练 2760 数字三角形, \myurl{http://poj.grids.cn/practice/2760/}
-\item wikioi 1220 数字三角形, \myurl{http://www.wikioi.com/problem/1220/}
-\myenddot
-
-与本题相似的题目：
-\begindot
-\item  TODO
-\myenddot
-
-
-\subsection{过河卒}
-
-\subsubsection{描述}
-如图，A点有一个过河卒，需要走到目标B点。卒行走规则：可以向下、或者向右。同时在棋盘上的任一点有一个对方的马（如上图的C点），该马所在的点和所有跳跃一步可达的点称为对方马的控制点。例如上图C点上的马可以控制9个点（图中的P1，P2 … P8 和 C）。卒不能通过对方马的控制点。
-
-\begin{center}
-\includegraphics[width=300pt]{river.png}\\
-\figcaption{过河卒}\label{fig:river}
-\end{center}
-
-棋盘用坐标表示，A点（0，0）、B点（n,m）(n,m 为不超过20的整数，并由键盘输入)，同样马的位置坐标是需要给出的（约定: C不等于A，同时C不等于B）。现在要求你计算出卒从A点能够到达B点的路径的条数。
-
-\subsubsection{输入}
-B点的坐标（n,m）以及对方马的坐标（X,Y）
-
-\subsubsection{输出}
-一个整数（路径的条数）
-
-\subsubsection{样例输入}
-\begin{Code}
-6 6 3 2
-\end{Code}
-
-\subsubsection{样例输出}
-\begin{Code}
-17
-\end{Code}
-
-\subsubsection{分析}
-这是一个棋盘形动态规划。
-
-设状态为f[i][j]，表示从(0,0)到(i,j)的路径的条数，状态转移方程为
-$$
-f[i][j] = f[i-1][j] + f[i][j-1]
-$$
-
-\subsubsection{代码}
-
-\begin{Codex}[label=river.c]
-#include <stdio.h>
-#include <memory.h>
-
-#define MAX 21
-
-int n, m;
-int x, y; /* 马儿的坐标 */
-
-/* 八个控制点，顺时针方向 */
-int dx[] = {-2, -1, 1, 2, 2, 1, -1, -2};
-int dy[] = {1, 2, 2, 1, -1, -2, -2, -1};
-
-int g[MAX][MAX];  /* 棋盘，马儿以及马儿的控制点为1，其余为0 */
-int f[MAX][MAX];  /* f[i][j] = f[i-1][j] + f[i][j-1] */
-
-void dp() {
-    int i, j;
-    memset(g, 0, sizeof(g));
-    memset(f, 0, sizeof(f));
-
-    g[x][y] = 1;
-    for (i = 0; i < 8; i++) if(x+dx[i] >=0 && x+dx[i] <= n &&
-            y+dy[i] >= 0 && y+dy[i] <= n){
-        g[x+dx[i]][y+dy[i]] = 1;
-    }
-
-    f[0][0] = 1;  /* 起点 */
-    /* 初始化边界 */
-    for (i = 1; i <= n; i++) if (!g[i][0]) f[i][0] = f[i-1][0];
-    for (j = 1; j <= m; j++) if (!g[0][j]) f[0][j] = f[0][j-1];
-
-    for (i = 1; i <= n; i++) {
-        for (j = 1; j <= m; j++) {
-            if (!g[i][j]) f[i][j] = f[i-1][j] + f[i][j-1];
-        }
-    }
-}
-
-int main() {
-    scanf("%d%d%d%d", &n, &m, &x, &y);
-    dp();
-    printf("%d\n", f[n][m]);
-    return 0;
-}
-\end{Codex}
-
-\subsubsection{相关的题目}
-与本题相同的题目：
-\begindot
-\item wikioi 1010, 过河卒, \myurl{http://www.wikioi.com/problem/1010/}
-\myenddot
-
-与本题相似的题目：
-\begindot
-\item  null
-\myenddot
-
-
-\subsection{传纸条}
-
-\subsubsection{描述}
-小渊和小轩是好朋友也是同班同学，他们在一起总有谈不完的话题。一次素质拓展活动中，班上同学安排做成一个$m$行$n$列的矩阵，而小渊和小轩被安排在矩阵对角线的两端，因此，他们就无法直接交谈了。幸运的是，他们可以通过传纸条来进行交流。纸条要经由许多同学传到对方手里，小渊坐在矩阵的左上角，坐标$(1,1)$，小轩坐在矩阵的右下角，坐标$(m,n)$。从小渊传到小轩的纸条只可以向下或者向右传递，从小轩传给小渊的纸条只可以向上或者向左传递。
-
-在活动进行中，小渊希望给小轩传递一张纸条，同时希望小轩给他回复。班里每个同学都可以帮他们传递，但只会帮他们一次，也就是说如果此人在小渊递给小轩纸条的时候帮忙，那么在小轩递给小渊的时候就不会再帮忙。反之亦然。
-
-还有一件事情需要注意，全班每个同学愿意帮忙的好感度有高有低（注意：小渊和小轩的好心程度没有定义，输入时用0表示），可以用一个$0 \sim 100$的自然数来表示，数越大表示越好心。小渊和小轩希望尽可能找好心程度高的同学来帮忙传纸条，即找到来回两条传递路径，使得这两条路径上同学的好心程度只和最大。现在，请你帮助小渊和小轩找到这样的两条路径。
-
-\subsubsection{输入}
-输入的第一行有2个用空格隔开的整数$m$和$n$，表示班里有$m$行$n$列$(1 \leq m,n \leq 50)$。接下来的$m$行是一个$m*n$的矩阵，矩阵中第$i$行$j$列的整数表示坐在第$i$行$j$列的学生的好心程度。每行的$n$个整数之间用空格隔开
-
-\subsubsection{输出}
-输出共一行，包含一个整数，表示来回两条路上参与传递纸条的学生的好心程度之和的最大值。
-
-\subsubsection{样例输入}
-\begin{Code}
-3 3
-0 3 9
-2 8 5
-5 7 0
-\end{Code}
-
-\subsubsection{样例输出}
-\begin{Code}
-34
-\end{Code}
-
-\subsubsection{分析}
-这是一个棋盘形动态规划。用矩阵\fn{int g[MAX][MAX]}存储输入数据，即每个学生的好心值。
-
-题目等价为为从$(1,1)$传两张纸条到$(m,n)$。每个纸条都是由上面或左边传递过来的， 所以有四种情况。设状态为$f[i][j][k][l]$，表示纸条一在$(i,j)$,纸条二在$(k,l)$的好心程度之和，状态转移方程为
-
-\begin{eqnarray}
-f[i][j][k][l] = \max\{ & f[i-1][j][k-1][l], & \nonumber \\
-                            & f[i-1][j][k][l-1], & \nonumber \\
-							& f[i][j-1][k][l-1], & \nonumber \\
-                            & f[i][j-1][k-1][l]\} & +g[i][j]+g[k][l] \nonumber
-\end{eqnarray}
-
-\subsubsection{代码}
-
-\begin{Codex}[label=deliver_note.c]
-#include <stdio.h>
-#include <memory.h>
-
-#define MAX 51  /* m,n的最大值是50，应该有笔误，实际是51 */
-
-int m, n;           /* 行，列 */
-int g[MAX][MAX];    /* 好心值 */
-/** 题目等价为为从(1，1)传两张纸条到(m,n)，
- * f[i][j][k][l]表示纸条一在(i,j),纸条二在(k,l）的好心程度之和
- */
-int f[MAX][MAX][MAX][MAX];
-
-int max(const int a, const int b) {
-    return a > b ? a : b;
-}
-
-void dp() {
-    int i, j, k, l;
-    memset(f, 0, sizeof(f));
-    /* 每个纸条都是由上面或左边传递过来的， 所以有四种情况 */
-    for (i = 0; i < m; i++) {
-        for (j = 0; j < n; j++) {
-            for (k = 0; k < m; k++) {
-                for (l = 0; l < n; l++) {
-                    if(i > 0 && k > 0 && (i != k || j != l))
-                        f[i][j][k][l] = max(f[i][j][k][l],
-                                f[i-1][j][k-1][l] + g[i][j]+g[k][l]);
-                    if(i > 0 && l < n && (i-1 != k || j != l-1))
-                        f[i][j][k][l] = max(f[i][j][k][l],
-                                f[i-1][j][k][l-1] + g[i][j]+g[k][l]);
-                    if(j < n && l < n && (i != k || j != l))
-                        f[i][j][k][l] = max(f[i][j][k][l],
-                                f[i][j-1][k][l-1] + g[i][j]+g[k][l]);
-                    if(j < n && k > 0 && (i != k-1 || j-1 != l))
-                        f[i][j][k][l] = max(f[i][j][k][l],
-                                f[i][j-1][k-1][l] + g[i][j]+g[k][l]);
-                }
-            }
-        }
-    }
-}
-
-int main() {
-    int i, j;
-    scanf("%d%d", &m, &n);
-    for (i = 0; i < m; i++) {
-        for (j = 0; j < n; j++) {
-            scanf("%d", &g[i][j]);
-        }
-    }
-    dp();
-    printf("%d\n", f[m-1][n-1][m-1][n-1]);
-    return 0;
-}
-\end{Codex}
-
-TODO: 本题可以优化为三维
-
-\subsubsection{相关的题目}
-与本题相同的题目：
-\begindot
-\item wikioi 1169, 传纸条, \myurl{http://www.wikioi.com/problem/1169/}
-\myenddot
-
-与本题相似的题目：
-\begindot
-\item  null
-\myenddot
-
-
-\subsection{骑士游历}
-
-\subsubsection{描述}
-设有一个$n*m$的棋盘($2 \leq n \leq 50, 2 \leq m \leq 50$)，如图~\ref{fig:horse}所示，在棋盘上有一个中国象棋马。规定：
-\begindot
-\item 马只能走日字
-\item 马只能向右跳
-\myenddot
-
-\begin{center}
-\includegraphics{horse.png} \\
-\figcaption{骑士游历}\label{fig:horse}
-\end{center}
-
-问给定起点(x1,y1)和终点(x2,y2)，求出马从(x1,y1)出发到(x2,y2)的合法路径条数。
-
-\subsubsection{输入}
-第一行2个整数n和m，第二行4个整数x1,y1,x2,y2
-
-\subsubsection{输出}
-合法路径条数
-
-\subsubsection{样例输入}
-\begin{Code}
-30 30
-1 15 3 15
-\end{Code}
-
-\subsubsection{样例输出}
-\begin{Code}
-2
-\end{Code}
-
-\subsubsection{分析}
-这是一道棋盘型动态规划。
-
-设状态为f[i][j]，表示从起点(x1,y1)到(i,j)的合法路径条数，状态转移方程为
-$$
-f[i][j] = f[i-1][j-2] + f[i-1][j+2] + f[i-2][j-1] + f[i-2][j+1]
-$$
-
-注意，合法路径条数有可能非常大，32位整数存不下，需要用64位整数。
-
-\subsubsection{代码}
-
-\begin{Codex}[label=horse.c]
-#include <stdio.h>
-#include <memory.h>
-#include <stdint.h>
-
-#define MAX  51  /* n,m最大值，本题范围又有笔误，应该是51 */
-
-int n, m;
-int x1, y1, x2, y2;
-/*f[i][j]表示从(x1,y1)到(i,j)的合法路径的条数*/
-int64_t f[MAX+1][MAX+1];
-
-void dp() {
-    int i, j;
-    memset(f, 0, sizeof(f));
-    f[x1][y1] = 1;
-    for (i = x1+1; i <= x2; i++) {
-        for (j = 1; j <= m; j++) {
-            f[i][j] = f[i-1][j-2] + f[i-1][j+2] + f[i-2][j-1] + f[i-2][j+1];
-        }
-    }
-
-}
-
-int main() {
-    scanf("%d%d", &n, &m);
-    scanf("%d%d%d%d", &x1, &y1, &x2, &y2);
-    dp();
-    printf("%lld\n", f[x2][y2]);
-    return 0;
-}
-\end{Codex}
-
-\subsubsection{相关的题目}
-与本题相同的题目：
-\begindot
-\item wikioi 1219, 骑士游历, \myurl{http://www.wikioi.com/problem/1219/}
-\myenddot
-
-与本题相似的题目：
-\begindot
-\item  null
-\myenddot
-
-\section{背包问题} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-背包问题(Knapsack problem\footnote{Knapsack problem, \myurl{http://en.wikipedia.org/wiki/Knapsack_problem}})
-有很多种版本，常见的是以下三种：
-\begindot
-\item 0-1背包问题(0-1 knapsack problem)：每种物品只有一个
-\item 完全背包问题(UKP, unbounded knapsack problem)：每种物品都有无限个可用
-\item 多重背包问题(BKP, bounded knapsack problem)：第i种物品有c[i]个可用
-\myenddot
-
-其他版本的背包问题请参考“背包问题九讲”，\myurl{https://github.com/tianyicui/pack}
-
-背包问题是一种“多阶段决策问题”。
-
-\subsection{0-1背包问题}
-
-\subsubsection{描述}
-有$N$种物品，第$i$种物品的重量为$w_i$，价值为$v_i$，每种物品只有一个。背包能承受的重量为$W$。
-将哪些物品装入背包可使这些物品的总重量不超过背包容量，且价值总和最大？
-
-\subsubsection{输入}
-第1行包含一个整数T，表示有T组测试用例。
-每组测试用例有3行，第1行包含两个整数$N, W(N \leq 1000 , W \leq 1000)$分别表示
-物品的种数和背包的容量，第2行包含N个整数表示每种物品的价值，第3行包含N个整数表示每种物品的重量。
-
-\subsubsection{输出}
-每行一个整数，表示价值总和的最大值。
-
-\subsubsection{样例输入}
-\begin{Code}
-1
-5 10
-1 2 3 4 5
-5 4 3 2 1
-\end{Code}
-
-\subsubsection{样例输出}
-\begin{Code}
-14
-\end{Code}
-
-\subsubsection{分析}
-由于每种物品仅有一个，可以选择装或者不装。
-
-定义状态f[i][j]，表示“把前i个物品装进容量为j的背包可以获得的最大价值”，
-则其状态转移方程便是：
-$$f[i][j]=\max\left\{f[i-1][j], f[i-1][j-w[i]+v[i]\right\}$$
-
-这个方程理解如下，把前i个物品装进容量为j的背包时，有两种情况：
-\begindot
-\item 第i个不装进去，这时所得价值为：$f[i-1][j]$
-\item 第i个装进去，这时所得价值为：$f[i-1][j-w[i]]+v[i]$
-\myenddot
-
-动规过程的伪代码如下：
-\begin{Code}
-f[0..N][0..W] = 0
-for i=1..N
-    for j=0..W
-        f[i][j]=max{f[i-1][j],f[i-1][j-w[i]]+v[i]};
-\end{Code}
-
-内循环从右向左也可以：
-\begin{Code}
-f[0..N][0..W] = 0
-for i=1..N
-    for j=W..0
-        f[i][j]=max{f[i-1][j],f[i-1][j-w[i]]+v[i]};
-\end{Code}
-
-内循环从右向左时，可以把二维数组优化成一维数组。伪代码如下：
-\begin{Code}
-for i=1..N
-    for j=W..0
-        d[j]=max{d[j],d[j-w[i]]+v[i]};
-\end{Code}
-
-为什么呢？举个例子，测试数据如下：
-\begin{Code}
-1
-3 10
-4 5 6
-3 4 5
-\end{Code}
-
-f是从上到下、从右到左计算的，如图~\ref{fig:01knapsack}所示。
-\begin{center}
-\includegraphics[width=360pt]{01knapsack.gif}\\
-\figcaption{0-1背包问题的计算顺序}\label{fig:01knapsack}
-\end{center}
-
-当内循环是逆序时，且动规是用自底向上方式实现时，就可以保证同一行可以从右向左更新。
-
-设一维数组为d（又称为滚动数组\footnote{刘汝佳,算法竞赛入门经典，清华大学出版社，2009，第169页9.3.3节}），
-在更新d[j]之前，d[j]里保存的f[i-1][j]，更新之后，d[j]里保存的是f[i][j]。
-
-事实上，使用一维数组解0-1背包问题的程序在后面会被多次用到，所以这里抽象出一
-个处理单个物品的函数，以后的代码中直接调用不加说明。
-\begin{Code}
-def ZeroOneKnapsack(d[], i)
-    for j = W..w[i]
-        d[j] = max(d[j], d[j-w[i]] + v[i])
-\end{Code}
-
-有了这个函数以后，0-1背包问题的伪代码就可以这样写：
-\begin{Code}
-d[0..W] = 0
-for i = 1..N
-    ZeroOneKnapsack(d[], i)
-\end{Code}
-
-\subsubsection{代码}
-版本1，自底向上。
-
-\begin{Codex}[label=01knapsack.c]
-#include <stdio.h>
-#include <string.h>
-
-#define MAXN 1000
-#define MAXW 1000
-
-int N, W;
-int w[MAXN+1], v[MAXN+1]; /* 0 没有用 */
-
-int f[MAXN + 1][MAXW + 1];
-
-void dp() {
-    int i, j;
-    memset(f, 0, sizeof(f)); /* 背包不一定要装满 */
-    for(i = 1; i <= N; ++i) {
-        /* for(j = W; j >= 0; --j) { /* 也可以 */
-        for(j = 0; j <= W; ++j) {
-            f[i][j] = f[i-1][j];
-            if(j >= w[i]) {
-                const int tmp = f[i-1][j-w[i]] + v[i];
-                if(tmp > f[i][j]) f[i][j] = tmp;
-            }
-        }
-    }
-}
-
-int main() {
-    int i, T;
-    scanf("%d", &T);
-    while(T--) {
-        scanf("%d %d", &N, &W);
-        for(i = 1; i <= N; ++i) scanf("%d", &v[i]);
-        for(i = 1; i <= N; ++i) scanf("%d", &w[i]);
-
-        dp();
-        printf("%d\n", f[N][W]);
-    }
-    return 0;
-}
-\end{Codex}
-
-版本2，自底向上，滚动数组。
-
-\begin{Codex}[label=01knapsack2.c]
-#include <stdio.h>
-#include <string.h>
-
-#define MAXN 1000
-#define MAXW 1000
-
-int N, W;
-int w[MAXN], v[MAXN];
-
-int d[MAXW + 1]; /* 滚动数组 */
-
-/**
- * @brief 0-1背包问题中，处理单个物品.
- * @param[in] d 滚动数组
- * @param[in] i 该物品的下标
- * @return 无
- */
-void zero_one_knapsack(int d[], const int i) {
-    int j;
-    for(j = W; j >= w[i]; --j) {
-        const int tmp = d[j - w[i]] + v[i];
-        if(tmp > d[j]) d[j] = tmp; /* 求最小用 <，求最大用 > */
-    }
-}
-
-void dp() {
-    int i;
-    memset(d, 0, sizeof(d)); /* 背包不一定要装满 */
-
-    for(i = 0; i < N; ++i) zero_one_knapsack(d, i);
-}
-
-int main() {
-    int i, T;
-    scanf("%d", &T);
-    while(T--) {
-        scanf("%d %d", &N, &W);
-        for(i = 0; i < N; ++i) scanf("%d", &v[i]);
-        for(i = 0; i < N; ++i) scanf("%d", &w[i]);
-
-        dp();
-        printf("%d\n", d[W]);
-    }
-    return 0;
-}
-\end{Codex}
-
-\subsubsection{相关的题目}
-与本题相同的题目：
-\begindot
-\item 《算法竞赛入门经典》\footnote{刘汝佳,算法竞赛入门经典，清华大学出版社，2009}第167页例题9-5
-\item  HDOJ 2602 Bone Collector, \myurl{http://acm.hdu.edu.cn/showproblem.php?pid=2602}
-\myenddot
-
-与本题相似的题目：
-\begindot
-\item  wikioi 1014 装箱问题, \myurl{http://www.wikioi.com/problem/1014/}, \\
-参考代码 \myurl{https://gist.github.com/soulmachine/6248518}
-\myenddot
-
-\subsection{完全背包问题}
-\label{sec:ukp}
-
-\subsubsection{描述}
-给你一个储钱罐(piggy bank)，往里面存硬币。存入的过程是不可逆的，要想把钱拿出来只能摔碎
-储钱罐。因此，你想知道里面是否有足够多的钱，把它摔碎是值得的。
-
-你可以通过储钱罐的重量来推测里面至少有多少钱。已知储钱罐空的时候的重量和装了硬币后的重量，
-还有每种硬币的重量和面值，每种硬币的数量不限。求在最坏情况下，储钱罐里最少有多少钱。
-
-\subsubsection{输入}
-第1行包含一个整数T，表示有T组测试用例。
-每组测试用例，第一行是两个整数E和F，分别表示空储钱罐的重量和装了硬币后的重量，以克(gram)为单位，
-储钱罐的重量不会超过10kg，即$1 \leq E \leq F \leq 10000$。第二行是一个整数$N(1 \leq N \leq 500)$，表示
-硬币的种类数目。接下来是N行，每行包含两个整数v和w($1 \leq v \leq 50000, 1 \leq w \leq 10000$)，分别
-表示硬币的面值和重量。
-
-\subsubsection{输出}
-每个案例打印一行。内容是"The minimum amount of money in the piggy-bank is X."，其中
-X表示储钱罐里最少有多少钱。如果不能精确地达到给定的重量，则打印"This is impossible."。
-
-\subsubsection{样例输入}
-\begin{Code}
-3
-10 110
-2
-1 1
-30 50
-10 110
-2
-1 1
-50 30
-1 6
-2
-10 3
-20 4
-\end{Code}
-
-\subsubsection{样例输出}
-\begin{Code}
-The minimum amount of money in the piggy-bank is 60.
-The minimum amount of money in the piggy-bank is 100.
-This is impossible.
-\end{Code}
-
-\subsubsection{分析}
-每种物品有无限个可用，这是完全背包问题。
-
-本题没有给出储钱罐的容量，但每个案例给出了，初始为空时的重量E和装了硬币后的重量F，
-因此可以把储钱罐看作一个容量为F-E的背包，背包必须要装满。
-
-这个问题非常类似于0-1背包问题，所不同的是每种物品有无限个。也就是从每种
-物品的角度考虑，与它相关的策略已并非取或不取两种，而是取0个、取1个、取2
-个……直至取$W/w[i]$个。
-
-一种好想好写的基本方法是转化为0-1背包问题：把第i种物品换成$W/w[i]$个0-1
-背包问题中的物品，则得到了物品数为$\sum \dfrac{W}{w[i]}$的0-1背包问题。
-时间复杂度是$O(NW\sum \dfrac{W}{w[i]})$。
-
-按照该思路，状态转移方程为：
-$$f[i][j]=\max\left\{f[i-1][j-k*w[i]]+k*v[i], 0 \leq k*w[i] \leq j\right\}$$
-
-伪代码如下：
-\begin{Code}
-for i = 1..N
-    for j = W..w[i]
-        for k = 1..j/w[i]
-            d[j] = max{d[j], d[j-k*w[i]] + k*v[i]};
-\end{Code}
-
-也可以写成：
-\begin{Code}
-for i = 1..N
-    for k = 1..W/w[i]
-        ZeroOneKnapsack(d[], w, v)
-\end{Code}
-
-“拆分物品”还有更高效的拆分方法：把第i种物品拆分成重量为$2^k*w[i]$、价值为$2^k*v[i]$的
-若干物品，其中k取所有满足$2^k*w[i] \leq W$的非负整数。这是二进制的思想，因为闭区间[1, W/w[i]]中
-的任何整数都可以表示为$1, 2, 4, ..., 2^k$中若干个的和。
-
-这样处理单个物品的复杂度由$O\left(\dfrac{W}{w[i]}\right)$降到了$O\left(\log \dfrac{W}{w[i]}\right)$，伪代码如下：
-\begin{Code}
-def UnboundedKnapsack(d[], i)
-    k=1
-    while k*w[i] <= W
-        ZeroOneKnapsack(d[], k*w[i], k*v[i])
-        k=2*k
-\end{Code}
-
-还存在更优化的算法，复杂度为$O(NW)$，伪代码如下：
-\begin{Code}
-for i = 1..N
-    for j = 0..W
-        d[j] = max{d[j], d[j-w[i]] + v[i]};
-\end{Code}
-
-与0-1背包问题相比，仅有一行代码不同，这里内循环是顺序的，而0-1背包是逆序的（在使用滚动数组的情况下）。
-
-为什么这个算法可行呢？首先想想为什么0-1背包中内循环要逆序，逆序是为了保证每个物品只选一次，保证在
-“选择第i件物品”时，依赖的是一个没有选择第i件物品的子结果$f[i-1][j-w[i]]$。而现在完全背
-包的特点却是每种物品可选无限个，没有了每个物品只选一次的限制，所以就可以并且必须采用j递增
-的顺序循环。
-
-根据上面的伪代码，状态转移方程也可以写成这种形式：
-$$f[i][j]=\max\left\{f[i-1][j], f[i][j-w[i]+v[i]\right\}$$
-
-抽象出处理单个物品的函数：
-\begin{Code}
-def UnboundedKnapsack(d[], i)
-    for j = w[i]..W
-        d[j] = max(d[j], d[j-w[i]] + v[i])
-\end{Code}
-
-\subsubsection{代码}
-\begin{Codex}[label=piggy_bank.c]
-#include <stdio.h>
-
-#define MAXN 500
-#define MAXW 10000
- /* 无效值，不要用0x7FFFFFFF，执行加运算后会变成负数 */
-const int INF = 0x0FFFFFFF;
-
-int N, W;
-int w[MAXN], v[MAXN];
-
-int d[MAXW + 1]; /* 滚动数组 */
-
-/**
- * @brief 完全背包问题中，处理单个物品.
- * @param[in] d 滚动数组
- * @param[in] i 该物品的下标
- * @return 无
- */
-void unbounded_knapsack(int d[], const int i) {
-    int j;
-    for(j = w[i]; j <= W; ++j) {
-        const int tmp = d[j - w[i]] + v[i];
-        if(tmp < d[j]) d[j] = tmp; /* 求最小用 <，求最大用 > */
-    }
-}
-/** c，物品的系数 */
-void zero_one_knapsack(int d[], const int i, const int c) {
-    int j;
-    const int neww = c * w[i];
-    const int newv = c * v[i];
-    for(j = W; j >= neww; --j) {
-        const int tmp = d[j - neww] + newv;
-        if(tmp < d[j]) d[j] = tmp;  /* 求最小用 <，求最大用 > */
-    }
-}
-
-void unbounded_knapsack1(int d[], const int i) {
-    int k = 1;
-    while(k * w[i] <= W) {
-        zero_one_knapsack(d, i, k);
-        k *= 2;
-    }
-}
-
-void dp() {
-    int i;
-    for(i = 0; i <= W; ++i) d[i] = INF; /* 背包要装满 */
-    d[0] = 0;
-
-    for(i = 0; i < N; ++i) unbounded_knapsack(d, i);
-}
-
-int main() {    
-    int i, T;
-    int E, F;
- 
-    scanf("%d", &T);
-    while(T--) {
-        scanf("%d %d", &E, &F);
-        W = F - E;
-        scanf("%d", &N);
-        for(i = 0; i < N; ++i) scanf("%d %d", &v[i], &w[i]);
-
-        dp();
-        if(d[W] == INF) {
-            printf("This is impossible.\n");
-        } else {
-            printf("The minimum amount of money in the piggy-bank is %d.\n",
-                    d[W]);
-        }
-    }
-    return 0;
-}
-
-/* 将第i种物品取0个，1个，...，W/w[i]个，该版本不能AC，会TLE */
-void unbounded_knapsack2(int d[], const int w, const int v) {
-    int j, k;
-    for(j = W; j >= w; --j) {
-        const int K = j / w;
-        for(k = 1; k <= K; ++k) {
-            const int tmp = d[j - k * w] + k * v;
-            if(tmp < d[j]) d[j] = tmp; /* 求最小用 <，求最大用 > */
-        }
-    }
-}
-
-/* 将第i种物品取0个，1个，...，W/w[i]个，该版本不能AC，会TLE */
-void unbounded_knapsack3(int d[], const int w, const int v) {
-    int k;
-    const int K = W / w;
-    for(k = 0; k < K; ++k){
-        zero_one_knapsack(d, w, v);
-    }
-}
-\end{Codex}
-
-\subsubsection{相关的题目}
-与本题相同的题目：
-\begindot
-\item 《算法竞赛入门经典》\footnote{刘汝佳,算法竞赛入门经典，清华大学出版社，2009}第167页例题9-4
-\item POJ 1384 Piggy-Bank, \myurl{http://poj.org/problem?id=1384}
-\item HDOJ 1114 Piggy-Bank, \myurl{http://t.cn/zWXbXIn}
-\myenddot
-
-与本题相似的题目：
-\begindot
-\item POJ 2063 Investment, \myurl{http://poj.org/problem?id=2063}
-\myenddot
-
-\subsection{多重背包问题}
-
-\subsubsection{描述}
-某地发生地震，为了挽救灾区同胞的生命，心系灾区同胞的你准备自己采购一些粮食
-支援灾区，现在假设你一共有资金W元，而市场有N种大米，每种大米都是袋装产品，
-其价格不等，并且只能整袋购买。
-
-请问：你用有限的资金最多能采购多少公斤粮食呢？
-
-\subsubsection{输入}
-第1行包含一个整数T，表示有T组测试用例。
-每组测试用例的第一行是两个整数W和N($1 \leq W \leq 100, 1 \leq N \leq 100$),分别表示经费的金
-额和大米的种类，然后是N行数据，每行包含3个整数w，v和c
-($1 \leq w \leq 20,1 \leq v \leq 200,1 \leq c \leq 20$)，
-分别表示每袋的价格、每袋的重量以及对应种类大米的袋数。
-
-\subsubsection{输出}
-对于每组测试用例，输出能够购买大米的最大重量，你可以假设经费买不光所有的大米，
-并且经费你可以不用完。每个实例的输出占一行。
-
-\subsubsection{样例输入}
-\begin{Code}
-1
-8 2
-2 100 4
-4 100 2
-\end{Code}
-
-\subsubsection{样例输出}
-\begin{Code}
-400
-\end{Code}
-
-\subsubsection{分析}
-第i种物品有c[i]个可用，这是多重背包问题。
-
-与完全背包问题类似，也可以用“拆分物品”的思想把本问题转化为0-1背包问题：把
-第i种物品换成$c[i]$个0-1背包问题中的物品，则得到了物品数为$\sum c[i]$的0-1背包问题。
-时间复杂度是$O(NW\sum c[i])$。状态转移方程为：
-$$f[i][j]=\max\left\{f[i-1][j-k*w[i]]+k*v[i], 0 \leq k \leq c[i], 0 \leq k*w[i] \leq j\right\}$$
-
-伪代码如下：
-\begin{Code}
-for i = 1..N
-    for j = W..w[i]
-        K = min{j/w[i], c[i]}
-        for k = 1..K
-            d[j] = max{d[j], d[j-k*w[i]] + k*v[i]};
-\end{Code}
-
-也可以写成：
-\begin{Code}
-for i = 1..N
-    for k = 1..c[i]
-        ZeroOneKnapsack(d[], i)
-\end{Code}
-
-拆分物品也可以使用二进制的技巧，把第i种物品拆分成若干物品，其中每件物品都有一个
-系数，这个新物品的重量和价值均是原来的重量和价值乘以这个系数。系数分别为
-$1,2,2^2,...,2^{k-1},c[i]-2^k+1$，其中k是满足$2^k-1<c[i]$的最大整数。例如，某种物品
-有13个，即c[i]=13，则相应的k=3，这种物品应该被拆分成系数分别1,2,4,6的四个物品。
-
-这样处理单个物品的复杂度由$O(c[i])$降到了$O(\log c[i])$，伪代码如下：
-\begin{Code}
-// c, 物品系数
-def ZeroOneKnapsack(d[], i, c)
-    for j = W..w[i]
-        d[j] = max(d[j], d[j-c*w[i]] + c*v[i])
-def BoundedKnapsack(d[], i)
-    if c[i]*w[i] >= W
-        unbounded_knapsack(d[], i);
-        return;
-
-    k = 1;
-    while k < c[i]
-        zero_one_knapsack(d[], i, k);
-        c[i] -= k;
-        k *= 2;
-
-    zero_one_knapsack(d[], i, c);
-\end{Code}
-
-\subsubsection{代码}
-\begin{Codex}[label=bkp.c]
-#include <stdio.h>
-#include <string.h>
-
-#define MAXN 100
-#define MAXW 100
-
-int N, W;
-int w[MAXN], v[MAXN], c[MAXN];
-
-int d[MAXW + 1]; /* 滚动数组 */
-
-/** c，物品的系数 */
-void zero_one_knapsack(int d[], const int i, const int c) {
-    int j;
-    const int neww = c * w[i];
-    const int newv = c * v[i];
-    for(j = W; j >= neww; --j) {
-        const int tmp = d[j - neww] + newv;
-        if(tmp > d[j]) d[j] = tmp;  /* 求最小用 <，求最大用 > */
-    }
-}
-
-void unbounded_knapsack(int d[], const int i) {
-    int j;
-    for(j = w[i]; j <= W; ++j) {
-        const int tmp = d[j - w[i]] + v[i];
-        if(tmp > d[j]) d[j] = tmp; /* 求最小用 <，求最大用 > */
-    }
-}
-
-/**
- * @brief 多重背包问题中，处理单个物品.
- * @param[in] d 滚动数组
- * @param[in] i 该物品的下标
- * @param[in] c 该物品的数量
- * @return 无
- */
-void bounded_knapsack(int d[], const int i) {
-    int k;
-    for(k = 0; k < c[i]; ++k) {
-        zero_one_knapsack(d, i, 1);
-    }
-}
-
-/* 另一个版本，拆分物品更加优化 */
-void bounded_knapsack1(int d[], const int i) {
-    int k;
-    if(c[i] * w[i] >= W) {
-        unbounded_knapsack(d, i);
-        return;
-    }
-
-    k = 1;
-    while(k < c[i]) {
-        zero_one_knapsack(d, i, k);
-        c[i] -= k;
-        k *= 2;
-    }
-    zero_one_knapsack(d, i, c[i]);
-}
-
-void dp() {
-    int i;
-    memset(d, 0, sizeof(d)); /* 背包不一定要装满 */
-
-    for(i = 0; i < N; ++i) bounded_knapsack1(d, i);
-}
- 
-int main() {
-    int i;
-    int T;
-    scanf("%d", &T);
-    while(T--) {
-        scanf("%d %d", &W, &N);
-        for(i = 0; i < N; ++i) scanf("%d %d %d", &w[i], &v[i], &c[i]);
-
-        dp();
-        printf("%d\n", d[W]);
-    }
-    return 0;
-}
-\end{Codex}
-
-\subsubsection{相关的题目}
-与本题相同的题目：
-\begindot
-\item HDOJ 2191 买大米, \myurl{http://acm.hdu.edu.cn/showproblem.php?pid=2191}
-\myenddot
-
-与本题相似的题目：
-\begindot
-\item TODO
-\myenddot
-
-
 \section{区间型动态规划} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
@@ -2648,6 +2195,460 @@ int main() {
 与本题相似的题目：
 \begindot
 \item TODO
+\myenddot
+
+
+\section{棋盘型动态规划} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{数字三角形}
+
+\subsubsection{描述}
+有一个由非负整数组成的三角形，第一行只有一个数，除了最下一行之外每个数的左下角和右下
+角各有一个数，如图~\ref{fig:numbersTriangle}所示。
+
+\begin{center}
+\includegraphics[width=360pt]{numbers-triangle.png}\\
+\figcaption{数字三角形问题}\label{fig:numbersTriangle}
+\end{center}
+
+从第一行的数开始，每次可以往左下或右下走一格，直到走到最下行，把沿途经过的数全部加起来。
+如何走才能使得这个和最大？
+
+\subsubsection{输入}
+第一行是一个整数$N (1 \le N \leq 100)$，给出三角形的行数。接下来的N行给出数字三角形。三
+角形中的数全部是整数，范围在0到100之间。
+
+\subsubsection{输出}
+输出最大的和。
+
+\subsubsection{样例输入}
+\begin{Code}
+5
+7
+3 8 
+8 1 0  
+2 7 4 4 
+4 5 2 6 5
+\end{Code}
+
+\subsubsection{样例输出}
+\begin{Code}
+30
+\end{Code}
+
+\subsubsection{分析}
+这是一个动态决策问题，在每层有两种选择，左下或右下，因此一个n层的数字三角形有$2^n$条路线。
+
+可以用回溯法，用回溯法求出所有可能的路线，就可以从中选出最优路线。但是由于有$2^n$条路线，
+回溯法很慢。
+
+本题可以用动态规划来求解(具有最有子结构和重叠子问题两个要素，后面会看到)。把当前位置(i,j)看
+成一个状态，然后定义状态d[i][j]为从位置(i,j)出发时能得到的最大和（包括格子(i,j)本
+身的值a[i][j]）。在这个状态定义下，原问题的解是d[0][0]。
+
+下面来看看不同状态之间是怎样转移的。从位置(i,j)出发有两种决策，如果往左走，则走到(i+1,j)后需要求
+“从(i+1,j)出发后能得到的最大和”这一子问题，即d[i+1][j]，类似地，往右走之后需要求d[i+1][j+1]。应该
+选择d[i+1][j]和d[i+1][j+1]中较大的一个，因此可以得到如下的状态转移方程：
+$$d[i][j]=a[i][j]+\max\left\{d[i+1][j], d[i+1][j+1]\right\}$$
+
+\subsubsection{代码}
+版本1，自顶向下。
+
+\begin{Codex}[label=numbers_triangle1.c]
+#include<stdio.h>
+#include<string.h>
+
+#define MAXN 100
+
+int n, a[MAXN][MAXN], d[MAXN][MAXN];
+
+int max(const int x, const int y) {
+    return x > y ? x : y;
+}
+
+/**
+ * @brief 求从位置(i,j)出发时能得到的最大和
+ * @param[in] i 行
+ * @param[in] j 列
+ * @return 最大和
+ */
+int dp(const int i, const int j) {
+    if(d[i][j] >= 0) {
+        return d[i][j];
+    } else {
+        return d[i][j] = a[i][j] + (i == n-1 ? 0 : max(dp(i+1, j+1), dp(i+1, j)));
+    }
+}
+
+int main() {
+    int i, j;
+    memset(d, -1, sizeof(d));
+
+    scanf("%d", &n);
+    for(i = 0; i < n; i++)
+      for (j = 0; j <= i; j++) scanf("%d", &a[i][j]);
+    
+    printf("%d\n", dp(0, 0));
+    return 0;
+}
+\end{Codex}
+
+版本2，自底向上。
+
+\begin{Codex}[label=numbers_triangle2.c]
+#include<stdio.h>
+#include<string.h>
+
+#define MAXN 100
+
+int n, a[MAXN][MAXN], d[MAXN][MAXN];
+
+int max(const int x, const int y) {
+    return x > y ? x : y;
+}
+
+/**
+ * @brief 自底向上计算所有子问题的最优解
+ * @return 无
+ */
+void dp() {
+    int i, j;
+    for (i = 0; i < n; ++i) {
+        d[n-1][i] = a[n-1][i];
+    }
+    for (i = n-2; i >= 0; --i)
+      for (j = 0; j <= i; ++j)
+        d[i][j] = a[i][j] + max(d[i+1][j], d[i+1][j+1]);
+}
+
+int main() {
+    int i, j;
+    memset(d, -1, sizeof(d));
+
+    scanf("%d", &n);
+    for(i = 0; i < n; i++)
+      for (j = 0; j <= i; j++) 
+          scanf("%d", &a[i][j]);
+
+    dp();
+    
+    printf("%d\n", d[0][0]);
+    return 0;
+}
+\end{Codex}
+
+\subsubsection{相关的题目}
+与本题相同的题目：
+\begindot
+\item 《算法竞赛入门经典》\footnote{刘汝佳,算法竞赛入门经典，清华大学出版社，2009}第159页9.1.1节
+\item POJ 1163 The Triangle, \myurl{http://poj.org/problem?id=1163}
+\item 百练 2760 数字三角形, \myurl{http://poj.grids.cn/practice/2760/}
+\item wikioi 1220 数字三角形, \myurl{http://www.wikioi.com/problem/1220/}
+\myenddot
+
+与本题相似的题目：
+\begindot
+\item  TODO
+\myenddot
+
+
+\subsection{过河卒}
+
+\subsubsection{描述}
+如图，A点有一个过河卒，需要走到目标B点。卒行走规则：可以向下、或者向右。同时在棋盘上的任一点有一个对方的马（如上图的C点），该马所在的点和所有跳跃一步可达的点称为对方马的控制点。例如上图C点上的马可以控制9个点（图中的P1，P2 … P8 和 C）。卒不能通过对方马的控制点。
+
+\begin{center}
+\includegraphics[width=300pt]{river.png}\\
+\figcaption{过河卒}\label{fig:river}
+\end{center}
+
+棋盘用坐标表示，A点（0，0）、B点（n,m）(n,m 为不超过20的整数，并由键盘输入)，同样马的位置坐标是需要给出的（约定: C不等于A，同时C不等于B）。现在要求你计算出卒从A点能够到达B点的路径的条数。
+
+\subsubsection{输入}
+B点的坐标（n,m）以及对方马的坐标（X,Y）
+
+\subsubsection{输出}
+一个整数（路径的条数）
+
+\subsubsection{样例输入}
+\begin{Code}
+6 6 3 2
+\end{Code}
+
+\subsubsection{样例输出}
+\begin{Code}
+17
+\end{Code}
+
+\subsubsection{分析}
+这是一个棋盘形动态规划。
+
+设状态为f[i][j]，表示从(0,0)到(i,j)的路径的条数，状态转移方程为
+$$
+f[i][j] = f[i-1][j] + f[i][j-1]
+$$
+
+\subsubsection{代码}
+
+\begin{Codex}[label=river.c]
+#include <stdio.h>
+#include <memory.h>
+
+#define MAX 21
+
+int n, m;
+int x, y; /* 马儿的坐标 */
+
+/* 八个控制点，顺时针方向 */
+int dx[] = {-2, -1, 1, 2, 2, 1, -1, -2};
+int dy[] = {1, 2, 2, 1, -1, -2, -2, -1};
+
+int g[MAX][MAX];  /* 棋盘，马儿以及马儿的控制点为1，其余为0 */
+int f[MAX][MAX];  /* f[i][j] = f[i-1][j] + f[i][j-1] */
+
+void dp() {
+    int i, j;
+    memset(g, 0, sizeof(g));
+    memset(f, 0, sizeof(f));
+
+    g[x][y] = 1;
+    for (i = 0; i < 8; i++) if(x+dx[i] >=0 && x+dx[i] <= n &&
+            y+dy[i] >= 0 && y+dy[i] <= n){
+        g[x+dx[i]][y+dy[i]] = 1;
+    }
+
+    f[0][0] = 1;  /* 起点 */
+    /* 初始化边界 */
+    for (i = 1; i <= n; i++) if (!g[i][0]) f[i][0] = f[i-1][0];
+    for (j = 1; j <= m; j++) if (!g[0][j]) f[0][j] = f[0][j-1];
+
+    for (i = 1; i <= n; i++) {
+        for (j = 1; j <= m; j++) {
+            if (!g[i][j]) f[i][j] = f[i-1][j] + f[i][j-1];
+        }
+    }
+}
+
+int main() {
+    scanf("%d%d%d%d", &n, &m, &x, &y);
+    dp();
+    printf("%d\n", f[n][m]);
+    return 0;
+}
+\end{Codex}
+
+\subsubsection{相关的题目}
+与本题相同的题目：
+\begindot
+\item wikioi 1010, 过河卒, \myurl{http://www.wikioi.com/problem/1010/}
+\myenddot
+
+与本题相似的题目：
+\begindot
+\item  null
+\myenddot
+
+
+\subsection{传纸条}
+
+\subsubsection{描述}
+小渊和小轩是好朋友也是同班同学，他们在一起总有谈不完的话题。一次素质拓展活动中，班上同学安排做成一个$m$行$n$列的矩阵，而小渊和小轩被安排在矩阵对角线的两端，因此，他们就无法直接交谈了。幸运的是，他们可以通过传纸条来进行交流。纸条要经由许多同学传到对方手里，小渊坐在矩阵的左上角，坐标$(1,1)$，小轩坐在矩阵的右下角，坐标$(m,n)$。从小渊传到小轩的纸条只可以向下或者向右传递，从小轩传给小渊的纸条只可以向上或者向左传递。
+
+在活动进行中，小渊希望给小轩传递一张纸条，同时希望小轩给他回复。班里每个同学都可以帮他们传递，但只会帮他们一次，也就是说如果此人在小渊递给小轩纸条的时候帮忙，那么在小轩递给小渊的时候就不会再帮忙。反之亦然。
+
+还有一件事情需要注意，全班每个同学愿意帮忙的好感度有高有低（注意：小渊和小轩的好心程度没有定义，输入时用0表示），可以用一个$0 \sim 100$的自然数来表示，数越大表示越好心。小渊和小轩希望尽可能找好心程度高的同学来帮忙传纸条，即找到来回两条传递路径，使得这两条路径上同学的好心程度只和最大。现在，请你帮助小渊和小轩找到这样的两条路径。
+
+\subsubsection{输入}
+输入的第一行有2个用空格隔开的整数$m$和$n$，表示班里有$m$行$n$列$(1 \leq m,n \leq 50)$。接下来的$m$行是一个$m*n$的矩阵，矩阵中第$i$行$j$列的整数表示坐在第$i$行$j$列的学生的好心程度。每行的$n$个整数之间用空格隔开
+
+\subsubsection{输出}
+输出共一行，包含一个整数，表示来回两条路上参与传递纸条的学生的好心程度之和的最大值。
+
+\subsubsection{样例输入}
+\begin{Code}
+3 3
+0 3 9
+2 8 5
+5 7 0
+\end{Code}
+
+\subsubsection{样例输出}
+\begin{Code}
+34
+\end{Code}
+
+\subsubsection{分析}
+这是一个棋盘形动态规划。用矩阵\fn{int g[MAX][MAX]}存储输入数据，即每个学生的好心值。
+
+题目等价为为从$(1,1)$传两张纸条到$(m,n)$。每个纸条都是由上面或左边传递过来的， 所以有四种情况。设状态为$f[i][j][k][l]$，表示纸条一在$(i,j)$,纸条二在$(k,l)$的好心程度之和，状态转移方程为
+
+\begin{eqnarray}
+f[i][j][k][l] = \max\{ & f[i-1][j][k-1][l], & \nonumber \\
+                            & f[i-1][j][k][l-1], & \nonumber \\
+							& f[i][j-1][k][l-1], & \nonumber \\
+                            & f[i][j-1][k-1][l]\} & +g[i][j]+g[k][l] \nonumber
+\end{eqnarray}
+
+\subsubsection{代码}
+
+\begin{Codex}[label=deliver_note.c]
+#include <stdio.h>
+#include <memory.h>
+
+#define MAX 51  /* m,n的最大值是50，应该有笔误，实际是51 */
+
+int m, n;           /* 行，列 */
+int g[MAX][MAX];    /* 好心值 */
+/** 题目等价为为从(1，1)传两张纸条到(m,n)，
+ * f[i][j][k][l]表示纸条一在(i,j),纸条二在(k,l）的好心程度之和
+ */
+int f[MAX][MAX][MAX][MAX];
+
+int max(const int a, const int b) {
+    return a > b ? a : b;
+}
+
+void dp() {
+    int i, j, k, l;
+    memset(f, 0, sizeof(f));
+    /* 每个纸条都是由上面或左边传递过来的， 所以有四种情况 */
+    for (i = 0; i < m; i++) {
+        for (j = 0; j < n; j++) {
+            for (k = 0; k < m; k++) {
+                for (l = 0; l < n; l++) {
+                    if(i > 0 && k > 0 && (i != k || j != l))
+                        f[i][j][k][l] = max(f[i][j][k][l],
+                                f[i-1][j][k-1][l] + g[i][j]+g[k][l]);
+                    if(i > 0 && l < n && (i-1 != k || j != l-1))
+                        f[i][j][k][l] = max(f[i][j][k][l],
+                                f[i-1][j][k][l-1] + g[i][j]+g[k][l]);
+                    if(j < n && l < n && (i != k || j != l))
+                        f[i][j][k][l] = max(f[i][j][k][l],
+                                f[i][j-1][k][l-1] + g[i][j]+g[k][l]);
+                    if(j < n && k > 0 && (i != k-1 || j-1 != l))
+                        f[i][j][k][l] = max(f[i][j][k][l],
+                                f[i][j-1][k-1][l] + g[i][j]+g[k][l]);
+                }
+            }
+        }
+    }
+}
+
+int main() {
+    int i, j;
+    scanf("%d%d", &m, &n);
+    for (i = 0; i < m; i++) {
+        for (j = 0; j < n; j++) {
+            scanf("%d", &g[i][j]);
+        }
+    }
+    dp();
+    printf("%d\n", f[m-1][n-1][m-1][n-1]);
+    return 0;
+}
+\end{Codex}
+
+TODO: 本题可以优化为三维
+
+\subsubsection{相关的题目}
+与本题相同的题目：
+\begindot
+\item wikioi 1169, 传纸条, \myurl{http://www.wikioi.com/problem/1169/}
+\myenddot
+
+与本题相似的题目：
+\begindot
+\item  null
+\myenddot
+
+
+\subsection{骑士游历}
+
+\subsubsection{描述}
+设有一个$n*m$的棋盘($2 \leq n \leq 50, 2 \leq m \leq 50$)，如图~\ref{fig:horse}所示，在棋盘上有一个中国象棋马。规定：
+\begindot
+\item 马只能走日字
+\item 马只能向右跳
+\myenddot
+
+\begin{center}
+\includegraphics{horse.png} \\
+\figcaption{骑士游历}\label{fig:horse}
+\end{center}
+
+问给定起点(x1,y1)和终点(x2,y2)，求出马从(x1,y1)出发到(x2,y2)的合法路径条数。
+
+\subsubsection{输入}
+第一行2个整数n和m，第二行4个整数x1,y1,x2,y2
+
+\subsubsection{输出}
+合法路径条数
+
+\subsubsection{样例输入}
+\begin{Code}
+30 30
+1 15 3 15
+\end{Code}
+
+\subsubsection{样例输出}
+\begin{Code}
+2
+\end{Code}
+
+\subsubsection{分析}
+这是一道棋盘型动态规划。
+
+设状态为f[i][j]，表示从起点(x1,y1)到(i,j)的合法路径条数，状态转移方程为
+$$
+f[i][j] = f[i-1][j-2] + f[i-1][j+2] + f[i-2][j-1] + f[i-2][j+1]
+$$
+
+注意，合法路径条数有可能非常大，32位整数存不下，需要用64位整数。
+
+\subsubsection{代码}
+
+\begin{Codex}[label=horse.c]
+#include <stdio.h>
+#include <memory.h>
+#include <stdint.h>
+
+#define MAX  51  /* n,m最大值，本题范围又有笔误，应该是51 */
+
+int n, m;
+int x1, y1, x2, y2;
+/*f[i][j]表示从(x1,y1)到(i,j)的合法路径的条数*/
+int64_t f[MAX+1][MAX+1];
+
+void dp() {
+    int i, j;
+    memset(f, 0, sizeof(f));
+    f[x1][y1] = 1;
+    for (i = x1+1; i <= x2; i++) {
+        for (j = 1; j <= m; j++) {
+            f[i][j] = f[i-1][j-2] + f[i-1][j+2] + f[i-2][j-1] + f[i-2][j+1];
+        }
+    }
+
+}
+
+int main() {
+    scanf("%d%d", &n, &m);
+    scanf("%d%d%d%d", &x1, &y1, &x2, &y2);
+    dp();
+    printf("%lld\n", f[x2][y2]);
+    return 0;
+}
+\end{Codex}
+
+\subsubsection{相关的题目}
+与本题相同的题目：
+\begindot
+\item wikioi 1219, 骑士游历, \myurl{http://www.wikioi.com/problem/1219/}
+\myenddot
+
+与本题相似的题目：
+\begindot
+\item  null
 \myenddot
 
 
