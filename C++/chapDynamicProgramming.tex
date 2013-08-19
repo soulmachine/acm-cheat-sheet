@@ -2652,6 +2652,278 @@ int main() {
 \myenddot
 
 
+\section{划分型动态规划} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{乘积最大}
+
+\subsubsection{描述}
+设有一个长度为$N$的数字串，要求选手使用$K$个乘号将它分成$K+1$个部分，找出一种分法，使得这$K+1$个部分的乘积能够为最大。
+
+举个例子：有一个数字串：312， 当$N=3$，$K=1$时会有以下两种分法：
+\begindot
+\item  3*12=36
+\item  31*2=62
+\myenddot
+这时，符合题目要求的结果是：31*2=62。
+
+\subsubsection{输入}
+输入共有两行：\\
+第一行共有2个自然数$N,K(6 \leq N \leq 40, 1 \leq K \leq 6)$\\
+第二行是一个长度为$N$的数字串。
+
+\subsubsection{输出}
+输出最大乘积
+
+\subsubsection{样例输入}
+\begin{Code}
+4 2
+1231
+\end{Code}
+
+\subsubsection{样例输出}
+\begin{Code}
+62
+\end{Code}
+
+\subsubsection{分析}
+首先，本题可以用区间型动态规划的思路解决。设状态为f[i][j][k]，表示i到j这一段用k个乘号的最大乘积，状态转移方程如下：
+$$
+f[i][j][k] = \max\left\{f[i][s][t] * f[s+1][j][k-t-1]\right\}, i \leq s < j , 0 \leq t < k
+$$
+
+复杂度是$O(N^3K^2)$，代码如下：
+
+\begin{Code}
+/** wikioi 1017 乘积最大, http://www.wikioi.com/problem/1017 */
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
+
+#define MAXN 40
+#define MAXK 6
+
+int N, K;
+char str[MAXN];
+
+/** f[i][j][k]表示i到j这一段用k个乘号的最大乘积. */
+int64_t f[MAXN][MAXN][MAXK+1];
+
+
+int max(int a, int b) {
+    return a > b ? a : b;
+}
+
+/** 计算str[l,r]字符串的值，int64可以过，不用高精度. */
+int64_t num(int l, int r) {
+    int64_t ret = 0;
+    int i;
+    for (i = l; i <= r; i++) {
+        ret = ret * 10 + str[i] - '0';
+    }
+    return ret;
+}
+
+/**
+ * 区间型动态规划，复杂度是O(n^3*k^2).
+ *
+ * f[i][j][k] = max(f[i][s][t] * f[s+1][j][k-t-1]),
+ * i <= s < j , 0 <= t < k
+ */
+void dp() {
+    int i, j, k, s, t;
+    memset(f, 0, sizeof(f));
+    for (i = 0; i < N; i++) {
+        for (j = i; j < N; j++) {
+            f[i][j][0] = num(i, j);
+        }
+    }
+
+    for (i = 0; i < N; i++) {
+        for (j = i; j < N; j++) {
+            for (k = 1; k <= K; k++) {
+                for (s = i; s < j; s++) {
+                    for (t = 0; t < k; t++) {
+                        f[i][j][k] = max(f[i][j][k],
+                                f[i][s][t] * f[s + 1][j][k - t - 1]);
+                    }
+                }
+            }
+        }
+    }
+}
+
+int main() {
+    scanf("%d%d", &N, &K);
+    scanf("%s", str);
+    dp();
+    printf("%lld\n", f[0][N-1][K]);
+    return 0;
+}
+\end{Code}
+
+尽管上面的代码可以AC了，但还有更高效的思路。设状态为f[k][j]，表示在区间[0,j]放入k个乘号的最大乘积，状态转移方程如下：
+$$
+f[k][j]=\max\left\{f[k][j], f[k-1][i]*num(i+1,j), 0 \leq i < j\right\}
+$$
+
+复杂度是$O(N^2K)$。代码如下。
+
+\subsubsection{代码}
+
+\begin{Codex}[label=maximal_product.c]
+/** wikioi 1017 乘积最大, http://www.wikioi.com/problem/1017 */
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
+
+#define MAXN 40
+#define MAXK 6
+
+int N, K;
+char str[MAXN];
+
+/** f[k][j]在区间[0,j]放入k个乘号的最大乘积. */
+int64_t f[MAXK+1][MAXN];
+
+
+int max(int a, int b) {
+    return a > b ? a : b;
+}
+
+/** 计算str[l,r]字符串的值，int64可以过，不用高精度. */
+int64_t num(int l, int r) {
+    int64_t ret = 0;
+    int i;
+    for (i = l; i <= r; i++) {
+        ret = ret * 10 + str[i] - '0';
+    }
+    return ret;
+}
+
+/** 划分型型动态规划，复杂度是O(n^3*k^2). */
+void dp() {
+    int i, j, k;
+    memset(f, 0, sizeof(f));
+    for (j = 0; j < N; j++) {
+        f[0][j] = num(0, j);
+    }
+
+    for (k = 1; k <= K; k++) {
+        for (j = 0; j < N; j++) {
+            for (i = 0; i < j; i++) {
+                f[k][j] = max(f[k][j], f[k-1][i]*num(i+1, j));
+            }
+        }
+    }
+}
+
+int main() {
+    scanf("%d%d", &N, &K);
+    scanf("%s", str);
+    dp();
+    printf("%lld\n", f[K][N-1]);
+    return 0;
+}
+\end{Codex}
+
+\subsubsection{相关的题目}
+与本题相同的题目：
+\begindot
+\item wikioi 1017, 乘积最大, \myurl{http://www.wikioi.com/problem/1017/}
+\myenddot
+
+与本题相似的题目：
+\begindot
+\item  null
+\myenddot
+
+
+\subsection{数的划分}
+
+\subsubsection{描述}
+将整数$n$分成$k$份，且每份不能为空，任意两种划分方案不能相同(不考虑顺序)。
+
+例如：$n=7$，$k=3$，下面三种划分方案被认为是相同的。
+\begin{Code}
+1 1 5
+1 5 1
+5 1 1
+\end{Code}
+问有多少种不同的分法。
+
+\subsubsection{输入}
+$n,k (6<n \leq 200,2 \leq k \leq 6)$
+
+\subsubsection{输出}
+一个整数，即不同的分法。
+
+\subsubsection{样例输入}
+\begin{Code}
+7 3
+\end{Code}
+
+\subsubsection{样例输出}
+\begin{Code}
+4
+\end{Code}
+
+\subsubsection{分析}
+设状态为f[k][i]，表示将整数i分成k份的方案数。有两种情况，一种划分中有至少一个1，另外一种划分中所有的数都大于1。对于第一种划分，去掉一个1，就变成了一个于子问题f[n-1][k-1]，对于第二种划分，把划分中的每个数都减去1，就变成了一个子问题f[k][n-k]。因此，状态转移方程如下：
+$$
+f[k][i] = f[k-1][i-1] + f[k][i-k]
+$$
+
+\subsubsection{代码}
+
+\begin{Codex}[label=integer_partition.c]
+/** wikioi 1039 数的划分, http://www.wikioi.com/problem/1039 */
+#include <stdio.h>
+#include <memory.h>
+
+#define MAXN 300
+#define MAXK 10
+
+int N, K;
+
+/** f[k][i]表示将整数i分成k份的方案数. */
+int f[MAXK+1][MAXN+1];
+
+/** 划分型动态规划，复杂度是O(K*N). */
+void dp() {
+    int i, k;
+    memset(f, 0, sizeof(f));
+    for (i = 1; i <= N; i++) {
+        f[1][i] = 1;
+        if (i <= K) f[i][i] = 1;
+    }
+
+    for (k = 2; k <= K; k++) {
+        for (i = k+1; i <= N; i++) {
+            f[k][i] = f[k-1][i-1] + f[k][i-k];
+        }
+    }
+}
+
+int main() {
+    scanf("%d%d", &N, &K);
+    dp();
+    printf("%d\n", f[K][N]);
+    return 0;
+}
+\end{Codex}
+
+\subsubsection{相关的题目}
+与本题相同的题目：
+\begindot
+\item wikioi 1039, 数的划分, \myurl{http://www.wikioi.com/problem/1039/}
+\myenddot
+
+与本题相似的题目：
+\begindot
+\item  null
+\myenddot
+
+
 \section{最大子矩形} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 在一个给定的矩形网格中有一些障碍点，要找出网格内部不包含任何障碍点，且边界与坐标轴平行的最大子矩形。
 
