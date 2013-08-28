@@ -1,0 +1,190 @@
+\chapter{深度优先搜索}
+
+
+\section{四色问题} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{描述}
+给定$N(N \leq 8)$个点的地图，以及地图上各点的相邻关系，请输出用4种颜色将地图涂色的所有方案数（要求相邻两点不能涂成相同的颜色）。
+
+数据中0代表不相邻，1代表相邻。
+
+\subsubsection{输入}
+第一行一个整数$N$，代表地图上有$N$个点。
+
+接下来$N$行，每行$N$个整数，每个整数是0或者1。第i行第j列的值代表了第i个点和第j个点之间是相邻的还是不相邻，相邻就是1，不相邻就是0。我们保证a[i][j] = a[j][i]。
+
+\subsubsection{输出}
+染色的方案数
+
+\subsubsection{样例输入}
+\begin{Code}
+8
+0 0 0 1 0 0 1 0 
+0 0 0 0 0 1 0 1 
+0 0 0 0 0 0 1 0 
+1 0 0 0 0 0 0 0 
+0 0 0 0 0 0 0 0 
+0 1 0 0 0 0 0 0 
+1 0 1 0 0 0 0 0 
+0 1 0 0 0 0 0 0
+\end{Code}
+
+\subsubsection{样例输出}
+\begin{Code}
+15552
+\end{Code}
+
+\subsubsection{分析}
+这是一道经典的题目。深搜。
+
+\subsubsection{代码}
+\begin{Codex}[label=four_colors.c]
+/* wikioi 1116 四色问题   , http://www.wikioi.com/problem/1116/ */
+#include <stdio.h>
+#include <string.h>
+
+#define MAXN 8
+
+int N;
+int g[MAXN][MAXN];
+
+/* 记录每个点的颜色，四种颜色用1234表示，0表示未染色. */
+int history[MAXN];
+int count; /* 方案个数 */
+
+/**
+ * 深搜，给第i个节点涂色.
+ * @param i 第i个地点
+ * @return 无
+ */
+void dfs(int i) {
+    int j, c;
+    if (i == N) {
+        count++;
+        return;
+    }
+
+    for (c = 1; c < 5; c++) {
+        int ok = 1;
+        for (j = 0; j < i; j++) {
+            if (g[i][j] && c == history[j])
+                ok = 0; /* 相邻且同色 */
+        }
+        if (ok) {
+            history[i] = c;
+            dfs(i + 1);
+        }
+    }
+}
+
+int main() {
+    int i, j;
+
+    scanf("%d", &N);
+    for (i = 0; i < N; i++) {
+        for (j = 0; j < N; j++) {
+            scanf("%d", &g[i][j]);
+        }
+    }
+
+    dfs(0);
+    printf("%d\n", count);
+    return 0;
+}
+\end{Codex}
+
+\subsubsection{相关的题目}
+与本题相同的题目：
+\begindot
+\item wikioi 1116 四色问题, \myurl{http://www.wikioi.com/problem/1116/}
+\myenddot
+
+与本题相似的题目：
+\begindot
+\item TODO
+\myenddot
+
+
+\section{全排列} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{描述}
+给出一个正整数$n$, 请输出$n$的所有全排列
+
+\subsubsection{输入}
+一个整数$n(1 \leq n \leq 10)$
+
+\subsubsection{输出}
+一共$n!$行，每行$n$个用空格隔开的数，表示$n$的一个全排列。并且按全排列的字典序输出。
+
+\subsubsection{样例输入}
+\begin{Code}
+3
+\end{Code}
+
+\subsubsection{样例输出}
+\begin{Code}
+1 2 3
+1 3 2
+2 1 3
+2 3 1
+3 1 2
+3 2 1
+\end{Code}
+
+\subsubsection{分析}
+这也是一道短小精悍的经典题目。深搜。从代码上看，与上一题的思路几乎一摸一样。
+
+\subsubsection{代码}
+\begin{Codex}[label=all_permutations.c]
+/* wikioi 1294 全排列   , http://www.wikioi.com/problem/1294/ */
+#include <stdio.h>
+#include <string.h>
+
+#define MAXN 10
+
+int N;
+
+int history[MAXN];
+int count;
+
+void dfs(int i) {
+    int j, k;
+    if (i == N) {
+        count++;
+        for (j = 0; j < N; j++) {
+            printf("%d ", history[j]);
+        }
+        printf("\n");
+        return;
+    }
+
+    for (k = 1; k <= N; k++) {
+        int ok = 1;
+        for (j = 0; j < i; j++) {
+            if (history[j] == k)
+                ok = 0;
+        }
+        if (ok) {
+            history[i] = k;
+            dfs(i + 1);
+        }
+    }
+}
+
+int main() {
+    scanf("%d", &N);
+    dfs(0);
+    return 0;
+}
+\end{Codex}
+
+\subsubsection{相关的题目}
+与本题相同的题目：
+\begindot
+\item wikioi 1294 全排列 , \myurl{http://www.wikioi.com/problem/1294/}
+\myenddot
+
+与本题相似的题目：
+\begindot
+\item TODO
+\myenddot
