@@ -1249,29 +1249,10 @@ void print_path(const int path[], int n) {
     }
 }
 
-
-/* test
-
-输入数据:
-
-6 8
-A C 10
-A E 30
-A F 100
-B C 5
-C D 50
-D 5 10
-E D 20
-E F 60
-
-输出:
-
-A->C
-A->E->D
-A->E
-A->E->F
-*/
-int main() {
+/**
+ * @brief 读取输入，构建图.
+ */
+void read_graph() {
     int i, j, k;
     char chx, chy;
     graph_weight_t cost;
@@ -1297,6 +1278,31 @@ int main() {
         j = chy - 'A';
         g.matrix[i][j] = cost;
     }
+}
+
+/* test
+
+输入数据:
+
+6 8
+A C 10
+A E 30
+A F 100
+B C 5
+C D 50
+D 5 10
+E D 20
+E F 60
+
+输出:
+
+A->C
+A->E->D
+A->E
+A->E->F
+*/
+int main() {
+    read_graph();
 
     /* 求 V0 到其他所有顶点的最短路径 */
     mgraph_dijkstra(&g, 0, dist, path);
