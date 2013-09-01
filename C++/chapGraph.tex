@@ -145,12 +145,12 @@ int main() {
 与本题相同的题目：
 \begindot
 \item 《算法竞赛入门经典》\footnote{刘汝佳,算法竞赛入门经典，清华大学出版社，2009} 第107页6.4.1节
-\item  TODO
+\item  None
 \myenddot
 
 与本题相似的题目：
 \begindot
-\item  TODO
+\item  None
 \myenddot
 
 \subsection{欧拉回路}
@@ -337,7 +337,7 @@ int main() {
 与本题相同的题目：
 \begindot
 \item 《算法竞赛入门经典》\footnote{刘汝佳,算法竞赛入门经典，清华大学出版社，2009} 第111页6.4.4节
-\item  TODO
+\item  None
 \myenddot
 
 与本题相似的题目：
@@ -693,43 +693,8 @@ int mgraph_prim(const mgraph_t *g){
 #include <stdlib.h>  /* for malloc() */
 #include <limits.h>  /* for INT_MAX */
 
-/************ 并查集 ************/
-/**
-  * @brief 初始化并查集.
-  * @param[in] s 双亲表示法的数组
-  * @param[in] n 数组s的元素个数
-  * @return 无
-  */
-void ufs_init(int s[], int n) {
-    int i;
-    for(i = 0; i < n; i++) s[i] = -1;
-}
-
-/**
-  * @brief Find操作，查找包含元素x的树的根.
-  * @param[in] s 双亲表示法的数组
-  * @param[in] x 要查找的元素
-  * @return 包含元素x的树的根
-  */
-int ufs_find(const int s[], int x) {
-    while(s[x] >= 0) {
-        x = s[x];
-    }
-    return x;
-}
-
- /*
-  * @brief Union操作，求两个不相交集合的并集.
-  * @param[in] s 双亲表示法的数组
-  * @param[in] root1 一棵树的根
-  * @param[in] root2 另一棵树的根
-  * @return 无
-  */
-void ufs_union(int s[], int root1, int root2) {
-    s[root1] += s[root2];
-    s[root2] = root1;
-}
-/************ 并查集 ************/
+/* 等价于复制粘贴，这里为了节约篇幅，使用include，在OJ上提交时请用复制粘贴 */
+#include "ufs.c"  /* 见“树->并查集”这节 */
 
 
 /** 顶点数的最大值*/
@@ -1042,7 +1007,7 @@ int main() {
 \subsubsection{相关的题目}
 与本题相同的题目：
 \begindot
-\item TODO
+\item None
 \myenddot
 
 与本题相似的题目：
