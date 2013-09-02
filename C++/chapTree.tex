@@ -1038,6 +1038,23 @@ int ufs_find(const int s[], int x) {
     return x;
 }
 
+/* 带路径压缩的find. */
+int ufs_find_compress(int s[], int x) {
+    const int oldx = x; /* 记录原始x */
+    while (s[x] >= 0) {
+        x = s[x];
+    }
+    if (oldx != x) s[oldx] = x;
+    return x;
+}
+
+/* 带路径压缩的find. */
+int ufs_find_compress1(int s[], int x) {
+    if (s[x] < 0) return x;
+    s[x] = ufs_find_compress(s, s[x]); /* 回溯时的压缩路径 */
+    return s[x];
+}
+
 /**
  * @brief Union操作，将root2并入到root1.
  * @param[in] s 双亲表示法的数组
@@ -1110,15 +1127,15 @@ int main() {
 
             k--;
             scanf("%d", &x);
-            rx = ufs_find(s, x);
+            rx = ufs_find_compress(s, x);
             while (k--) {
                 scanf("%d", &y);
-                ry = ufs_find(s, y);
+                ry = ufs_find_compress(s, y);
                 ufs_union(s, rx, ry);  /* 只要是跟x同一个集合的都并进去 */
             }
         }
         /* 最后搜索0属于哪个集合，这个集合有多少人 */
-        printf("%d\n", -s[ufs_find(s, 0)]);
+        printf("%d\n", -s[ufs_find_compress(s, 0)]);
     }
     return 0;
 }
