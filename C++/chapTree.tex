@@ -880,6 +880,117 @@ heap_elem_t heap_top(const heap_t *h) {
 \end{Codex}
 
 
+\subsection{最小的N个和} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{描述}
+有两个长度为$N$的序列 A 和 B，在 A 和 B 中各任取一个数可以得到 $N^2$ 个和，求这$N^2$ 个和中最小的$N$个。
+
+\subsubsection{输入}
+第一行输入一个正整数$N$；第二行N个整数$A_i$ 且$A_i \leq 10^9$；第三行$N$个整数$B_i$，且$Bi \leq 10^9$。
+
+\subsubsection{输出}
+输出仅一行，包含$N$个整数，从小到大输出这$N$个最小的和，相邻数字之间用空格隔开。
+
+\subsubsection{样例输入}
+\begin{Code}
+5
+1 3 2 4 5 
+6 3 4 1 7
+\end{Code}
+
+\subsubsection{样例输出}
+\begin{Code}
+2 3 4 4 5
+\end{Code}
+
+\subsubsection{分析}
+由于数据太大，有$N^2$个和，不能通过先求和再排序的方式来求解，这个时候就要用到堆了。
+
+首先将A，B两数组排序，我们可以建立这样一个有序表：
+\begin{eqnarray}
+A_1+B_1<A_1+B_2<A_1+B_3< &...& <A_1+B_N \nonumber \\
+A_2+B_1<A_2+B_2<A_2+B_3< &...& <A_2+B_N \nonumber \\
+& ...  \nonumber \\
+A_N+B_1<A_N+B_2<A_N+B_3< &...& <A_N+B_N \nonumber
+\end{eqnarray}
+
+首先将\fn{A[i] + B[0]}压入堆中，设每次出堆的元素为\fn{sum=A[a]+B[b]}，则将\fn{A[a]+B[b+1]}入堆，这样可以保证前$N$个出堆的元素为最小的前$N$项。在实现的时候，可以不用保存B数组的下标，通过\fn{sum-B[b]+B[b+1]}来替换\fn{A[a]+B[b+1]}来节省空间。
+
+\subsubsection{代码}
+\begin{Codex}[label=sequence.c]
+/* wikioi 1245 最小的N个和，http://www.wikioi.com/problem/1245/  */
+#include <stdio.h>
+#include <stdlib.h>  /* for malloc() */
+#include <string.h>  /* for memcpy() */
+
+#define MAXN 100000
+
+int N;
+int a[MAXN], b[MAXN];
+
+typedef struct node_t {
+    int sum;
+    int b; /* sum=a[i]+b[b] */
+} node_t;
+
+typedef node_t heap_elem_t; // 元素的类型
+/* 等价于复制粘贴，这里为了节约篇幅，使用include，在OJ上提交时请用复制粘贴 */
+#include "heap.c"
+
+void k_merge() {
+    heap_t h;
+    int i;
+    node_t tmp;
+
+    qsort(a, N, sizeof(int), cmp_int);
+    qsort(b, N, sizeof(int), cmp_int);
+    heap_init(&h, N, cmp_node);
+
+    for (i = 0; i < N; i++) {
+        tmp.sum = a[i]+b[0];
+        tmp.b = 0;
+        heap_push(&h, tmp);
+    }
+
+    for (i = 0; i < N; i++) {
+        tmp = heap_top(&h); heap_pop(&h);
+        printf("%d ", tmp.sum);
+        tmp.sum = tmp.sum - b[tmp.b] + b[tmp.b + 1];
+        tmp.b++;
+        heap_push(&h, tmp);
+    }
+
+    heap_uninit(&h);
+    return;
+}
+
+int main() {
+    int i;
+
+    scanf("%d", &N);
+    for (i = 0; i < N; i++) {
+        scanf("%d", &a[i]);
+    }
+    for (i = 0; i < N; i++) {
+        scanf("%d", &b[i]);
+    }
+
+    k_merge();
+    return 0;
+}
+\end{Codex}
+
+\subsubsection{相关的题目}
+与本题相同的题目：
+\begindot
+\item wikioi 1245 最小的N个和, \myurl{http://www.wikioi.com/problem/1245/}
+\myenddot
+
+与本题相似的题目：
+\begindot
+\item  POJ 2442 Sequence, \myurl{http://poj.org/problem?id=2442}
+\myenddot
+
+
 \section{并查集} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{原理和实现}
@@ -928,7 +1039,7 @@ int ufs_find(const int s[], int x) {
 }
 
 /**
- * @brief Union操作，求两个不相交集合的并集.
+ * @brief Union操作，将root2并入到root1.
  * @param[in] s 双亲表示法的数组
  * @param[in] root1 一棵树的根
  * @param[in] root2 另一棵树的根
@@ -1017,6 +1128,210 @@ int main() {
 与本题相同的题目：
 \begindot
 \item POJ 1611 The Suspects, \myurl{http://poj.org/problem?id=1611}
+\myenddot
+
+与本题相似的题目：
+\begindot
+\item  None
+\myenddot
+
+
+\subsection{两个黑帮} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{描述}
+Tadu城市有两个黑帮帮派，已知有$N$黑帮分子，从1到$N$编号，每个人至少属于一个帮派。每个帮派至少有一个人。给你$M$条信息，有两类信息：
+\begindot
+\item D a b，明确告诉你，a和b属于不同的帮派 
+\item A a b，问你，a和b是否属于不同的帮派
+\myenddot
+
+\subsubsection{输入}
+第一行是一个整数$T$，表示有$T$组测试用例。每组测试用例的第一行是两个整数$N$和$M$，接下来是$M$行，每行包含一条消息。
+
+\subsubsection{输出}
+对每条消息"A a b"，基于当前获得的信息，输出判断。答案是"In the same gang.", "In different gangs." 和 "Not sure yet."中的一个。
+
+\subsubsection{样例输入}
+\begin{Code}
+1
+5 5
+A 1 2
+D 1 2
+A 1 2
+D 2 4
+A 1 4
+\end{Code}
+
+\subsubsection{样例输出}
+\begin{Code}
+Not sure yet.
+In different gangs.
+In the same gang.
+\end{Code}
+
+\subsubsection{分析}
+把不在一个集合的节点直接用并查集合并在一起。这样的话，如果询问的2个节点在同一个并查集里面，那么它们之间的关系是确定的，否则无法确定它们的关系。
+
+现在还有一个问题是，在同一个集合里面的2个节点是敌对关系还是朋友关系？可以给每个节点另外附加个信息，记录其距离集合根节点的距离。如果，询问的2个节点距离其根节点的距离都是奇数或者都是偶数，那么这2个节点是朋友关系，否则是敌对关系。
+
+\subsubsection{代码}
+\begin{Codex}[label=two_gangs.c]
+/* POJ 2524 Find them, Catch them, http://poj.org/problem?id=1703 */
+#include <stdio.h>
+
+#define MAXN 1000001
+int s[MAXN]; /* 0位置未用 */
+char dist[MAXN];  /* 到根节点的距离的奇偶性 */
+
+/**
+ * @brief 初始化并查集.
+ * @param[in] s 双亲表示法的数组
+ * @param[in] n 数组s的元素个数
+ * @return 无
+ */
+void ufs_init(int s[], int n) {
+    int i;
+    for(i = 0; i < n; i++) {
+        s[i] = -1;
+        dist[i] = 0;
+    }
+}
+
+/**
+ * @brief Find操作.
+ * @param[in] s 双亲表示法的数组
+ * @param[in] x 要查找的元素
+ * @return 包含元素x的树的根
+ */
+int ufs_find(const int s[], int x) {
+    while (s[x] >= 0) {
+        dist[x] = (dist[x] + dist[s[x]]) % 2;
+        x = s[x];
+    }
+    return x;
+}
+
+/**
+ * @brief Union操作，将root2并入到root1.
+ * @param[in] s 双亲表示法的数组
+ * @param[in] root1 一棵树的根
+ * @param[in] root2 另一棵树的根
+ * @return 如果二者已经在同一集合，并失败，返回0，否则返回1
+ */
+int ufs_union(int s[], int root1, int root2) {
+    if (root1 == root2) return 0;
+    s[root1] += s[root2];
+    s[root2] = root1;
+    return 1;
+}
+
+int main() {
+    int T;
+
+    scanf("%d", &T);
+    while (T--) {
+        int n, m;
+        char c;
+        int x, y, rx, ry;
+        scanf("%d%d%*c", &n, &m);
+        ufs_init(s, MAXN);
+
+        while (m--) {
+            scanf("%c%d%d%*c", &c, &x, &y); //注意输入
+            rx = ufs_find(s, x);
+            ry = ufs_find(s, y);
+
+            if (c == 'A') {
+                if (rx == ry) { //如果根节点相同，则表示能判断关系
+                    if (dist[x] != dist[y])
+                        printf("In different gangs.\n");
+                    else
+                        printf("In the same gang.\n");
+                } else
+                    printf("Not sure yet.\n");
+            } else if (c == 'D') {
+                ufs_union(s, rx, ry);
+                /* ry与y关系 + y与x的关系 + x与rx的关系 = ry与rx的关系 */
+                dist[ry] = (dist[y] + 1 + dist[x]) % 2;
+            }
+        }
+    }
+    return 0;
+}
+\end{Codex}
+
+\subsubsection{相关的题目}
+与本题相同的题目：
+\begindot
+\item POJ 1703 Find them, Catch them, \myurl{http://poj.org/problem?id=1703}
+\myenddot
+
+与本题相似的题目：
+\begindot
+\item  None
+\myenddot
+
+
+\subsection{食物链} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{描述}
+动物王国中有三类动物A,B,C，这三类动物的食物链构成了有趣的环形。A吃B， B吃C，C吃A。 现有$N$个动物，从1到$N$编号。每个动物都是A,B,C中的一种，但是我们并不知道它到底是哪一种。 
+
+有人用两种说法对这N个动物所构成的食物链关系进行描述：
+\begindot
+\item 第一种说法是"1 X Y"，表示X和Y是同类。 
+\item 第二种说法是"2 X Y"，表示X吃Y。 
+\myenddot
+
+此人对$N$个动物，用上述两种说法，一句接一句地说出$K$句话，这$K$句话有的是真的，有的是假的。当一句话满足下列三条之一时，这句话就是假话，否则就是真话。 
+\begindot
+\item 当前的话与前面的某些真的话冲突，就是假话； 
+\item 当前的话中X或Y比N大，就是假话； 
+\item 当前的话表示X吃X，就是假话。 
+\myenddot
+
+你的任务是根据给定的$N(1 \leq N \leq 50,000)$和$K$句话($0 \leq K \leq 100,000$)，输出假话的总数。 
+
+\subsubsection{输入}
+第一行是两个整数$N$和$K$，以一个空格分隔。 
+
+以下$K$行每行是三个正整数D，X，Y，两数之间用一个空格隔开，其中D表示说法的种类。
+\begindot
+\item 若D=1，则表示X和Y是同类。 
+\item 若D=2，则表示X吃Y。
+\myenddot
+
+\subsubsection{输出}
+只有一个整数，表示假话的数目。
+
+\subsubsection{样例输入}
+\begin{Code}
+100 7
+1 101 1 
+2 1 2
+2 2 3 
+2 3 3 
+1 1 3 
+2 3 1 
+1 5 5
+\end{Code}
+
+\subsubsection{样例输出}
+\begin{Code}
+3
+\end{Code}
+
+\subsubsection{分析}
+
+
+\subsubsection{代码}
+\begin{Codex}[label=food_chain.c]
+
+\end{Codex}
+
+\subsubsection{相关的题目}
+与本题相同的题目：
+\begindot
+\item POJ 1182 食物链, \myurl{http://poj.org/problem?id=1182}
+\item wikioi 1074 食物链, \myurl{http://www.wikioi.com/problem/1074/}
 \myenddot
 
 与本题相似的题目：
