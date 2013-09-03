@@ -696,7 +696,7 @@ int mgraph_prim(const mgraph_t *g){
 /* 等价于复制粘贴，这里为了节约篇幅，使用include，在OJ上提交时请用复制粘贴 */
 #include "ufs.c"  /* 见“树->并查集”这节 */
 
-#define MAX_VERTICES_NO 10 /* 顶点编号最大值 */
+#define MAX_VERTICES_NO 11 /* 顶点编号最大值 */
 #define MAX_EDGES 100  /* 最大边数 */
 #define INF INT_MAX  /* 边权值无穷大 */
 /** 边的权值，对无权图，用0或1表示是否相邻；对有权图，则为权值. */
@@ -712,11 +712,10 @@ typedef struct edge_t{
 } edge_t;
 
 edge_t edges[MAX_EDGES];
+int s[MAX_VERTICES_NO]; /* 并查集，0位置未用  */
 
 static int edge_cmp(const edge_t *e1, const edge_t *e2) {
-    const edge_t* const e11 = (const edge_t *)e1;
-    const edge_t* const e22 = (const edge_t *)e2;
-    return e11->w - e22->w;
+    return e1->w - e2->w;
 }
 
 typedef edge_t heap_elem_t; // 元素的类型
@@ -728,19 +727,17 @@ typedef edge_t heap_elem_t; // 元素的类型
 /*
   * @brief Kruskal算法，求图的最小生成树.
   * @param[in] edges 边的数组
-  * @param[in] n 边数
+  * @param[in] n 边数，一定要大于或等于(顶点数-1)
+  * @param[in] m 顶点数
   * @return MST的边的权值之和
   */
-int kruskal(const edge_t edges[], int n) {
+graph_weight_t kruskal(const edge_t edges[], int n, int m) {
     int i;
     graph_weight_t sum = 0;
-    edge_t e;
-    int u, v;
     heap_t h;
-    int *ufs;
+    if (n < m - 1) return -1;
 
-    ufs = (int *) malloc(MAX_VERTICES_NO * sizeof(int));
-    ufs_init(ufs, MAX_VERTICES_NO);
+    ufs_init(s, MAX_VERTICES_NO);
     heap_init(&h, n, edge_cmp);
 
     /* 把所有边插入堆中*/
@@ -749,28 +746,60 @@ int kruskal(const edge_t edges[], int n) {
     }
 
     for (i = 0; i < n; i++) {
-        /* 从堆中退出最小权值边，存入ed */
-        e = heap_top(&h);
+        /* 从堆中退出最小权值边 */
+        const edge_t e = heap_top(&h);
+        int u, v;
         heap_pop(&h);
         /* 取两顶点所在集合的根*/
-        u = ufs_find(ufs, e.u);
-        v = ufs_find(ufs, e.v);
+        u = ufs_find(s, e.u);
+        v = ufs_find(s, e.v);
         if (u != v) { /* 不是同一集合，说明不连通*/
-            ufs_union(ufs, u, v); /* 合并，连通成一个分量*/
+            ufs_union(s, u, v); /* 合并，连通成一个分量*/
             /* 输出生成树TE的边，即此边加入TE */
             printf("%d - %d\n", e.u, e.v);
             sum += e.w;
         }
     }
 
-    free(ufs);
     heap_uninit(&h);
+    return sum;
+}
+
+static int edge_cmp1(const void *e1, const void *e2) {
+    const edge_t* const ee1 = (const edge_t *)e1;
+    const edge_t* const ee2 = (const edge_t *)e2;
+    return ee1->w - ee2->w;
+}
+
+/** Kruskal算法，快排+并查集. */
+graph_weight_t kruskal1(edge_t edges[], int n, int m) {
+    int i;
+    graph_weight_t sum = 0;
+    if (n < m - 1) return -1;
+
+    ufs_init(s, MAX_VERTICES_NO);
+    qsort(edges, n, sizeof(edge_t), edge_cmp1);
+
+    for (i = 0; i < n; i++) {
+        /* 从堆中退出最小权值边，存入ed */
+        const edge_t e = edges[i];
+        /* 取两顶点所在集合的根*/
+        const int u = ufs_find(s, e.u);
+        const int v = ufs_find(s, e.v);
+        if (u != v) { /* 不是同一集合，说明不连通*/
+            ufs_union(s, u, v); /* 合并，连通成一个分量*/
+            /* 输出生成树TE的边，即此边加入TE */
+            printf("%d - %d\n", e.u, e.v);
+            sum += e.w;
+        }
+    }
+
     return sum;
 }
 
 /* test
 输入数据:
-11
+7 11
 0 1 7
 0 3 5
 1 2 8
@@ -793,19 +822,18 @@ int kruskal(const edge_t edges[], int n) {
 Total:39
 */
 int main() {
-    int i, n;
+    int i, m, n;
 
-    /* 读取边数目*/
-    scanf("%d", &n);
+    /* 读取顶点数，边数目*/
+    scanf("%d%d", &m, &n);
 
     /* 读取边信息 */
     for (i = 0; i < n; i++) {
-        scanf("%d %d %d", &(edges[i].u), &(edges[i].v),
-                &(edges[i].w));
+        scanf("%d %d %d", &edges[i].u, &edges[i].v, &edges[i].w);
     }
 
     /* 求解最小生成树 */
-    printf("Total:%d\n", kruskal(edges, n));
+    printf("Total:%d\n", kruskal(edges, n, m));
     return 0;
 }
 \end{Codex}
