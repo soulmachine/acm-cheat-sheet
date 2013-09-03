@@ -1025,21 +1025,21 @@ void ufs_init(int s[], int n) {
     for(i = 0; i < n; i++) s[i] = -1;
 }
 
-/**
- * @brief Find操作.
- * @param[in] s 双亲表示法的数组
- * @param[in] x 要查找的元素
- * @return 包含元素x的树的根
- */
-int ufs_find(const int s[], int x) {
+/** Find操作，朴素版. */
+int ufs_find_naive(const int s[], int x) {
     while (s[x] >= 0) {
         x = s[x];
     }
     return x;
 }
 
-/* 带路径压缩的find. */
-int ufs_find_compress(int s[], int x) {
+/**
+ * @brief Find操作，带路径压缩.
+ * @param[in] s 双亲表示法的数组
+ * @param[in] x 要查找的元素
+ * @return 包含元素x的树的根
+ */
+int ufs_find(int s[], int x) {
     int oldx = x; /* 记录原始x */
     while (s[x] >= 0) {
         x = s[x];
@@ -1052,10 +1052,10 @@ int ufs_find_compress(int s[], int x) {
     return x;
 }
 
-/* 带路径压缩的find. */
-int ufs_find_compress1(int s[], int x) {
+/* 带路径压缩的find，递归版. */
+int ufs_find1(int s[], int x) {
     if (s[x] < 0) return x;
-    s[x] = ufs_find_compress(s, s[x]); /* 回溯时的压缩路径 */
+    s[x] = ufs_find1(s, s[x]); /* 回溯时的压缩路径 */
     return s[x];
 }
 
@@ -1131,15 +1131,15 @@ int main() {
 
             k--;
             scanf("%d", &x);
-            rx = ufs_find_compress(s, x);
+            rx = ufs_find(s, x);
             while (k--) {
                 scanf("%d", &y);
-                ry = ufs_find_compress(s, y);
+                ry = ufs_find(s, y);
                 ufs_union(s, rx, ry);  /* 只要是跟x同一个集合的都并进去 */
             }
         }
         /* 最后搜索0属于哪个集合，这个集合有多少人 */
-        printf("%d\n", -s[ufs_find_compress(s, 0)]);
+        printf("%d\n", -s[ufs_find(s, 0)]);
     }
     return 0;
 }
