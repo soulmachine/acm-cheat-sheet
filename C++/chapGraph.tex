@@ -674,6 +674,7 @@ int mgraph_prim(const mgraph_t *g){
 该算法迭代次数为$O(n)$，每次迭代将平均$e/n$条边插入最小堆中，$e$条边从堆中删除，堆的插入和删除操作时间复杂度均为$O(\log_2 e)$，则总的时间复杂度为 $O(e\log_2e)$。
 
 \subsection{Kruskal算法}
+\label{sec:kruskal}
 假设连通网$N={V, E}$，则令最小生成树的初始状态为只有$n$个顶点而无边的非连通图$T=(V, {})$，图中每个顶点自成一个连通分量。在$E$中选择代价最小的边，若该边依附的顶点落在$T$中不同的连通分量上，则将此边加入到$T$中，否则舍去此边而选择下一条代价最小的边。依次类推，直至T中所有顶点都在同一连通分量上为止。
 
 图\ref{fig:kruskal}所示为Kruskal算法构造一棵最小生成树的过程。
@@ -688,7 +689,7 @@ int mgraph_prim(const mgraph_t *g){
 
 \subsubsection{代码}
 
-\begin{Codex}[label=mgraph_kruskal.c]
+\begin{Codex}[label=kruskal.c]
 #include <stdio.h>
 #include <stdlib.h>  /* for malloc() */
 #include <limits.h>  /* for INT_MAX */
@@ -1058,6 +1059,60 @@ int main() {
 \item POJ 1251 Jungle Roads, \myurl{http://poj.org/problem?id=1251}
 \item POJ 3625 Building Roads, \myurl{http://poj.org/problem?id=3625}
 \item POJ 1789 Truck History, \myurl{http://poj.org/problem?id=1789}
+\myenddot
+
+
+\subsection{最优布线问题 }
+\subsubsection{描述}
+学校需要将n台计算机连接起来，不同的2台计算机之间的连接费用可能是不同的。为了节省费用，我们考虑采用间接数据传输结束，就是一台计算机可以间接地通过其他计算机实现和另外一台计算机连接。
+
+为了使得任意两台计算机之间都是连通的（不管是直接还是间接的），需要在若干台计算机之间用网线直接连接，现在想使得总的连接费用最省，让你编程计算这个最小的费用。
+
+\subsubsection{输入}
+输入第一行为两个整数$n,m(2 \leq n \leq 100000,2\leq m \leq 100000)$，表示计算机总数，和可以互相建立连接的连接个数。接下来$m$行，每行三个整数$a,b,c$ 表示在机器$a$和机器$b$之间建立连接的话费是$c$。(题目保证一定存在可行的连通方案, 数据中可能存在权值不一样的重边，但是保证没有自环)
+
+\subsubsection{输出}
+输出只有一行一个整数，表示最省的总连接费用。
+
+\subsubsection{样例输入}
+\begin{Code}
+3 3
+1 2 1
+1 3 2
+2 3 1
+\end{Code}
+
+\subsubsection{样例输出}
+\begin{Code}
+2
+\end{Code}
+
+\subsubsection{分析}
+本题是非常直白的kruskal算法，可以直接使用第 \S \ref{sec:kruskal}节的样例代码。
+
+\subsubsection{代码}
+\begin{Codex}[label=wiring.c]
+/* wikioi 1231 最优布线问题, http://www.wikioi.com/problem/1231/ */
+// 1. 修改范围
+#define MAX_VERTICES_NO 100001 /* 顶点编号最大值 */
+#define MAX_EDGES 100000  /* 最大边数 */
+// 2. 注释掉 kruskal()里的printf()
+// 3. sum类型改为 long long，kruskal()返回值改为 long long
+// 4. main()里的printf改为 %lld
+
+/* 等价于复制粘贴，这里为了节约篇幅，使用include，在OJ上提交时请用复制粘贴 */
+#include "kruskal.c"  /* 见“图->最小生成树->Kruskal算法”这节 */
+\end{Codex}
+
+\subsubsection{相关的题目}
+与本题相同的题目：
+\begindot
+\item wikioi 1231 最优布线问题, \myurl{http://www.wikioi.com/problem/1231/}
+\myenddot
+
+与本题相似的题目：
+\begindot
+\item None
 \myenddot
 
 
