@@ -1220,7 +1220,7 @@ mgraph_t g;
 /** path[i]存放的是最短路径上指向vi的弧尾顶点 */
 int path[MAX_VERTICES_NUM];
 /** dist[i]存放的是v到vi的最短路径长度 */
-int dist[MAX_VERTICES_NUM];
+graph_weight_t dist[MAX_VERTICES_NUM];
 
 
 /*
@@ -1231,7 +1231,7 @@ int dist[MAX_VERTICES_NUM];
   * @param[out] path path[i]存放的是最短路径上指向vi的弧尾顶点
   * @return 无
   */
-void mgraph_dijkstra(const mgraph_t *g, int v, int dist[], int path[]) {
+void mgraph_dijkstra(const mgraph_t *g, int v, graph_weight_t dist[], int path[]) {
     int i, j;
     const int n = g->vertices_num;
 
@@ -1471,7 +1471,7 @@ int path[MAX_VERTICES_NUM][MAX_VERTICES_NUM];
   * @return 无
   */
 void mgraph_floyd(const mgraph_t *g,
-       int dist[][MAX_VERTICES_NUM],
+       graph_weight_t dist[][MAX_VERTICES_NUM],
        int path[][MAX_VERTICES_NUM]) {
     int i, j, k;
     const int n = g->vertices_num;
