@@ -696,98 +696,70 @@ int mgraph_prim(const mgraph_t *g){
 /* 等价于复制粘贴，这里为了节约篇幅，使用include，在OJ上提交时请用复制粘贴 */
 #include "ufs.c"  /* 见“树->并查集”这节 */
 
-
-/** 顶点数的最大值*/
-#define MAX_VERTICES_NUM 100
+#define MAX_VERTICES_NO 10 /* 顶点编号最大值 */
+#define MAX_EDGES 100  /* 最大边数 */
+#define INF INT_MAX  /* 边权值无穷大 */
 /** 边的权值，对无权图，用0或1表示是否相邻；对有权图，则为权值. */
 typedef int graph_weight_t;
-#define INFINITY INT_MAX  /* 边权值无穷大 */
-/** 顶点信息，例如顶点名字. */
-typedef char graph_vertex_t;
 
 /**
- *@struct
- *@brief 邻接矩阵.
- */
-typedef struct mgraph_t {
-    int vertices_num; /* 顶点数*/
-    int edges_num; /* 边数*/
-    /* 顶点表，存放顶点的信息，如名字等*/
-    graph_vertex_t vertices[MAX_VERTICES_NUM];
-    /* 邻接矩阵，存放边的信息，如权重等*/
-    graph_weight_t matrix[MAX_VERTICES_NUM][MAX_VERTICES_NUM];
-    int directed; /* 图(网)的种类，1表示有向，0表示无向*/
-} mgraph_t;
-
-mgraph_t g;
-
-
-/**
- * @struct 边
+ * @struct 无向图的边.
  */
 typedef struct edge_t{
-    int tail;  /** 弧尾, from */
-    int head;  /** 弧头, to */
-    graph_weight_t cost;  /** 权值 */
-}edge_t;
+    int u;  /** 顶点编号 */
+    int v;  /** 顶点编号 */
+    graph_weight_t w;  /** 权值 */
+} edge_t;
+
+edge_t edges[MAX_EDGES];
 
 static int edge_cmp(const edge_t *e1, const edge_t *e2) {
     const edge_t* const e11 = (const edge_t *)e1;
     const edge_t* const e22 = (const edge_t *)e2;
-    return e11->cost - e22->cost;
+    return e11->w - e22->w;
 }
 
 typedef edge_t heap_elem_t; // 元素的类型
 
 /* 等价于复制粘贴，这里为了节约篇幅，使用include，在OJ上提交时请用复制粘贴 */
-#include "heap.c"
+#include "heap.c"  /* 见“树->堆”这节 */
 
 
 /*
   * @brief Kruskal算法，求图的最小生成树.
-  * @param[in] g 图对象的指针
+  * @param[in] edges 边的数组
+  * @param[in] n 边数
   * @return MST的边的权值之和
   */
-int mgraph_kruskal(const mgraph_t *g) {
+int kruskal(const edge_t edges[], int n) {
+    int i;
     graph_weight_t sum = 0;
-    edge_t ed;
-    int u, v, count;
-    const int n = g->vertices_num;
+    edge_t e;
+    int u, v;
     heap_t h;
     int *ufs;
 
-    ufs = (int *)malloc(n * sizeof(int));
-    ufs_init(ufs, n);
-    heap_init(&h, g->edges_num, edge_cmp);
+    ufs = (int *) malloc(MAX_VERTICES_NO * sizeof(int));
+    ufs_init(ufs, MAX_VERTICES_NO);
+    heap_init(&h, n, edge_cmp);
 
     /* 把所有边插入堆中*/
-    for(u = 0; u < n; u++) {
-        for(v = u + 1; v < n; v++) {
-            const int w = g->matrix[u][v];
-            if(w < INFINITY) {
-                ed.tail = u;
-                ed.head = v;
-                ed.cost = w;
-                heap_push(&h, ed);
-            }
-        }
+    for (i = 0; i < n; i++) {
+        heap_push(&h, edges[i]);
     }
 
-    count = 0; /* 最小生成树的边数*/
-    while (count < n - 1)
-    {
+    for (i = 0; i < n; i++) {
         /* 从堆中退出最小权值边，存入ed */
-        ed = heap_top(&h);
+        e = heap_top(&h);
         heap_pop(&h);
         /* 取两顶点所在集合的根*/
-        u = ufs_find(ufs, ed.tail);
-        v = ufs_find(ufs, ed.head);
-        if(u != v) { /* 不是同一集合，说明不连通*/
+        u = ufs_find(ufs, e.u);
+        v = ufs_find(ufs, e.v);
+        if (u != v) { /* 不是同一集合，说明不连通*/
             ufs_union(ufs, u, v); /* 合并，连通成一个分量*/
             /* 输出生成树TE的边，即此边加入TE */
-            printf("%d - %d\n", ed.tail, ed.head);
-            sum += ed.cost;
-            count++;
+            printf("%d - %d\n", e.u, e.v);
+            sum += e.w;
         }
     }
 
@@ -796,10 +768,46 @@ int mgraph_kruskal(const mgraph_t *g) {
     return sum;
 }
 
+/* test
+输入数据:
+11
+0 1 7
+0 3 5
+1 2 8
+1 3 9
+1 4 7
+2 4 5
+3 4 15
+3 5 6
+4 5 8
+4 6 9
+5 6 11
 
-// test，输入数据和main()函数与 mgraph_prim1.c 相同
-// int main() {
-// ...
+输出:
+0 - 3
+2 - 4
+3 - 5
+0 - 1
+1 - 4
+4 - 6
+Total:39
+*/
+int main() {
+    int i, n;
+
+    /* 读取边数目*/
+    scanf("%d", &n);
+
+    /* 读取边信息 */
+    for (i = 0; i < n; i++) {
+        scanf("%d %d %d", &(edges[i].u), &(edges[i].v),
+                &(edges[i].w));
+    }
+
+    /* 求解最小生成树 */
+    printf("Total:%d\n", kruskal(edges, n));
+    return 0;
+}
 \end{Codex}
 
 \subsubsection{算法分析}
@@ -808,7 +816,7 @@ int mgraph_kruskal(const mgraph_t *g) {
 如果采用邻接表作为图的存储结构，则在建立小根堆时需要检测图的邻接表，这需要$O(n+e)$的时间。为建成初始的小根堆，需要$O(e\log_2e)$的时间。在构造最小生成树的过程中，需要进行$O(e)$次出堆操作\fn{heap_remove()}、$2e$次并查集的\fn{ufs_find()}操作以及$n-1$次\fn{ufs_union()}操作，计算时间分别为$O(e\log_2e)$、$O(e\log_2n)$和$O(n)$，所以总时间为$O(n+e\log_2e)$。
 
 
-\subsection{例题：POJ 1751 Highways}
+\subsection{Highways}
 \subsubsection{描述}
 一个名叫Flatopia的岛国地势非常平坦。不幸的是Flatopia的公共高速公路系统很差劲。Flatopia的政府也意识到了这个问题，已经建造了许多高速公路用来连接比较重要的城镇。不过，仍然有一些城镇没有接入高速公路。因此，很有必要建造更多的高速公路，让任意两个城镇之间可以通过高速公路连接。
 
@@ -1007,7 +1015,7 @@ int main() {
 \subsubsection{相关的题目}
 与本题相同的题目：
 \begindot
-\item None
+\item POJ 1751 Highways, \myurl{http://poj.org/problem?id=1751}
 \myenddot
 
 与本题相似的题目：
