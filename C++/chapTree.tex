@@ -1040,11 +1040,15 @@ int ufs_find(const int s[], int x) {
 
 /* 带路径压缩的find. */
 int ufs_find_compress(int s[], int x) {
-    const int oldx = x; /* 记录原始x */
+    int oldx = x; /* 记录原始x */
     while (s[x] >= 0) {
         x = s[x];
     }
-    if (oldx != x) s[oldx] = x;
+    while (oldx != x) {
+        int temp = s[oldx];
+        s[oldx] = x;
+        oldx = temp;
+    }
     return x;
 }
 
