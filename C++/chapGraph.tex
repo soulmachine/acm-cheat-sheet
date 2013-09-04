@@ -410,28 +410,25 @@ lowcost & 0 & 0 & 0 & 0 & 0 & & & \\
 #define MAX_VERTICES_NUM 100
 /** 边的权值，对无权图，用0或1表示是否相邻；对有权图，则为权值. */
 typedef int graph_weight_t;
-/** 顶点信息，例如顶点名字. */
-typedef char graph_vertex_t;
+#define GRAPH_INF INT_MAX
 
 /**
  *@struct
  *@brief 邻接矩阵.
  */
 typedef struct mgraph_t {
-    int vertices_num; /* 顶点数*/
-    int edges_num; /* 边数*/
-    /* 顶点表，存放顶点的信息，如名字等*/
-    graph_vertex_t vertices[MAX_VERTICES_NUM];
+    int nv; /* 顶点数*/
+    int ne; /* 边数*/
     /* 邻接矩阵，存放边的信息，如权重等*/
     graph_weight_t matrix[MAX_VERTICES_NUM][MAX_VERTICES_NUM];
-    int directed; /* 图(网)的种类，1表示有向，0表示无向*/
 } mgraph_t;
 
 mgraph_t g;
 
 typedef struct closedge_t {
     int adjvex; /* 弧头，属于U */
-    graph_weight_t lowcost; /* 边 adjvex->本下标 的权值，INT_MIN表示已经加入U */
+    /* 边 adjvex->本下标 的权值，-GRAPH_INF表示已经加入U */
+    graph_weight_t lowcost;
 } closedge_t;
 
 /*
@@ -442,10 +439,10 @@ typedef struct closedge_t {
  */
 static int min_element(const closedge_t closedge[], int n) {
     int i;
-    int min_value = INT_MAX;
+    int min_value = GRAPH_INF;
     int min_loc = -1;
     for (i = 0; i < n; i++)
-        if (closedge[i].lowcost > INT_MIN) {
+        if (closedge[i].lowcost > -GRAPH_INF) {
             if (min_value > closedge[i].lowcost) {
                 min_value = closedge[i].lowcost;
                 min_loc = i;
@@ -463,7 +460,7 @@ graph_weight_t mgraph_prim(const mgraph_t *g) {
     graph_weight_t sum = 0; /* 权值之和 */
     int i, j;
     int u = 0; /* 从0号顶点出发 */
-    const int n = g->vertices_num;
+    const int n = g->nv;
     /* closedge[n]，记录从顶点集U到V-U的边*/
     closedge_t* const closedge = (closedge_t*) malloc(n * sizeof(closedge_t));
 
@@ -472,16 +469,17 @@ graph_weight_t mgraph_prim(const mgraph_t *g) {
         closedge[i].adjvex = u;
         closedge[i].lowcost = g->matrix[u][i];
     }
-    closedge[u].lowcost = INT_MIN; /* 初始, U={u} */
+    closedge[u].lowcost = -GRAPH_INF; /* 初始, U={u} */
 
     for (i = 0; i < n; i++) if (i != u) { /* 其余的n-1个顶点*/
         /* 求出TE的下一个顶点k */
         const int k = min_element(closedge, n);
         /* 输出此边 closedge[k].adjvex --> k */
-        printf("%c - %c\n", g->vertices[closedge[k].adjvex], g->vertices[k]);
+        printf("%c - %c : %d\n", 'A' + closedge[k].adjvex, 'A' + k,
+                g->matrix[closedge[k].adjvex][k]);
         sum += g->matrix[closedge[k].adjvex][k];
         // sum += closedge[k].lowcost;  // 等价
-        closedge[k].lowcost = INT_MIN;  /* 顶点k并入U，表示此边加入TE */
+        closedge[k].lowcost = -GRAPH_INF;  /* 顶点k并入U，表示此边加入TE */
         /* 更新k的邻接点的值，不相邻为无穷大*/
         for (j = 0; j < n; j++) {
             const graph_weight_t w = g->matrix[k][j];
@@ -493,6 +491,36 @@ graph_weight_t mgraph_prim(const mgraph_t *g) {
     }
     free(closedge);
     return sum;
+}
+
+/** 读取输入，构建图. */
+void read_graph() {
+    int i, j, k, m, n;
+
+    /* 读取节点和边的数目 */
+    scanf("%d%d", &m, &n);
+    getchar(); // 消耗回车键
+    g.nv = m;
+    g.ne = n;
+
+    /* 初始化图，所有节点间距离为无穷大 */
+    for (i = 0; i < m; i++) {
+        for (j = 0; j < m; j++) {
+            g.matrix[i][j] = GRAPH_INF;
+        }
+    }
+
+    /* 读取边信息 */
+    for (k = 0; k < n; k++) {
+        char chx, chy;
+        int w;
+        scanf("%c %c %d", &chx, &chy, &w);
+        getchar();
+        i = chx - 'A';
+        j = chy - 'A';
+        g.matrix[i][j] = w;
+        g.matrix[j][i] = w;
+    }
 }
 
 /* test
@@ -523,34 +551,7 @@ E - G : 9
 Total:39
 */
 int main() {
-    int i, j, k, m, n;
-    char chx, chy;
-    int cost;
-
-    /* 读取节点和边的数目 */
-    scanf("%d%d", &m, &n);
-    getchar(); // 消耗回车键
-    g.vertices_num = m;
-    g.edges_num = n;
-    for (i = 0; i < m; i++) g.vertices[i] = 'A' + i;
-
-    /* 初始化图，所有节点间距离为无穷大 */
-    for (i = 0; i < m; i++) {
-        for (j = 0; j < m; j++) {
-            g.matrix[i][j] = INT_MAX;
-        }
-    }
-
-    /* 读取边信息 */
-    for (k = 0; k < n; k++) {
-        scanf("%c %c %d", &chx, &chy, &cost);
-        getchar();
-        i = chx - 'A';
-        j = chy - 'A';
-        g.matrix[i][j] = cost;
-        g.matrix[j][i] = cost;
-    }
-
+    read_graph();
     /* 求解最小生成树 */
     printf("Total:%d\n", mgraph_prim(&g));
     return 0;
@@ -573,21 +574,17 @@ Prim算法的另一种实现是使用小根堆，其流程是：小根堆中存�
 #define MAX_VERTICES_NUM 100
 /** 边的权值，对无权图，用0或1表示是否相邻；对有权图，则为权值. */
 typedef int graph_weight_t;
-/** 顶点信息，例如顶点名字. */
-typedef char graph_vertex_t;
+#define GRAPH_INF INT_MAX
 
 /**
  *@struct
  *@brief 邻接矩阵.
  */
 typedef struct mgraph_t {
-    int vertices_num; /* 顶点数*/
-    int edges_num; /* 边数*/
-    /* 顶点表，存放顶点的信息，如名字等*/
-    graph_vertex_t vertices[MAX_VERTICES_NUM];
+    int nv; /* 顶点数*/
+    int ne; /* 边数*/
     /* 邻接矩阵，存放边的信息，如权重等*/
     graph_weight_t matrix[MAX_VERTICES_NUM][MAX_VERTICES_NUM];
-    int directed; /* 图(网)的种类，1表示有向，0表示无向*/
 } mgraph_t;
 
 mgraph_t g;
@@ -599,20 +596,17 @@ mgraph_t g;
 typedef struct edge_t{
     int tail;  /** 弧尾, from */
     int head;  /** 弧头, to */
-    graph_weight_t cost;  /** 权值 */
+    graph_weight_t w;  /** 权值 */
 }edge_t;
 
 static int edge_cmp(const edge_t *e1, const edge_t *e2) {
-    const edge_t* const e11 = (const edge_t *)e1;
-    const edge_t* const e22 = (const edge_t *)e2;
-    return e11->cost - e22->cost;
+    return e1->w - e2->w;
 }
 
 typedef edge_t heap_elem_t; // 元素的类型
 
 /* 等价于复制粘贴，这里为了节约篇幅，使用include，在OJ上提交时请用复制粘贴 */
-#include "heap.c"
-
+#include "heap.c"  /* 见“树->堆”这节 */
 
 /**
   * @brief Prim算法，求图的最小生成树.
@@ -623,34 +617,34 @@ int mgraph_prim(const mgraph_t *g){
     graph_weight_t sum = 0; /* 权值之和 */
     int u = 0; /* 从0号顶点出发 */
     int i, count = 1;
-    edge_t ed;
+    edge_t e;
     heap_t h;
-    const int n = g->vertices_num;
+    const int n = g->nv;
     /* 判断顶点是否已经加入最小生成树*/
     int* U = (int *)malloc(n * sizeof(int));
     for(i = 0; i < n; i++) U[i] = 0;
-    heap_init(&h, g->edges_num, edge_cmp);
+    heap_init(&h, g->ne, edge_cmp);
 
     /* 开始顶点加入U(所以count初始为1) */
     U[u] = 1;
     while (count < n) {
         int v;
         for(v = 0; v < n; v++) if(!U[v]) { /* 若v不在生成树，(u,v)加入堆*/
-            ed.tail = u;
-            ed.head = v;
+            e.tail = u;
+            e.head = v;
             /* tail在树内，head不在树内*/
-            ed.cost = g->matrix[u][v];
-            heap_push(&h, ed);
+            e.w = g->matrix[u][v];
+            heap_push(&h, e);
         }
         while(!heap_empty(&h) && count < n) {
             /* 从堆中退出最小权值边，存入ed */
-            ed = heap_top(&h); heap_pop(&h);
-            if(!U[ed.head]) {
+            e = heap_top(&h); heap_pop(&h);
+            if(!U[e.head]) {
                 /* 输出生成树TE的边，即此边加入TE */
-                printf("%c - %c\n", g->vertices[ed.tail],
-                        g->vertices[ed.head]);
-                sum += g->matrix[ed.tail][ed.head];
-                u = ed.head;
+                printf("%c - %c: %d\n", 'A' + e.tail, 'A' + e.head,
+                        g->matrix[e.tail][e.head]);
+                sum += g->matrix[e.tail][e.head];
+                u = e.head;
                 /* u并入到生成树的顶点集合U */
                 U[u] = 1;
                 count++;
@@ -664,9 +658,6 @@ int mgraph_prim(const mgraph_t *g){
     return sum;
 }
 
-
-// test，输入数据和main()函数与 mgraph_prim1.c 相同
-// int main() {
 // ...
 \end{Codex}
 
@@ -699,7 +690,6 @@ int mgraph_prim(const mgraph_t *g){
 
 #define MAX_VERTICES_NO 11 /* 顶点编号最大值 */
 #define MAX_EDGES 100  /* 最大边数 */
-#define INF INT_MAX  /* 边权值无穷大 */
 /** 边的权值，对无权图，用0或1表示是否相邻；对有权图，则为权值. */
 typedef int graph_weight_t;
 
@@ -903,99 +893,18 @@ Flatopia政府希望能最小化建造高速公路的代价。由于Flatopia地�
 
 \subsubsection{代码}
 \begin{Codex}[label=poj_1751_highways_prim.c]
-#include <stdio.h>
-#include <stdlib.h>  /* for malloc() */
-#include <limits.h>  /* for INT_MAX */
+/* POJ 1751 Highways, http://poj.org/problem?id=1751 */
 
-/** 顶点数的最大值*/
+/* 等价于复制粘贴，这里为了节约篇幅，使用include，在OJ上提交时请用复制粘贴 */
+#include "mgraph_prim1.c"  /* 见“图->最小生成树->Prim算法”这节 */
+
+// 1. 修改范围
 #define MAX_VERTICES_NUM 750
-/** 边的权值，对无权图，用0或1表示是否相邻；对有权图，则为权值. */
-typedef int graph_weight_t;
-/** 顶点信息，例如顶点名字. */
-typedef int graph_vertex_t;
-
-/**
- *@struct
- *@brief 邻接矩阵.
- */
-typedef struct mgraph_t {
-    int vertices_num; /* 顶点数*/
-    int edges_num; /* 边数*/
-    /* 顶点表，存放顶点的信息，如名字等*/
-    graph_vertex_t vertices[MAX_VERTICES_NUM];
-    /* 邻接矩阵，存放边的信息，如权重等*/
-    graph_weight_t matrix[MAX_VERTICES_NUM][MAX_VERTICES_NUM];
-    int directed; /* 图(网)的种类，1表示有向，0表示无向*/
-} mgraph_t;
-
-mgraph_t g;
-
-typedef struct closedge_t {
-    int adjvex; /* 弧头，属于U */
-    graph_weight_t lowcost; /* 边 adjvex->本下标 的权值，INT_MIN表示已经加入U */
-} closedge_t;
-
-/*
- * @brief 在V-E集合中寻找最小的边
- * @param[in] closedge MST中的边，起点为adjvex，终点为本下标
- * @param[in] n closedge数组的长度
- * @return 找到了则返回弧尾的下标，V-U为空集则返回-1，表示终止
- */
-static int min_element(const closedge_t closedge[], int n) {
-    int i;
-    int min_value = INT_MAX;
-    int min_loc = -1;
-    for (i = 0; i < n; i++)
-        if (closedge[i].lowcost > INT_MIN) {
-            if (min_value > closedge[i].lowcost) {
-                min_value = closedge[i].lowcost;
-                min_loc = i;
-            }
-        }
-    return min_loc;
-}
-
-/**
- * @brief Prim算法，求图的最小生成树.
- * @param[in] g 图对象的指针
- * @return MST的边的权值之和
- */
-graph_weight_t mgraph_prim(const mgraph_t *g) {
-    graph_weight_t sum = 0; /* 权值之和 */
-    int i, j;
-    int u = 0; /* 从0号顶点出发 */
-    const int n = g->vertices_num;
-    /* closedge[n]，记录从顶点集U到V-U的边*/
-    closedge_t* const closedge = (closedge_t*) malloc(n * sizeof(closedge_t));
-
-    /* 辅助数组初始化*/
-    for (i = 0; i < n; i++) if (i != u) {
-        closedge[i].adjvex = u;
-        closedge[i].lowcost = g->matrix[u][i];
-    }
-    closedge[u].lowcost = INT_MIN; /* 初始, U={u} */
-
-    for (i = 0; i < n; i++) if (i != u) { /* 其余的n-1个顶点*/
-        /* 求出TE的下一个顶点k */
-        const int k = min_element(closedge, n);
-        /* 输出此边 closedge[k].adjvex --> k */
-        if (g->matrix[closedge[k].adjvex][k] > 0)
-            printf("%d %d\n", g->vertices[closedge[k].adjvex], g->vertices[k]);
-        sum += g->matrix[closedge[k].adjvex][k];
-        // sum += closedge[k].lowcost;  // 等价
-        closedge[k].lowcost = INT_MIN;  /* 顶点k并入U，表示此边加入TE */
-        /* 更新k的邻接点的值，不相邻为无穷大*/
-        for (j = 0; j < n; j++) {
-            const graph_weight_t w = g->matrix[k][j];
-            if (w < closedge[j].lowcost) {
-                closedge[j].adjvex = k;
-                closedge[j].lowcost = w;
-            }
-        }
-    }
-    free(closedge);
-    return sum;
-}
+// 2. 重写 read_graph()
+// 3. 重写 main()
+// 4. 修改 mgraph_prim()里的printf，权值大于0才打印出来
+if (g->matrix[closedge[k].adjvex][k] > 0)
+    printf("%d %d\n", closedge[k].adjvex+1,  k+1);
 
 /* 输入数据 */
 int n, m, x[MAX_VERTICES_NUM], y[MAX_VERTICES_NUM];
@@ -1015,28 +924,30 @@ static int distance(int i,int j) {
     return (x[i]-x[j]) * (x[i]-x[j]) + (y[i]-y[j]) * (y[i]-y[j]);
 }
 
-int main() {
+/** 读取输入，构建图. */
+void read_graph() {
     int i, j;
-    scanf("%d",&n);
-    g.vertices_num = n;
-    g.edges_num = n * (n-1) / 2;
-    g.directed = 0;
-    for(i = 0; i < n; i++) g.vertices[i] = i+1;
+    scanf("%d", &n);
+    g.nv = n;
+    g.ne = n * (n - 1) / 2;
 
-    for(i = 0; i < n; i++) scanf("%d %d", &x[i], &y[i]);
-    for(i = 0; i < n; i++)
-        for(j = i; j < n; j++)
-            g.matrix[i][j] = g.matrix[j][i] = distance(i,j);
+    for (i = 0; i < n; i++)
+        scanf("%d %d", &x[i], &y[i]);
+    for (i = 0; i < n; i++)
+        for (j = i; j < n; j++)
+            g.matrix[i][j] = g.matrix[j][i] = distance(i, j);
 
-    scanf("%d",&m);
-    for(i = 0; i < m; i++) {
+    scanf("%d", &m);
+    for (i = 0; i < m; i++) {
         int a, b;
-        scanf("%d %d",&a, &b);
-        g.matrix[a-1][b-1] = g.matrix[b-1][a-1] = 0;
+        scanf("%d %d", &a, &b);
+        g.matrix[a - 1][b - 1] = g.matrix[b - 1][a - 1] = 0;
     }
+}
 
+int main() {
+    read_graph();
     mgraph_prim(&g);
-
     return 0;
 }
 \end{Codex}
@@ -1197,22 +1108,17 @@ Dijkstra算法的C语言实现如下。
 #define MAX_VERTICES_NUM 100
 /** 边的权值，对无权图，用0或1表示是否相邻；对有权图，则为权值. */
 typedef int graph_weight_t;
-#define GRAPH_INFINITY INT_MAX
-/** 顶点信息，例如顶点名字. */
-typedef char graph_vertex_t;
+#define GRAPH_INF INT_MAX
 
 /**
  *@struct
  *@brief 邻接矩阵.
  */
 typedef struct mgraph_t {
-    int vertices_num; /* 顶点数*/
-    int edges_num; /* 边数*/
-    /* 顶点表，存放顶点的信息，如名字等*/
-    graph_vertex_t vertices[MAX_VERTICES_NUM];
+    int nv; /* 顶点数*/
+    int ne; /* 边数*/
     /* 邻接矩阵，存放边的信息，如权重等*/
     graph_weight_t matrix[MAX_VERTICES_NUM][MAX_VERTICES_NUM];
-    int directed; /* 图(网)的种类，1表示有向，0表示无向*/
 } mgraph_t;
 
 mgraph_t g;
@@ -1233,17 +1139,16 @@ graph_weight_t dist[MAX_VERTICES_NUM];
   */
 void mgraph_dijkstra(const mgraph_t *g, int v, graph_weight_t dist[], int path[]) {
     int i, j;
-    const int n = g->vertices_num;
+    const int n = g->nv;
 
-    // 初始化S集合
-    int *S = (int*)malloc( n * sizeof(int));
-    for(i = 0; i < n; i++) S[i] = 0;
+    /* 初始化S集合 */
+    int *S = (int*)calloc(n, sizeof(int));
     S[v] = 1; /* 初始化，顶点u加入S */
 
-    // 初始化dist和path
+    /* 初始化dist和path */
     for(i = 0; i < n; i++) if (i !=v) {
         dist[i] = g->matrix[v][i];
-        if(dist[i] < GRAPH_INFINITY) {
+        if(dist[i] < GRAPH_INF) {
             path[i] = v;
         }  else {
             path[i] = -1; /* 没有顶点指向i */
@@ -1254,19 +1159,20 @@ void mgraph_dijkstra(const mgraph_t *g, int v, graph_weight_t dist[], int path[]
 
     for(i = 0; i < n; i++) if (i !=v) {
         /* 选不在S中的最短路径顶点 u */
-        int u;
-        graph_weight_t min = GRAPH_INFINITY;
+        int u = -1;
+        graph_weight_t min = GRAPH_INF;
         for(j = 0; j < n; j++) {
             if(!S[j] && dist[j] < min) {
                 u = j;
                 min = dist[j];
             }
         }
+        if (u < 0) break; /* 结束 */
         S[u] = 1;
         for(j = 0; j < n; j++) {
             const graph_weight_t w = g->matrix[u][j];
             /* 顶点j未就加入S，且经过u到j可缩短路径*/
-            if(!S[j] && w < GRAPH_INFINITY &&
+            if(!S[j] && w < GRAPH_INF &&
                 dist[u] + w < dist[j]) {
                 dist[j] = dist[u] + w;
                 path[j] = u; /* 修改到j的最短路径*/
@@ -1284,10 +1190,10 @@ void mgraph_dijkstra(const mgraph_t *g, int v, graph_weight_t dist[], int path[]
  */
 static void print_path_r(int v, const int path[]) {
     if (path[v] == -1) {
-        printf("%c", g.vertices[v]);
+        printf("%c", 'A' + v);
     } else {
         print_path_r(path[v], path);
-        printf("->%c", g.vertices[v]);
+        printf("->%c", 'A' + v);
     }
 }
 
@@ -1310,29 +1216,27 @@ void print_path(const int path[], int n) {
  */
 void read_graph() {
     int i, j, k;
-    char chx, chy;
-    graph_weight_t cost;
 
     /* 读取节点和边的数目 */
-    scanf("%d%d", &(g.vertices_num), &(g.edges_num));
-    g.directed = 1;
-    for (i = 0; i < g.vertices_num; i++) g.vertices[i] = 'A' + i;
+    scanf("%d%d", &g.nv, &g.ne);
 
     /* 初始化图，所有节点间距离为无穷大 */
-    for (i = 0; i < g.vertices_num; i++) {
-        for (j = 0; j < g.vertices_num; j++) {
-            g.matrix[i][j] = GRAPH_INFINITY;
+    for (i = 0; i < g.nv; i++) {
+        for (j = 0; j < g.nv; j++) {
+            g.matrix[i][j] = GRAPH_INF;
         }
     }
 
     /* 读取边信息 */
     getchar(); // 消耗回车键
-    for (k = 0; k < g.edges_num; k++) {
-        scanf("%c %c %d", &chx, &chy, &cost);
+    for (k = 0; k < g.ne; k++) {
+        char chx, chy;
+        graph_weight_t w;
+        scanf("%c %c %d", &chx, &chy, &w);
         getchar();
         i = chx - 'A';
         j = chy - 'A';
-        g.matrix[i][j] = cost;
+        g.matrix[i][j] = w;
     }
 }
 
@@ -1362,7 +1266,7 @@ int main() {
 
     /* 求 V0 到其他所有顶点的最短路径 */
     mgraph_dijkstra(&g, 0, dist, path);
-    print_path(path, g.vertices_num);
+    print_path(path, g.nv);
     return 0;
 }
 \end{Codex}
@@ -1437,22 +1341,17 @@ Floyd算法的C语言实现如下。
 #define MAX_VERTICES_NUM 100
 /** 边的权值，对无权图，用0或1表示是否相邻；对有权图，则为权值. */
 typedef int graph_weight_t;
-#define GRAPH_INFINITY (INT_MAX / 2)   /* 确保加法不溢出 */
-/** 顶点信息，例如顶点名字. */
-typedef char graph_vertex_t;
+#define GRAPH_INF (INT_MAX / 2)   /* 确保加法不溢出 */
 
 /**
  *@struct
  *@brief 邻接矩阵.
  */
 typedef struct mgraph_t {
-    int vertices_num; /* 顶点数*/
-    int edges_num; /* 边数*/
-    /* 顶点表，存放顶点的信息，如名字等*/
-    graph_vertex_t vertices[MAX_VERTICES_NUM];
+    int nv; /* 顶点数*/
+    int ne; /* 边数*/
     /* 邻接矩阵，存放边的信息，如权重等*/
     graph_weight_t matrix[MAX_VERTICES_NUM][MAX_VERTICES_NUM];
-    int directed; /* 图(网)的种类，1表示有向，0表示无向*/
 } mgraph_t;
 
 
@@ -1474,7 +1373,7 @@ void mgraph_floyd(const mgraph_t *g,
        graph_weight_t dist[][MAX_VERTICES_NUM],
        int path[][MAX_VERTICES_NUM]) {
     int i, j, k;
-    const int n = g->vertices_num;
+    const int n = g->nv;
 
     for(i = 0; i < n; i++) {
         for(j = 0; j < n; j++) {
@@ -1509,10 +1408,10 @@ void mgraph_floyd(const mgraph_t *g,
  */
 static void print_path_r(int u, int v, const int path[][MAX_VERTICES_NUM]) {
     if (path[u][v] == -1) {
-        printf("%c", g.vertices[u]);
+        printf("%c", 'A' + u);
     } else {
         print_path_r(u, path[u][v], path);
-        printf("->%c", g.vertices[v]);
+        printf("->%c", 'A' + v);
     }
 }
 
@@ -1524,8 +1423,8 @@ static void print_path_r(int u, int v, const int path[][MAX_VERTICES_NUM]) {
  */
 void print_path(const mgraph_t *g, const int path[][MAX_VERTICES_NUM]) {
     int i, j;
-    for (i = 0; i < g->vertices_num; i++) {
-        for (j = 0; j < g->vertices_num; j++) {
+    for (i = 0; i < g->nv; i++) {
+        for (j = 0; j < g->nv; j++) {
             if (i != j) {
                 print_path_r(i, j, path);
                 printf("\n");
@@ -1535,6 +1434,35 @@ void print_path(const mgraph_t *g, const int path[][MAX_VERTICES_NUM]) {
     }
 }
 
+/**
+ * @brief 读取输入，构建图.
+ */
+void read_graph() {
+    int i, j, k;
+
+    /* 读取节点和边的数目 */
+    scanf("%d%d", &(g.nv), &(g.ne));
+
+    /* 初始化图，所有节点间距离为无穷大 */
+    for (i = 0; i < g.nv; i++) {
+        for (j = 0; j < g.nv; j++) {
+            g.matrix[i][j] = GRAPH_INF;
+        }
+    }
+
+    /* 读取边信息 */
+    getchar(); // 消耗回车键
+    for (k = 0; k < g.ne; k++) {
+        char chx, chy;
+        graph_weight_t w;
+
+        scanf("%c %c %d", &chx, &chy, &w);
+        getchar();
+        i = chx - 'A';
+        j = chy - 'A';
+        g.matrix[i][j] = w;
+    }
+}
 
 /* test
 
@@ -1559,32 +1487,7 @@ C->A
 C->A->B
 */
 int main() {
-    int i, j, k;
-    char chx, chy;
-    graph_weight_t cost;
-
-    /* 读取节点和边的数目 */
-    scanf("%d%d", &(g.vertices_num), &(g.edges_num ));
-    g.directed = 1;
-    for (i = 0; i < g.vertices_num; i++) g.vertices[i] = 'A' + i;
-
-    /* 初始化图，所有节点间距离为无穷大 */
-    for (i = 0; i < g.vertices_num; i++) {
-        for (j = 0; j < g.vertices_num; j++) {
-            g.matrix[i][j] = GRAPH_INFINITY;
-        }
-    }
-
-    /* 读取边信息 */
-    getchar(); // 消耗回车键
-    for (k = 0; k < g.edges_num ; k++) {
-        scanf("%c %c %d", &chx, &chy, &cost);
-        getchar();
-        i = chx - 'A';
-        j = chy - 'A';
-        g.matrix[i][j] = cost;
-    }
-
+    read_graph();
     /* 求两两之间的最短路径 */
     mgraph_floyd(&g, dist, path);
     print_path(&g, path);
@@ -1633,125 +1536,50 @@ Dijkstra算法权值不能为负，Floyd权值可以为负，但环路之和不�
 
 \subsubsection{代码}
 \begin{Codex}[label=hdu_2544.c]
-/* http://acm.hdu.edu.cn/showproblem.php?pid=2544 */
-#include <stdio.h>
-#include <stdlib.h>  /* for malloc() */
-#include <limits.h>  /* for INT_MAX */
+/* HDU 2544 最短路, http://acm.hdu.edu.cn/showproblem.php?pid=2544 */
 
-/** 顶点数的最大值*/
+/* 等价于复制粘贴，这里为了节约篇幅，使用include，在OJ上提交时请用复制粘贴 */
+#include "mgraph_dijkstra.c"  /* 见“图->最短路径”这节 */
+
+// 1. 修改范围
 #define MAX_VERTICES_NUM 100
-/** 边的权值，对无权图，用0或1表示是否相邻；对有权图，则为权值. */
-typedef int graph_weight_t;
-#define GRAPH_INFINITY INT_MAX
-/** 顶点信息，例如顶点名字. */
-typedef char graph_vertex_t;
+// 2. 重写 read_graph()
+// 3. 重写 main()
 
-/**
- *@struct
- *@brief 邻接矩阵.
- */
-typedef struct mgraph_t {
-    int vertices_num; /* 顶点数*/
-    int edges_num; /* 边数*/
-    /* 顶点表，存放顶点的信息，如名字等*/
-    graph_vertex_t vertices[MAX_VERTICES_NUM];
-    /* 邻接矩阵，存放边的信息，如权重等*/
-    graph_weight_t matrix[MAX_VERTICES_NUM][MAX_VERTICES_NUM];
-    int directed; /* 图(网)的种类，1表示有向，0表示无向*/
-} mgraph_t;
+/** 读取输入，构建图. */
+void read_graph() {
+    int i, j, k;
+    /* 读取节点和边的数目 */
+    scanf("%d%d", &g.nv, &g.ne);
 
-mgraph_t g;
-
-/** path[i]存放的是最短路径上指向vi的弧尾顶点 */
-int path[MAX_VERTICES_NUM];
-/** dist[i]存放的是v到vi的最短路径长度 */
-int dist[MAX_VERTICES_NUM];
-
-
-/*
-  * @brief Dijkstra算法求单源最短路径.
-  * @param[in] g 图对象的指针
-  * @param[in] v 起点
-  * @param[out] dist dist[i]存放的是v到vi的最短路径长度
-  * @param[out] path path[i]存放的是最短路径上指向vi的弧尾顶点
-  * @return 无
-  */
-void mgraph_dijkstra(const mgraph_t *g, int v, int dist[], int path[]) {
-    int i, j;
-    const int n = g->vertices_num;
-
-    // 初始化S集合
-    int *S = (int*)malloc( n * sizeof(int));
-    for(i = 0; i < n; i++) S[i] = 0;
-    S[v] = 1; /* 初始化，顶点u加入S */
-
-    // 初始化dist和path
-    for(i = 0; i < n; i++) if (i !=v) {
-        dist[i] = g->matrix[v][i];
-        if(dist[i] < GRAPH_INFINITY) {
-            path[i] = v;
-        }  else {
-            path[i] = -1; /* 没有顶点指向i */
+    /* 初始化图，所有节点间距离为无穷大 */
+    for (i = 0; i < g.nv; i++) {
+        for (j = 0; j < g.nv; j++) {
+            g.matrix[i][j] = GRAPH_INF;
         }
     }
-    dist[v] = 0;
-    path[v] = -1;
 
-    for(i = 0; i < n; i++) if (i !=v) {
-        /* 选不在S中的最短路径顶点 u */
-        int u;
-        graph_weight_t min = GRAPH_INFINITY;
-        for(j = 0; j < n; j++) {
-            if(!S[j] && dist[j] < min) {
-                u = j;
-                min = dist[j];
-            }
-        }
-        S[u] = 1;
-        for(j = 0; j < n; j++) {
-            const graph_weight_t w = g->matrix[u][j];
-            /* 顶点j未就加入S，且经过u到j可缩短路径*/
-            if(!S[j] && w < GRAPH_INFINITY &&
-                dist[u] + w < dist[j]) {
-                dist[j] = dist[u] + w;
-                path[j] = u; /* 修改到j的最短路径*/
-            }
-        }
+    /* 读取边信息 */
+    for (k = 0; k < g.ne; k++) {
+        int x, y;
+        graph_weight_t w;
+        scanf("%d %d %d", &x, &y, &w);
+        i = x - 1;
+        j = y - 1;
+        g.matrix[i][j] = w;
+        g.matrix[j][i] = w;  // 注意，街道是双向的
     }
-    free(S);
+
 }
 
 int main() {
-    int i, j, k;
-    int x, y;
-    graph_weight_t cost;
-
-    /* 读取节点和边的数目 */
-    while(scanf("%d%d", &(g.vertices_num), &(g.edges_num)) > 0)
-        if (g.vertices_num > 0 && g.edges_num > 0){
-        g.directed = 1;
-        for (i = 0; i < g.vertices_num; i++) g.vertices[i] = '1' + i;
-
-        /* 初始化图，所有节点间距离为无穷大 */
-        for (i = 0; i < g.vertices_num; i++) {
-            for (j = 0; j < g.vertices_num; j++) {
-                g.matrix[i][j] = GRAPH_INFINITY;
-            }
-        }
-
-        /* 读取边信息 */
-        for (k = 0; k < g.edges_num; k++) {
-            scanf("%d %d %d", &x, &y, &cost);
-            i = x - 1;
-            j = y - 1;
-            g.matrix[i][j] = cost;
-            g.matrix[j][i] = cost;  // 注意，街道是双向的
-        }
-
+    while (1) {
+        read_graph();
+        if (g.nv <= 0 || g.ne <= 0) break;
         /* 求 商店（即路口1） 到其他所有顶点的最短路径 */
         mgraph_dijkstra(&g, 0, dist, path);
         /* 打印商店（即路口1）到赛场（即路口N）的最短路径长度 */
-        printf("%d\n", dist[g.vertices_num-1]);
+        printf("%d\n", dist[g.nv - 1]);
     }
     return 0;
 }
@@ -1828,85 +1656,27 @@ It is possible that your program will receive a network of connections that excl
 \end{Code}
 
 \subsubsection{分析}
+用Floyd算法求出每点之间的最短路径，输出距离最大的。
 
 \subsubsection{代码}
 \begin{Codex}[label=poj_1125.c]
-/* http://poj.org/problem?id=1125 */
-#include <stdio.h>
-#include <stdlib.h>  /* for malloc() */
-#include <limits.h>  /* for INT_MAX */
+/* poj 1125 Stockbroker Grapevine, http://poj.org/problem?id=1125 */
 
-/** 顶点数的最大值*/
+/* 等价于复制粘贴，这里为了节约篇幅，使用include，在OJ上提交时请用复制粘贴 */
+#include "mgraph_floyd.c"  /* 见“图->最短路径”这节 */
+
+// 1. 修改范围
 #define MAX_VERTICES_NUM 100
-/** 边的权值，对无权图，用0或1表示是否相邻；对有权图，则为权值. */
-typedef int graph_weight_t;
-#define GRAPH_INFINITY (INT_MAX / 2)   /* 确保加法不溢出 */
-/** 顶点信息，例如顶点名字. */
-typedef char graph_vertex_t;
-
-/**
- *@struct
- *@brief 邻接矩阵.
- */
-typedef struct mgraph_t {
-    int vertices_num; /* 顶点数*/
-    int edges_num; /* 边数*/
-    /* 顶点表，存放顶点的信息，如名字等*/
-    graph_vertex_t vertices[MAX_VERTICES_NUM];
-    /* 邻接矩阵，存放边的信息，如权重等*/
-    graph_weight_t matrix[MAX_VERTICES_NUM][MAX_VERTICES_NUM];
-    int directed; /* 图(网)的种类，1表示有向，0表示无向*/
-} mgraph_t;
-
-
-mgraph_t g;
-/** dist[i][j]是顶点i和j之间最短路径长度 */
-graph_weight_t dist[MAX_VERTICES_NUM][MAX_VERTICES_NUM];
-/** path[i][j]是最短路径上i和j之间的顶点 */
-int path[MAX_VERTICES_NUM][MAX_VERTICES_NUM];
+// 2. 添加 max_len 数组
 /** 存放每个点的最短路径的最长者 */
 graph_weight_t max_len[MAX_VERTICES_NUM];
-
-/**
-  * @brief Floyd算法求每点之间最短路径.
-  * @param[in] g 图对象的指针
-  * @param[out] dist dist[i][j]是顶点i和j之间最短路径长度
-  * @param[out] path path[i][j]是最短路径上i和j之间的顶点
-  * @return 无
-  */
-void mgraph_floyd(const mgraph_t *g,
-       int dist[][MAX_VERTICES_NUM],
-       int path[][MAX_VERTICES_NUM]) {
-    int i, j, k;
-    const int n = g->vertices_num;
-
-    for(i = 0; i < n; i++) {
-        for(j = 0; j < n; j++) {
-            if(i != j) {
-                dist[i][j] = g->matrix[i][j];
-                path[i][j] = i;
-            } else {
-                dist[i][j] = 0;
-                path[i][j] = -1;
-            }
-        }
-    }
-    for(k = 0; k < n; k++) {
-        for(i = 0; i < n; i++) {
-            for(j = 0; j < n; j++) {
-                /* i到j的路径上加入顶点k可以缩短路径长度*/
-                if(dist[i][k] + dist[k][j] < dist[i][j]) {
-                    dist[i][j] = dist[i][k] + dist[k][j];
-                    path[i][j] = k;
-                }
-            }
-        }
-    }
-}
+// 3. 添加 max_element()和min_element
+// 4. 重写 read_graph()
+// 5. 重写 main()
 
 static int max_element(const graph_weight_t w[], int begin, int end) {
     int i;
-    int max_value = INT_MIN;
+    int max_value = -GRAPH_INF;
     int max_pos = -1;
     for (i = begin; i < end; i++) {
         if (max_value < w[i]) {
@@ -1930,50 +1700,56 @@ static int min_element(const graph_weight_t w[], int begin, int end) {
     return min_pos;
 }
 
-int main() {
+
+/** 读取输入，构建图. */
+void read_graph() {
     int i, j;
-    int min_pos;
+    scanf("%d", &(g.nv));
+    g.ne = 0;
 
+    /* 初始化图，所有节点间距离为无穷大 */
+    for (i = 0; i < g.nv; i++) {
+        for (j = 0; j < g.nv; j++) {
+            g.matrix[i][j] = GRAPH_INF;
+        }
+    }
+
+    /* 读取边信息 */
+    for (i = 0; i < g.nv; i++) {
+        int m;
+        graph_weight_t w;
+        scanf("%d", &m);
+        g.ne += m;
+        while (m--) {
+            scanf("%d %d", &j, &w);
+            --j;
+            g.matrix[i][j] = w;
+        }
+    }
+}
+
+int main() {
     /* 读取顶点数 */
-    while (scanf("%d", &(g.vertices_num)) > 0 && g.vertices_num > 0) {
-        g.edges_num = 0;
-        g.directed = 1;
-        for (i = 0; i < g.vertices_num; i++) g.vertices[i] = '1' + i;
-
-        /* 初始化图，所有节点间距离为无穷大 */
-        for (i = 0; i < g.vertices_num; i++) {
-            for (j = 0; j < g.vertices_num; j++) {
-                g.matrix[i][j] = GRAPH_INFINITY;
-            }
-        }
-
-        /* 读取边信息 */
-        for (i = 0; i < g.vertices_num; i++) {
-            int m;
-            graph_weight_t cost;
-            scanf("%d", &m);
-            g.edges_num += m;
-            while (m--) {
-                scanf("%d %d", &j, &cost);
-                --j;
-                g.matrix[i][j] = cost;
-            }
-        }
+    while (1) {
+        int i, min_pos;
+        read_graph();
+        if (g.nv == 0)
+            break;
 
         /* 求两两之间的最短路径 */
         mgraph_floyd(&g, dist, path);
 
         /* 找最短路径的最长着 */
-        for (i = 0; i < g.vertices_num; i++) {
-            max_len[i] = dist[i][max_element(dist[i], 0, g.vertices_num)];
+        for (i = 0; i < g.nv; i++) {
+            max_len[i] = dist[i][max_element(dist[i], 0, g.nv)];
         }
         /* 找 max_len 的最小者　*/
-        min_pos = min_element(max_len, 0, g.vertices_num);
+        min_pos = min_element(max_len, 0, g.nv);
 
-        if (max_len[min_pos] == GRAPH_INFINITY) {
+        if (max_len[min_pos] == GRAPH_INF) {
             printf("disjoint\n");
         } else {
-            printf("%d %d\n", min_pos+1, max_len[min_pos]);
+            printf("%d %d\n", min_pos + 1, max_len[min_pos]);
         }
     }
     return 0;
@@ -2022,30 +1798,25 @@ int main() {
 #define MAX_VERTICES_NUM 100
 /** 边的权值，对无权图，用0或1表示是否相邻；对有权图，则为权值. */
 typedef int graph_weight_t;
-#define GRAPH_INFINITY INT_MAX
-/** 顶点信息，例如顶点名字. */
-typedef char graph_vertex_t;
+#define GRAPH_INF INT_MAX
 
 /**
  *@struct
  *@brief 邻接矩阵.
  */
 typedef struct mgraph_t {
-    int vertices_num; /* 顶点数*/
-    int edges_num; /* 边数*/
-    /* 顶点表，存放顶点的信息，如名字等*/
-    graph_vertex_t vertices[MAX_VERTICES_NUM];
+    int nv; /* 顶点数*/
+    int ne; /* 边数*/
     /* 邻接矩阵，存放边的信息，如权重等*/
     graph_weight_t matrix[MAX_VERTICES_NUM][MAX_VERTICES_NUM];
-    int directed; /* 图(网)的种类，1表示有向，0表示无向*/
 } mgraph_t;
 
 mgraph_t g;
 /** 拓扑排序的结果. */
 int topological[MAX_VERTICES_NUM];
 
-// 等价于复制粘贴，这里为了节约篇幅，使用include，在OJ上提交时请用复制粘贴
-#include "stack.c"
+/* 等价于复制粘贴，这里为了节约篇幅，使用include，在OJ上提交时请用复制粘贴 */
+#include "stack.c"  /* 见“栈和队列->栈”这节 */
 
 /*
   * @brief 拓扑排序.
@@ -2056,7 +1827,7 @@ int topological[MAX_VERTICES_NUM];
 int mgraph_topo_sort(const mgraph_t *g, int topological[]) {
     int i, j, u;
     int count = 0; /* 拓扑序列的元素个数*/
-    const int n = g->vertices_num;
+    const int n = g->nv;
     /* in_degree[i]是顶点i的入度 */
     int *in_degree = (int*)malloc(n * sizeof(int));
     stack_t s;
@@ -2064,7 +1835,7 @@ int mgraph_topo_sort(const mgraph_t *g, int topological[]) {
     memset(in_degree, 0, n * sizeof(int));
     for (i = 0; i < n; i++) {
         for (j = 0; j < n; j++) {
-            if (g->matrix[i][j] < GRAPH_INFINITY)
+            if (g->matrix[i][j] < GRAPH_INF)
                 in_degree[j]++;
         }
     }
@@ -2078,7 +1849,7 @@ int mgraph_topo_sort(const mgraph_t *g, int topological[]) {
     while(!stack_empty(&s)) {
         u = stack_top(&s); stack_pop(&s);
         topological[count++] = u;
-        for (i = 0; i < n; i++) if (g->matrix[u][i] < GRAPH_INFINITY) {
+        for (i = 0; i < n; i++) if (g->matrix[u][i] < GRAPH_INF) {
             if(--in_degree[i] == 0) stack_push(&s, i);
         }
     }
@@ -2091,6 +1862,32 @@ int mgraph_topo_sort(const mgraph_t *g, int topological[]) {
     }
 }
 
+/** 读取输入，构建图. */
+void read_graph() {
+    int i, j, k;
+    char buf[10]; /* 和 gets()配合消除回车键 */
+    /* 读取节点和边的数目 */
+    scanf("%d %d", &g.nv, &g.ne);
+    gets(buf); // 消耗回车键
+
+    /* 初始化图，所有节点间距离为无穷大 */
+    for (i = 0; i < g.nv; i++) {
+        for (j = 0; j < g.nv; j++) {
+            g.matrix[i][j] = GRAPH_INF;
+        }
+    }
+
+    /* 读取边信息 */
+    for (k = 0; k < g.ne; k++) {
+        char chx, chy;
+        graph_weight_t w;
+        scanf("%c %c %d", &chx, &chy, &w);
+        gets(buf); // 消耗回车键
+        i = chx - 'A';
+        j = chy - 'A';
+        g.matrix[i][j] = w;
+    }
+}
 
 /* test
 
@@ -2111,36 +1908,12 @@ E F 60
 B A E F C D
 */
 int main() {
-    int i, j, k;
-    char chx, chy;
-    graph_weight_t cost;
-
-    /* 读取节点和边的数目 */
-    scanf("%d%d", &(g.vertices_num), &(g.edges_num));
-    getchar(); // 消耗回车键
-    g.directed = 1;
-    for (i = 0; i < g.vertices_num; i++) g.vertices[i] = 'A' + i;
-
-    /* 初始化图，所有节点间距离为无穷大 */
-    for (i = 0; i < g.vertices_num; i++) {
-        for (j = 0; j < g.vertices_num; j++) {
-            g.matrix[i][j] = GRAPH_INFINITY;
-        }
-    }
-
-    /* 读取边信息 */
-    for (k = 0; k < g.edges_num; k++) {
-        scanf("%c %c %d", &chx, &chy, &cost);
-        getchar();
-        i = chx - 'A';
-        j = chy - 'A';
-        g.matrix[i][j] = cost;
-    }
-
+    int i;
+    read_graph();
     /* 拓扑排序 */
     mgraph_topo_sort(&g, topological);
-    for (i = 0; i < g.vertices_num; i++) {
-        printf("%c ", g.vertices[topological[i]]);
+    for (i = 0; i < g.nv; i++) {
+        printf("%c ", 'A'+topological[i]);
     }
     return 0;
 }
@@ -2217,30 +1990,25 @@ Inconsistency found after 6 relations.
 #define MAX_VERTICES_NUM 26
 /** 边的权值，对无权图，用0或1表示是否相邻；对有权图，则为权值. */
 typedef int graph_weight_t;
-#define GRAPH_INFINITY INT_MAX
-/** 顶点信息，例如顶点名字. */
-typedef char graph_vertex_t;
+#define GRAPH_INF INT_MAX
 
 /**
  *@struct
  *@brief 邻接矩阵.
  */
 typedef struct mgraph_t {
-    int vertices_num; /* 顶点数*/
-    int edges_num; /* 边数*/
-    /* 顶点表，存放顶点的信息，如名字等*/
-    graph_vertex_t vertices[MAX_VERTICES_NUM];
+    int nv; /* 顶点数*/
+    int ne; /* 边数*/
     /* 邻接矩阵，存放边的信息，如权重等*/
     graph_weight_t matrix[MAX_VERTICES_NUM][MAX_VERTICES_NUM];
-    int directed; /* 图(网)的种类，1表示有向，0表示无向*/
 } mgraph_t;
 
 mgraph_t g;
 /** 拓扑排序的结果. */
 int topological[MAX_VERTICES_NUM];
 
-// 等价于复制粘贴，这里为了节约篇幅，使用include，在OJ上提交时请用复制粘贴
-#include "stack.c"
+/* 等价于复制粘贴，这里为了节约篇幅，使用include，在OJ上提交时请用复制粘贴 */
+#include "stack.c"  /* 见“栈和队列->栈”这节 */
 
 /**
   * @brief 拓扑排序.
@@ -2252,7 +2020,7 @@ int mgraph_topological_sort(const mgraph_t *g, int topological[]) {
     int i, j, u;
     int count = 0; /* 拓扑序列的元素个数*/
     int insufficient = 0;  /* 条件不足 */
-    const int n = g->vertices_num;
+    const int n = g->nv;
     /* in_degree[i]是顶点i的入度 */
     int *in_degree = (int*)malloc(n * sizeof(int));
     stack_t s;
@@ -2260,7 +2028,7 @@ int mgraph_topological_sort(const mgraph_t *g, int topological[]) {
     memset(in_degree, 0, n * sizeof(int));
     for (i = 0; i < n; i++) {
         for (j = 0; j < n; j++) {
-            if (g->matrix[i][j] < GRAPH_INFINITY)
+            if (g->matrix[i][j] < GRAPH_INF)
                 in_degree[j]++;
         }
     }
@@ -2280,11 +2048,11 @@ int mgraph_topological_sort(const mgraph_t *g, int topological[]) {
         topological[count++] = u;
         --in_degree[u];  // 变成 -1，表示已经输出
         // 更新入度
-        for (i = 0; i < n; i++) if (g->matrix[u][i] < GRAPH_INFINITY) {
+        for (i = 0; i < n; i++) if (g->matrix[u][i] < GRAPH_INF) {
             --in_degree[i];
         }
         // 选择入度为0的顶点
-        for (i = 0; i < n; i++) if (g->matrix[u][i] < GRAPH_INFINITY) {
+        for (i = 0; i < n; i++) if (g->matrix[u][i] < GRAPH_INF) {
             if (in_degree[i] == 0) stack_push(&s, i);
         }
     }
@@ -2301,24 +2069,20 @@ int mgraph_topological_sort(const mgraph_t *g, int topological[]) {
     }
 }
 
-
 int main() {
     int i, j, k, m;  // m不一定是边的数目，因为输入边可能有重复
 
     /* 读取节点和边的数目 */
-    while (scanf("%d %d", &(g.vertices_num), &m)
-            && g.vertices_num > 0 && m > 0) {
+    while (scanf("%d %d", &(g.nv), &m)
+            && g.nv > 0 && m > 0) {
         char s[4];
         int ok;  // 是否有环，0 表示有环
         int finished = 0;  // 排序完成，结束，发现有环，可以提前结束
 
-        g.directed = 1;
-        for (i = 0; i < g.vertices_num; i++) g.vertices[i] = 'A' + i;
-
         /* 初始化图，所有节点间距离为无穷大 */
-        for (i = 0; i < g.vertices_num; i++) {
-            for (j = 0; j < g.vertices_num; j++) {
-                g.matrix[i][j] = GRAPH_INFINITY;
+        for (i = 0; i < g.nv; i++) {
+            for (j = 0; j < g.nv; j++) {
+                g.matrix[i][j] = GRAPH_INF;
             }
         }
 
@@ -2340,8 +2104,8 @@ int main() {
             }
             if (ok == 1 && k) {
                 printf("Sorted sequence determined after %d relations: ", k+1);
-                for (i = 0; i < g.vertices_num; i++) {
-                    printf("%c", g.vertices[topological[i]]);
+                for (i = 0; i < g.nv; i++) {
+                    printf("%c", 'A' + topological[i]);
                 }
                 printf(".\n");
                 finished = 1;
@@ -2434,22 +2198,17 @@ $v_6$ & 8 &                               & 8 &                             & $a
 #define MAX_VERTICES_NUM 100
 /** 边的权值，对无权图，用0或1表示是否相邻；对有权图，则为权值. */
 typedef int graph_weight_t;
-#define GRAPH_INFINITY INT_MAX
-/** 顶点信息，例如顶点名字. */
-typedef char graph_vertex_t;
+#define GRAPH_INF INT_MAX
 
 /**
  *@struct
  *@brief 邻接矩阵.
  */
 typedef struct mgraph_t {
-    int vertices_num; /* 顶点数*/
-    int edges_num; /* 边数*/
-    /* 顶点表，存放顶点的信息，如名字等*/
-    graph_vertex_t vertices[MAX_VERTICES_NUM];
+    int nv; /* 顶点数*/
+    int ne; /* 边数*/
     /* 邻接矩阵，存放边的信息，如权重等*/
     graph_weight_t matrix[MAX_VERTICES_NUM][MAX_VERTICES_NUM];
-    int directed; /* 图(网)的种类，1表示有向，0表示无向*/
 } mgraph_t;
 
 mgraph_t g;
@@ -2458,10 +2217,8 @@ int topological[MAX_VERTICES_NUM];
 /** 关键路径，其余顶点为-1. */
 int path[MAX_VERTICES_NUM];
 
-
 /* 等价于复制粘贴，这里为了节约篇幅，使用include，在OJ上提交时请用复制粘贴 */
-#include "stack.c"
-
+#include "stack.c"  /* 见“栈和队列->栈”这节 */
 
 /*
   * @brief 按照拓扑排序的顺序，计算所有顶点的最早发生时间 ve.
@@ -2474,7 +2231,7 @@ static int mgraph_toposort_ve(const mgraph_t *g, int topological[],
         graph_weight_t ve[]) {
     int i, j, u;
     int count = 0; /* 拓扑序列的元素个数*/
-    const int n = g->vertices_num;
+    const int n = g->nv;
     /* in_degree[i]是顶点i的入度 */
     int *in_degree = (int*)malloc(n * sizeof(int));
     stack_t s;
@@ -2482,7 +2239,7 @@ static int mgraph_toposort_ve(const mgraph_t *g, int topological[],
     memset(in_degree, 0, n * sizeof(int));
     for (i = 0; i < n; i++) {
         for (j = 0; j < n; j++) {
-            if (g->matrix[i][j] < GRAPH_INFINITY)
+            if (g->matrix[i][j] < GRAPH_INF)
                 in_degree[j]++;
         }
     }
@@ -2502,16 +2259,16 @@ static int mgraph_toposort_ve(const mgraph_t *g, int topological[],
         topological[count++] = u;
         --in_degree[u];  // 变成 -1，表示已经输出
         // 更新入度
-        for (i = 0; i < n; i++) if (g->matrix[u][i] < GRAPH_INFINITY) {
+        for (i = 0; i < n; i++) if (g->matrix[u][i] < GRAPH_INF) {
             --in_degree[i];
         }
         // 更新邻接点的 ve
-        for (i = 0; i < n; i++) if (g->matrix[u][i] < GRAPH_INFINITY) {
+        for (i = 0; i < n; i++) if (g->matrix[u][i] < GRAPH_INF) {
             if (ve[i] < ve[u] + g->matrix[u][i])
                 ve[i] = ve[u] + g->matrix[u][i];
         }
         // 选择入度为0的顶点
-        for (i = 0; i < n; i++) if (g->matrix[u][i] < GRAPH_INFINITY) {
+        for (i = 0; i < n; i++) if (g->matrix[u][i] < GRAPH_INF) {
             if (in_degree[i] == 0) stack_push(&s, i);
         }
     }
@@ -2535,28 +2292,28 @@ int mgraph_critical_path(const mgraph_t *g, int path[MAX_VERTICES_NUM]) {
     int i, j;
     int count = 0;    // 关键路径的顶点个数
     graph_weight_t *ve = (graph_weight_t*) malloc(
-            g->vertices_num * sizeof(graph_weight_t));
+            g->nv * sizeof(graph_weight_t));
     graph_weight_t *vl = (graph_weight_t*) malloc(
-            g->vertices_num * sizeof(graph_weight_t));
+            g->nv * sizeof(graph_weight_t));
 
     if (!mgraph_toposort_ve(g, topological, ve)) return 0;  // 有环
 
     for (i = 0; i < MAX_VERTICES_NUM; i++) path[i] = -1;
     // 初始化 vl 为最大
-    for (i = 0; i < g->vertices_num; i++) vl[i] = ve[g->vertices_num-1];
+    for (i = 0; i < g->nv; i++) vl[i] = ve[g->nv-1];
 
     // 逆序计算vl
-    for (i = g->vertices_num-1; i >=0; i--) {
+    for (i = g->nv-1; i >=0; i--) {
         int k = topological[i];
-        for (j = 0; j < g->vertices_num; j++) {
-            if (g->matrix[j][k] < GRAPH_INFINITY) {
+        for (j = 0; j < g->nv; j++) {
+            if (g->matrix[j][k] < GRAPH_INF) {
                 if (vl[j] > vl[k] - g->matrix[j][k])
                     vl[j] = vl[k] - g->matrix[j][k];
             }
         }
     }
-    for (i = 0; i < g->vertices_num; i++) {
-        for (j = 0; j < g->vertices_num; j++) {
+    for (i = 0; i < g->nv; i++) {
+        for (j = 0; j < g->nv; j++) {
             int e = ve[i];
             int l = vl[j] - g->matrix[i][j];
             if (e == l) {
@@ -2575,6 +2332,32 @@ int mgraph_critical_path(const mgraph_t *g, int path[MAX_VERTICES_NUM]) {
     return count;
 }
 
+/** 读取输入，构建图. */
+void read_graph() {
+    int i, j, k;
+
+    /* 读取节点和边的数目 */
+    scanf("%d%d", &g.nv, &g.ne);
+
+    /* 初始化图，所有节点间距离为无穷大 */
+    for (i = 0; i < g.nv; i++) {
+        for (j = 0; j < g.nv; j++) {
+            g.matrix[i][j] = GRAPH_INF;
+        }
+    }
+
+    /* 读取边信息 */
+    getchar(); // 消耗回车键
+    for (k = 0; k < g.ne; k++) {
+        char chx, chy;
+        graph_weight_t w;
+        scanf("%c %c %d", &chx, &chy, &w);
+        getchar();
+        i = chx - 'A';
+        j = chy - 'A';
+        g.matrix[i][j] = w;
+    }
+}
 
 /* test
 
@@ -2593,37 +2376,12 @@ D F 2
 
 */
 int main() {
-    int i, j, k;
-    char chx, chy;
-    graph_weight_t cost;
-    int count;
-
-    /* 读取节点和边的数目 */
-    scanf("%d%d", &(g.vertices_num), &(g.edges_num));
-    g.directed = 1;
-    for (i = 0; i < g.vertices_num; i++) g.vertices[i] = 'A' + i;
-
-    /* 初始化图，所有节点间距离为无穷大 */
-    for (i = 0; i < g.vertices_num; i++) {
-        for (j = 0; j < g.vertices_num; j++) {
-            g.matrix[i][j] = GRAPH_INFINITY;
-        }
-    }
-
-    /* 读取边信息 */
-    getchar(); // 消耗回车键
-    for (k = 0; k < g.edges_num; k++) {
-        scanf("%c %c %d", &chx, &chy, &cost);
-        getchar();
-        i = chx - 'A';
-        j = chy - 'A';
-        g.matrix[i][j] = cost;
-    }
-
+    int i, count;
+    read_graph();
     /* 拓扑排序 */
     count = mgraph_critical_path(&g, path);
     for (i = 0; i < count; i++) {
-        printf("%c ", g.vertices[path[i]]);
+        printf("%c ", 'A' + path[i]);
     }
     return 0;
 }
