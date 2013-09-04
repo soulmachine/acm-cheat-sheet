@@ -2909,6 +2909,271 @@ int main() {
 \myenddot
 
 
+\section{树型动态规划} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{访问艺术馆}
+
+\subsubsection{描述}
+皮尔是一个出了名的盗画者，他经过数月的精心准备，打算到艺术馆盗画。艺术馆的结构，每条走廊要么分叉为二条走廊，要么通向一个展览室。皮尔知道每个展室里藏画的数量，并且他精确地测量了通过每条走廊的时间，由于经验老道，他拿下一副画需要5秒的时间。你的任务是设计一个程序，计算在警察赶来之前(警察到达时皮尔回到了入口也算)，他最多能偷到多少幅画。
+
+\begin{center}
+\includegraphics{gallery.png}\\
+\figcaption{艺术馆}\label{fig:gallery}
+\end{center}
+
+\subsubsection{输入}
+第1行是警察赶到得时间s($s \leq 600$)，以秒为单位。第2行描述了艺术馆得结构，是一串非负整数，成对地出现：每一对得第一个数是走过一条走廊得时间，第2个数是它末端得藏画数量；如果第2个数是0，那么说明这条走廊分叉为两条另外得走廊。走廊的数目$ \leq 100$。数据按照深度优先得次序给出，请看样例
+
+\subsubsection{输出}
+输出偷到得画得数量
+
+\subsubsection{样例输入}
+\begin{Code}
+60
+7 0 8 0 3 1 14 2 10 0 12 4 6 2
+\end{Code}
+
+\subsubsection{样例输出}
+\begin{Code}
+2
+\end{Code}
+
+\subsubsection{分析}
+设状态为f[root][time]，表示在root节点，剩下time时间内能偷到的画数，则状态转移方程如下：
+$$
+f[root][time]=\max\left\{f[left][t]+f[right][ct-t], ct=time-T[root],0 \leq t \leq ct\right\}
+$$
+
+\subsubsection{代码}
+
+\begin{Codex}[label=art_gallery.c]
+/* wikioi 1163 访问艺术馆, http://www.wikioi.com/problem/1163/ */
+#include<stdio.h>
+#include <memory.h>
+
+#define max(a,b) ((a)>(b)?(a):(b))
+#define MAXN  1010  /* 走廊的最大数目 */
+
+/* 输入数据，警察到达时间，走廊时间，藏画数量 */
+int LIMIT, T[MAXN], P[MAXN];
+/* 二叉树，节点个数，左孩子，右孩子 */
+int n, L[MAXN], R[MAXN]; /* 0位置未用 */
+
+/* f[root][time]表示在root节点，剩下time时间内能偷到的画数 */
+int f[MAXN][MAXN];
+
+/**
+ * @brief 输入的数据是前序遍历序列，依次读入，递归建树
+ * @return 根节点
+ */
+int build_tree() {
+    n++;
+    scanf("%d%d", &T[n], &P[n]);
+    T[n] *= 2; /* 走廊花费时间要*2, 因为还要出来 */
+    int now = n; /* 当前节点 */
+    if (P[now] == 0) {
+        L[now] = build_tree();  /* 建立节点now的左子树 */
+        R[now] = build_tree();  /* 建立节点now的右子树 */
+    }
+    return now;
+}
+
+/**
+ * 动规过程，记忆化搜索.
+ * @param[in] root 开始节点
+ * @param[in] 剩余时间
+ * @return 偷到得画的数量
+ */
+int dp(int root, int time) {
+    int t;
+    if (f[root][time] != -1)
+        return f[root][time];
+    if (!time)
+        return f[root][time] = 0;
+
+    const int ct = time - T[root]; /* 留给左右子节点的时间 */
+
+    /* 到达叶子节点，即展览室 */
+    if (!L[root] && !R[root]) {
+        /* 不能tt / 5,因为时间够，但是可能画不够 */
+        if (P[root] * 5 <= ct)
+            return f[root][time] = P[root];
+        else
+            return f[root][time] = ct / 5;
+    }
+
+    f[root][time] = 0;
+    for (t = 0; t <= ct; t++) {
+        int lp = dp(L[root], t);
+        int rp = dp(R[root], ct - t);
+        f[root][time] = max(f[root][time], lp + rp);
+    }
+    return f[root][time];
+}
+
+int main() {
+    scanf("%d", &LIMIT);
+    build_tree();
+    memset(f, -1, sizeof(f));
+    printf("%d\n", dp(1, LIMIT));
+    return 0;
+}
+\end{Codex}
+
+\subsubsection{相关的题目}
+与本题相同的题目：
+\begindot
+\item wikioi 1163, 访问艺术馆, \myurl{http://www.wikioi.com/problem/1163/}
+\myenddot
+
+与本题相似的题目：
+\begindot
+\item  None
+\myenddot
+
+
+\subsection{没有上司的舞会}
+
+\subsubsection{描述}
+Ural大学有$N$个职员，编号为$1 \sim N$。他们有从属关系，也就是说他们的关系就像一棵以校长为根的树，父结点就是子结点的直接上司。每个职员有一个快乐指数。现在有个周年庆宴会，要求与会职员的快乐指数最大。但是，没有职员愿和直接上司一起与会。
+
+\subsubsection{输入}
+第一行一个整数$N(1 \leq N \leq 6000)$。
+
+接下来$N$行，第$i+1$行表示$i$号职员的快乐指数$R_i(-128 \leq R_i \leq 127)$。
+
+接下来$N-1$行，每行输入一对整数$L,K$。表示$K$是$L$的直接上司。
+
+最后一行输入0,0，表示结束。
+
+\subsubsection{输出}
+输出最大的快乐指数
+
+\subsubsection{样例输入}
+\begin{Code}
+7
+1
+1
+1
+1
+1
+1
+1
+1 3
+2 3
+6 4
+7 4
+4 5
+3 5
+0 0
+\end{Code}
+
+\subsubsection{样例输出}
+\begin{Code}
+5
+\end{Code}
+
+\subsubsection{分析}
+设状态为f[k][0]和f[k][1]，f[k][0]表示第i个人不参加时的最大值，f[k][1]表示第k个人参加的最大值，则状态转移方程如下：
+\begin{eqnarray}
+f[k][0] &=& \sum_l\max\left\{f[l][0],f[l][1]\right\}, \text{ 其中k是l的直接上司} \nonumber \\
+f[k][1] &=& \sum_l {f[l][0]}+r[k] \nonumber
+\end{eqnarray}
+
+\subsubsection{代码}
+
+\begin{Codex}[label=ball.c]
+/* wikioi 1380 没有上司的舞会, http://www.wikioi.com/problem/1380 */
+#include<stdio.h>
+#include<string.h>
+
+#define MAXN 6001 /* 0位置未用 */
+#define max(a,b) ((a)>(b)?(a):(b))
+typedef char bool;
+
+int n;
+/* 快乐指数 */
+int r[MAXN];
+
+/* 大的指向小的，倒着串起来. */
+typedef struct edge_t {
+    int v;  /* head[root]指向本对象, root->v */
+    int next; /* 上一条边 */
+} edge_t;
+
+edge_t edge[MAXN-1];
+
+/* head[root]指向最后一条边 */
+int head[MAXN];
+
+/* has_boss[i] 表示第i个人是否有上司 */
+bool has_boss[MAXN];
+
+int f[MAXN][2];
+
+int cnt;  /* 边个数-1 */
+void add_edge(int u, int v) {
+    edge[cnt].v = v;
+    edge[cnt].next = head[u];
+    head[u] = cnt++;
+}
+
+void dp(int k) {
+    int p;
+    f[k][1] = r[k];
+    f[k][0] = 0;
+    for (p = head[k]; p != -1; p = edge[p].next) {
+        int l = edge[p].v;
+        dp(l);
+        f[k][1] += f[l][0];
+        f[k][0] = f[k][0] + max(f[l][1],f[l][0]);
+    }
+}
+
+int solve() {
+    int k;
+    memset(f, 0, sizeof(f));
+    for (k = 1; k <= n; k++) if (!has_boss[k]) {
+        break;
+    }
+
+    dp(k);
+    return max(f[k][0], f[k][1]);
+}
+
+int main() {
+    int i;
+    scanf("%d", &n);
+    for (i = 1; i <= n; i++) scanf("%d", &r[i]);
+
+    cnt = 0;
+    memset(has_boss, 0, sizeof(has_boss));
+    memset(head, -1, sizeof(head));
+    int x, y;
+    for (i = 1; i < n; i++) {
+        scanf("%d%d", &x, &y);
+        has_boss[x] = 1;
+        add_edge(y, x);
+    }
+    scanf("%d%d", &x, &y);
+
+    printf("%d\n", solve());
+    return 0;
+}
+\end{Codex}
+
+\subsubsection{相关的题目}
+与本题相同的题目：
+\begindot
+\item wikioi 1380, 没有上司的舞会, \myurl{http://www.wikioi.com/problem/1380/}
+\myenddot
+
+与本题相似的题目：
+\begindot
+\item  None
+\myenddot
+
+
 \section{最大子矩形} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 在一个给定的矩形网格中有一些障碍点，要找出网格内部不包含任何障碍点，且边界与坐标轴平行的最大子矩形。
 
