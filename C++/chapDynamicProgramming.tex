@@ -229,13 +229,8 @@ target &=& \max\left\{d[j]\right\}, \text{ 其中 }1 \leq j \leq n \nonumber
 #include <stdio.h>
 #include <stdlib.h>
 
-inline static int max(int a , int b) {
-   return (a > b) ? a : b ;
-}
-
-inline static int min(int a , int b) {
-   return (a < b) ? a : b ;
-}
+#define max(a,b) ((a)>(b)?(a):(b))
+#define min(a,b) ((a)<(b)?(a):(b))
 
 /**
  * @brief 最大连续子序列和，思路四
@@ -2262,9 +2257,7 @@ $$d[i][j]=a[i][j]+\max\left\{d[i+1][j], d[i+1][j+1]\right\}$$
 
 int n, a[MAXN][MAXN], d[MAXN][MAXN];
 
-int max(const int x, const int y) {
-    return x > y ? x : y;
-}
+#define max(a,b) ((a)>(b)?(a):(b))
 
 /**
  * @brief 求从位置(i,j)出发时能得到的最大和
@@ -2303,9 +2296,7 @@ int main() {
 
 int n, a[MAXN][MAXN], d[MAXN][MAXN];
 
-int max(const int x, const int y) {
-    return x > y ? x : y;
-}
+#define max(a,b) ((a)>(b)?(a):(b))
 
 /**
  * @brief 自底向上计算所有子问题的最优解
@@ -2504,9 +2495,7 @@ int g[MAX][MAX];    /* 好心值 */
  */
 int f[MAX][MAX][MAX][MAX];
 
-int max(const int a, const int b) {
-    return a > b ? a : b;
-}
+#define max(a,b) ((a)>(b)?(a):(b))
 
 void dp() {
     int i, j, k, l;
@@ -2709,9 +2698,7 @@ char str[MAXN];
 int64_t f[MAXN][MAXN][MAXK+1];
 
 
-int max(int a, int b) {
-    return a > b ? a : b;
-}
+#define max(a,b) ((a)>(b)?(a):(b))
 
 /** 计算str[l,r]字符串的值，int64可以过，不用高精度. */
 int64_t num(int l, int r) {
@@ -2786,9 +2773,7 @@ char str[MAXN];
 int64_t f[MAXK+1][MAXN];
 
 
-int max(int a, int b) {
-    return a > b ? a : b;
-}
+#define max(a,b) ((a)>(b)?(a):(b))
 
 /** 计算str[l,r]字符串的值，int64可以过，不用高精度. */
 int64_t num(int l, int r) {
@@ -2920,7 +2905,7 @@ int main() {
 
 与本题相似的题目：
 \begindot
-\item  null
+\item  None
 \myenddot
 
 
@@ -2976,8 +2961,8 @@ clevow当然希望浴场的面积尽可能大了，所以你的任务就是帮�
 
 #define MAXN 5001
 
-#define max(a,b)  (a > b ? a : b)
-#define min(a,b)  (a < b ? a : b)
+#define max(a,b) ((a)>(b)?(a):(b))
+#define min(a,b) ((a)<(b)?(a):(b))
 
 int L, W; /* 长，竖向x坐标，宽，横向y坐标 */
 int n; /* n个产奶点 */
