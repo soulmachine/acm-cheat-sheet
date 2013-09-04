@@ -259,8 +259,8 @@ int father[MAX - 1]; // 父状态，初始状态无父状态
 char move[MAX - 1]; // 父状态到本状态的移动方向
 
 // 目标状态
-const int goal[] = {1, 2, 3, 4, 5, 6, 7, 8, 0};
-const int space_number = 0; // 空格对应着数字 0
+const int GOAL[] = {1, 2, 3, 4, 5, 6, 7, 8, 0};
+const int SPACE_NUMBER = 0; // 空格对应着数字 0
 
 // 上下左右四个方向
 const int dx[] = {-1, 1, 0, 0};
@@ -299,13 +299,13 @@ int bfs() {
     while (front < rear) {
         int x, y, z, d;
         const state_t*s = &(q[front]);
-        if (memcmp(goal, *s,sizeof(state_t)) == 0) {
+        if (memcmp(GOAL, *s,sizeof(state_t)) == 0) {
             return front;  // 找到目标状态，成功返回
         }
-        for (z = 0; z < DIGITS; z++)  if ((*s)[z] == space_number) {
+        for (z = 0; z < DIGITS; z++)  if ((*s)[z] == SPACE_NUMBER) {
             break;  // 找 0 的位置
         }
-        
+
         x=z / MATRIX_EDGE, y=z % MATRIX_EDGE; // 获取行列编号
         for (d=0; d < 4; d++) {  // 向四个方向扩展
             const int newx = x + dx[d];
@@ -316,8 +316,8 @@ int bfs() {
                 newy < MATRIX_EDGE) { // 没有越界
                 state_t *t = &(q[rear]);
                 memcpy(t, s, sizeof((*s)));
-                assert((*s)[z] == space_number);
-                (*t)[newz] = space_number;
+                assert((*s)[z] == SPACE_NUMBER);
+                (*t)[newz] = SPACE_NUMBER;
                 (*t)[z] = (*s)[newz];
 
                 // 三个版本随意切换
@@ -328,14 +328,14 @@ int bfs() {
                     move[rear] = dc[d];
                     distance[rear] = distance[front] + 1;
                     rear++;
-                } 
+                }
             }
         }
 
         front++;
     }
 
-    return 0;//失败 
+    return 0;  /* 失败 */
 }
 
 
@@ -360,6 +360,13 @@ void input() {
     return;
 }
 
+/** for wikioi 1225 */
+int input1() {
+    int start;
+    scanf("%d", &start);
+    return start;
+}
+
 int top = -1;
 char stack[MAX];
 /**
@@ -379,16 +386,12 @@ void output(const int index) {
 }
 
 int main() {
-    int ans;
-
     input();
-    
-    ans = bfs();
-    if ( ans > 0) {
-        output(ans);
-    } else {
-        printf("no solution\n");
-    }
+
+    int ans = bfs();
+    if (ans > 0) output(ans);
+    else printf("no solution\n");
+
     return 0;
 }
 
@@ -432,7 +435,7 @@ int hash(const state_t *s) {
  */
 int try_to_insert(const int index) {
     const int key = hash(&q[index]); // 将 q[index] 映射到整数 code
-    
+
     if (visited[key]) return 0;
     else visited[key] = 1;
 
@@ -492,6 +495,7 @@ int try_to_insert_stl(const int index) {
 \begindot
 \item 《算法竞赛入门经典》\footnote{刘汝佳,算法竞赛入门经典，清华大学出版社，2009} 第131页7.5.3节
 \item  POJ 1077 Eight, \myurl{http://poj.org/problem?id=1077}
+\item  wikioi 1225 八数码难题, \myurl{http://www.wikioi.com/problem/1225/}
 \myenddot
 
 与本题相似的题目：
@@ -757,13 +761,14 @@ int main() {
 \section{A*算法} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \label{sec:astar}
 
+\textbf{A*算法 = 宽搜 + 优先队列}
 
 \subsection{八数码问题}
 题目见 \S \ref{subsec:eightDigits}。
 
 \subsubsection{代码}
 \begin{Codex}[label=eight_digits_astar.c]
-/**
+/** POJ 1077 Eight, http://poj.org/problem?id=1077
  简单解释几个要点,便于理解代码.
  1. 怎么判断是否有解？只要计算出的逆序个数总和为奇数，该数据必然无解
  2. 如何判断某一状态是否到过？本题存在一种完美哈希方案，即用康托展开。
@@ -780,11 +785,11 @@ int main() {
  312 -- 4
  321 -- 5
  其中，左侧为排列，右侧为其序数。
- 
- 3.使用数据结构 堆 加速挑选最优值。
- 
+
+ 3.使用数据结构 —— 堆，加速挑选最优值。
+
  4.函数 g 的计算，此状态在搜索树中已经走过的路径的节点数.
- 
+
  5.估价函数 h ，采用曼哈顿距离, 见代码 calcH 函数。曼哈顿距离的定义是，
  假设有两个点(x1,y1),(x2,y2)，则曼哈顿距离L1=|x1-x2| + |y1-y2|
  */
@@ -815,10 +820,10 @@ state_t states[MAX];  // 全局的一条状态变化路径
 int  startIndex, goalIndex; // 开始状态，目标状态对应的hash值
 
 // 目标状态
-const int goal = 123456780;
-// 每个数字在棋盘中的位置，例如0，在(1,1)=4这个位置上
-const int goal_pos[DIGITS] = {8,0,1,2,3,4,5,6,7};
-const int space_number = 0; // 空格对应着数字 0
+const int GOAL = 123456780;
+// 每个数字在棋盘中的位置，例如0，在(2,2)=8这个位置上
+int GOAL_POS[DIGITS];
+const int SPACE_NUMBER = 0; // 空格对应着数字 0
 
 // 上下左右四个方向
 const int DI[] = {-1, 1, 0, 0};
@@ -827,6 +832,17 @@ const char DC[] = { 'u', 'd', 'l', 'r' };
 
 // 9 位变进制数，每个位数的单位，0!~8!
 const int fac[] = {40320, 5040, 720, 120, 24, 6, 2, 1, 1};
+
+/* 计算GOAL_POS */
+void calc_goal_pos() {
+    int cur = GOAL;
+    int i;
+    for (i = DIGITS-1; i >= 0 ; i--) {
+        int digit = cur % MOD;
+        GOAL_POS[digit] = i;
+        cur /= MOD;
+    }
+}
 
 /**
  * @brief 计算状态的hash值，这里用康托展开，是完美哈希.
@@ -843,7 +859,7 @@ int hash(int s) {
         d[i] = s % MOD;
         s /= MOD;
     }
-    
+
     for (i = 0; i < DIGITS; i++) {
         int c = 0; // 逆序数
         for (j = i + 1; j < DIGITS; j++) {
@@ -853,7 +869,7 @@ int hash(int s) {
         }
         key += c * fac[i];
     }
-    
+
     return key;
 }
 
@@ -866,13 +882,13 @@ int hash(int s) {
 int calcH(int s) {
     int i;
     int h = 0;
-    
+
     for (i = DIGITS - 1; i >= 0; --i) {
         const int p = s % 10;
         s /= 10;
         // 曼哈顿距离
-        h += abs(i / MATRIX_EDGE - goal_pos[p] / MATRIX_EDGE) +
-            abs(i % MATRIX_EDGE - goal_pos[p] % MATRIX_EDGE);
+        h += abs(i / MATRIX_EDGE - GOAL_POS[p] / MATRIX_EDGE) +
+            abs(i % MATRIX_EDGE - GOAL_POS[p] % MATRIX_EDGE);
     }
     return h;
 }
@@ -891,9 +907,16 @@ int input() {
             ch = getchar();
         } while ((ch != EOF) && ((ch < '1') || (ch > '8')) && (ch != 'x'));
         if (ch == EOF) return 0;
-        if (ch == 'x') start = start * MOD + space_number; // x 映射成数字 0
+        if (ch == 'x') start = start * MOD + SPACE_NUMBER; // x 映射成数字 0
         else             start = start * MOD + ch - '0';
     }
+    return start;
+}
+
+/** for wikioi 1225 */
+int input1() {
+    int start;
+    scanf("%d", &start);
     return start;
 }
 
@@ -909,10 +932,10 @@ int inversion_count(int permutation) {
         d[i] = permutation % MOD;
         permutation /= MOD;
     }
-    
-    for (i = 1; i < DIGITS; i++)  if (d[i] != space_number) {
+
+    for (i = 1; i < DIGITS; i++)  if (d[i] != SPACE_NUMBER) {
         for (j = 0; j < i; j++) {
-            if(d[j] != space_number) {
+            if(d[j] != SPACE_NUMBER) {
                 if (d[j] > d[i]) {
                     c++;
                 }
@@ -926,14 +949,15 @@ int inversion_count(int permutation) {
  * 判断是否无解.
  *
  * 求出除0之外所有数字的逆序数之和，也就是每个数字后面比它小的数字的个数的和，
- * 称为这个状态的逆序。若两个状态的逆序奇偶性相同，则可相互到达，否则不可相互到达。
- * 由于原始状态的逆序数为0（偶数），因此逆序数为偶数的目标状态有解。
+ * 称为这个状态的逆序。
+ *
+ * 若起始状态和目标状态的逆序数奇偶性相同，则可相互到达，否则不可相互到达。
  *
  * @param s 目标状态
- * @return 1表示无解，0表示有解
+ * @return 1表示有解，0表示无解
  */
-int not_solvable(const int s) {
-    return inversion_count(s) % 2;
+int solvable(const int s) {
+    return (inversion_count(s) + inversion_count(GOAL)) % 2 == 0;
 }
 
 // 存放 next()的输出结果
@@ -954,7 +978,7 @@ void next(int s) {
         for (j = MATRIX_EDGE - 1; j >= 0; j--) {
             p[i][j] = s % MOD;
             s /= MOD;
-            if (p[i][j] == space_number) {
+            if (p[i][j] == SPACE_NUMBER) {
                 i0 = i;
                 j0 = j;
             }
@@ -967,14 +991,14 @@ void next(int s) {
         if ((sx >= 0) && (sx < 3) && (sy >= 0) && (sy < 3)) {
             int key;
             p[i0][j0] = p[sx][sy];
-            p[sx][sy] = space_number;
+            p[sx][sy] = SPACE_NUMBER;
             // 移动空格后，计算新的状态
             s = 0;
             for (i = 0; i < MATRIX_EDGE; i++)
                 for (j = 0; j < MATRIX_EDGE; j++)
                     s = s * MOD + p[i][j];
             p[sx][sy] = p[i0][j0]; // 将矩阵还原，(i0, j0)可以不管
-            
+
             key = nextIndex[k] = hash(s);
             choice[k] = DC[k];
             if (states[key].state == 0) { // 该状态还没有出现过
@@ -987,8 +1011,14 @@ void next(int s) {
     }
 }
 
+/** 状态的比较函数 */
+int cmp_state(const int *x, const int *y) {
+    return states[*x].f - states[*y].f;
+}
+
 /* 等价于复制粘贴，这里为了节约篇幅，使用include，在OJ上提交时请用复制粘贴 */
-#include "heap.c"
+#include "heap.c"  /* 见“树->堆”这节 */
+
 heap_t heap;
 int heapIndex[MAX + 4]; // 状态 x 在heap中的下标
 
@@ -999,12 +1029,12 @@ int heapIndex[MAX + 4]; // 状态 x 在heap中的下标
  */
 int astar(const int start) {
     int i, j, k, ng, nf;
-    if (not_solvable(start)) return 0;
+    if (!solvable(start)) return 0;
 
     startIndex = hash(start);
-    goalIndex  = hash(goal);
-    if (start == goal) return 1;
-    
+    goalIndex  = hash(GOAL);
+    if (start == GOAL) return 1;
+
     memset(states, 0, sizeof(states));
     states[startIndex].state = start;
     states[startIndex].flag    = 1;
@@ -1043,7 +1073,8 @@ int astar(const int start) {
 }
 
 /* 等价于复制粘贴，这里为了节约篇幅，使用include，在OJ上提交时请用复制粘贴 */
-#include "stack.c"
+#include "stack.c"  /* 见“栈和队列->栈”这节 */
+
 /**
  * @brief 打印移动序列.
  * @return 无
@@ -1060,7 +1091,7 @@ void output() {
         printf("%c", stack_top(&stack));
         stack_pop(&stack);
     }
-    
+
     printf("\n");
     stack_uninit(&stack);
 }
@@ -1074,14 +1105,14 @@ void output1() {
     int d[DIGITS];
     stack_t stack;
     stack_init(&stack, MAX);
-    
+
     for (i = goalIndex; i != startIndex; i = states[i].parent) {
         stack_push(&stack, states[i].state);
     }
     stack_push(&stack, states[startIndex].state);
-    
+
     while(!stack_empty(&stack)) {
-        stack_elem_t tmp = stack_top(&stack); 
+        stack_elem_t tmp = stack_top(&stack);
         stack_pop(&stack);
         for(i = DIGITS - 1; i >=0; i--) {
             d[i] = tmp % MOD;
@@ -1100,15 +1131,13 @@ void output1() {
 }
 
 int main() {
+    calc_goal_pos();
     const int start = input();
-    heap_init(&heap, MAX + 4, cmp_int);
-    if (start > 0) {
-        if (astar(start)) {
-            output();
-        } else {
-            printf("no solution\n");
-        }
-    }
+    heap_init(&heap, MAX + 4, cmp_state);
+
+    if (astar(start))  output();
+    else printf("no solution\n");
+
     heap_uninit(&heap);
     return 0;
 }
