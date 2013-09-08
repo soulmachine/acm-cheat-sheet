@@ -3095,15 +3095,16 @@ int n;
 /* 快乐指数 */
 int r[MAXN];
 
-/* 大的指向小的，倒着串起来. */
+/* 静态链表节点. */
 typedef struct edge_t {
-    int v;  /* head[root]指向本对象, root->v */
-    int next; /* 上一条边 */
+    int v;
+    int prev; /* 上一条边，倒着串起来 */
 } edge_t;
 
+/* 多个静态链表在一个数组里，实质上是树的孩子表示法 */
 edge_t edge[MAXN-1];
 
-/* head[root]指向最后一条边 */
+/* head[root]指向表头，即最后一条边 */
 int head[MAXN];
 
 /* has_boss[i] 表示第i个人是否有上司 */
@@ -3114,7 +3115,7 @@ int f[MAXN][2];
 int cnt;  /* 边个数-1 */
 void add_edge(int u, int v) {
     edge[cnt].v = v;
-    edge[cnt].next = head[u];
+    edge[cnt].prev = head[u];
     head[u] = cnt++;
 }
 
@@ -3122,7 +3123,7 @@ void dp(int k) {
     int p;
     f[k][1] = r[k];
     f[k][0] = 0;
-    for (p = head[k]; p != -1; p = edge[p].next) {
+    for (p = head[k]; p != -1; p = edge[p].prev) {
         int l = edge[p].v;
         dp(l);
         f[k][1] += f[l][0];
