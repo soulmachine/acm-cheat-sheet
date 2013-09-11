@@ -8,6 +8,8 @@
 
 
 \section{算法框架} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\label{sec:bfs-template}
+
 思考的步骤：
 \begin{enumerate}
 \item 如何表示状态？即一个状态需要存储哪些些必要的数据，就可以完整表示该状态？这一步不考虑是求长度还是求路径的问题，纯粹考虑状态本身的数据。
@@ -183,6 +185,8 @@ int bfs(state_t *start) {
 
     path[state_hash(start) or start->index] = *start;
     history_insert(start); // 千万别忘记了标记此处的访问记录
+    if (state_is_target(start)) /* 如果起点就是终点，返回 */
+        return state_hash(start) or start->index;
     queue_push(&q, *start);
 
     while (!queue_empty(&q)) {
@@ -430,6 +434,8 @@ int bfs(state_t *start) {
 
     path[state_hash(start)] = *start;
     history_insert(start);
+    if (state_is_target(start))
+        return state_hash(start);
     queue_push(&q, *start);
 
     while (!queue_empty(&q)) {
@@ -588,19 +594,20 @@ ullddrurdllurdruldr
 \subsubsection{分析}
 计算“最短”，很自然的想到BFS。
 
-如何表示一个状态？本题是一个3*3的棋盘，状态有9!个，可以用一个32位整数表示，但15!已经超过32位整数的
-范围，21！超过了64位整数的范围，因此4*4的棋盘可以用一个64位整数表示。超过4*4的棋盘，则无法用整数来
-表示了，可以用一个数组来表示。
+如何表示一个状态？一个3*3的棋盘，首先可以想到用一个数组\fn{int data[9]}来表示。把每个格子看做是整数的一位的话，可以用一个整数来表示，最大的棋盘87654321x，表示成整数就是876543210，没有超过32位整数的范围。
 
-如何判重？用哈希表或者集合。哈希表的话，由于C++ STL 还没有 \fn{std::hashset}，
-需要自己实现哈希表，然后由于本题的特殊性，存在一种完美哈希(perfect hashing)方案。集合可以直接
-使用\fn{std::set}。总结起来，有以下三个方法：
-\begindot
-\item 把排列变成整数，这是一种完美哈希，即不存在冲突
-\item 用普通的哈希表，这种方法通用一些，速度也略慢。手工实现哈希表，把哈希值相同的组成一个单链表，
-\item 用 \fn{std::set} 实现判重，代码最短，速度也最慢（本题用这个方法会TLE）。建议把该方法作为“跳板”，
-先写一个STL版的程序，确保主算法正确，然后把\fn{std::set}替换成自己写的哈希表。
-\myenddot
+如何判重？用哈希表，自己实现或者用STL。C++ STL 里有\fn{std::set}, C++ 11新加入了\fn{std::unordered_set}。建议先用STL写一个版本，确保主算法正确，然后把\fn{std::set}(或\fn{std::unordered_set})替换成自己写的哈希表。
+
+由于本题的特殊性，存在一种完美哈希(perfect hashing)方案。即\textbf{康托展开}。棋盘本身是一个排列，将排列转化为序数，用序数作为hash值。例如，1,2,3 这三个数字的全排列，按字典序，依次为
+\begin{Code}
+123 -- 0
+132 -- 1
+213 -- 2
+231 -- 3
+312 -- 4
+321 -- 5
+\end{Code}
+其中，左侧为排列，右侧为其序数。
 
 此题更优的解法还有双向BFS（见\S \ref{sec:biBFS}），A*算法（见\S \ref{sec:astar}）。
 
@@ -687,7 +694,9 @@ int bfs(state_t *start) {
     start->count = 0;
 
     path[state_hash(start)] = *start;
-    history_insert(start); // 千万别忘记了标记此处的访问记录
+    history_insert(start);
+    if (state_is_target(start))
+        return state_hash(start);
     queue_push(&q, *start);
 
     while (!queue_empty(&q)) {
@@ -925,7 +934,9 @@ int bfs(state_t *start) {
     start->count = 0;
 
     path[start->index] = *start;
-    history_insert(start); // 千万别忘记了标记此处的访问记录
+    history_insert(start);
+    if (state_is_target(start))
+        return state_hash(start);
     queue_push(&q, *start);
 
     while (!queue_empty(&q)) {
@@ -1283,6 +1294,8 @@ void bfs(state_t *start) {
     start->color = 2;
 
     history_insert(start); // 千万别忘记了标记此处的访问记录
+    if (state_is_target(start)) /* 如果起点就是终点，返回 */
+        return;
     queue_push(&q, *start);
 
     while (!queue_empty(&q)) {
@@ -1487,6 +1500,8 @@ bool state_is_target(const state_t *s) {
 
 \textbf{A*算法 = 宽搜 + 优先队列}
 
+将广搜模板（见第\S \ref{sec:bfs-template}节）中的队列改为优先队列，设计好当前状态距离目标状态的预估距离$h()$，就变成了A*算法！
+
 \subsection{八数码问题}
 题目见 \S \ref{subsec:eightDigits}。
 
@@ -1494,167 +1509,208 @@ bool state_is_target(const state_t *s) {
 \begin{Codex}[label=eight_digits_astar.c]
 /** POJ 1077 Eight, http://poj.org/problem?id=1077
  简单解释几个要点,便于理解代码.
- 1. 怎么判断是否有解？只要计算出的逆序个数总和为奇数，该数据必然无解
- 2. 如何判断某一状态是否到过？本题存在一种完美哈希方案，即用康托展开。
-    详见 http://128kj.iteye.com/blog/1699795
-    2.1.将一个状态视为数字 0-8 的一个排列，将此排列转化为序数，作为此状
- 态的 HASH 值。0表示空格.转化算法此处不再赘述。
-
-    2.2.排列转化为序数，用序数作为hash值
-    例，1 2 3 这三个数字的全排列，按字典序，依次为
- 123 -- 0
- 132 -- 1
- 213 -- 2
- 231 -- 3
- 312 -- 4
- 321 -- 5
- 其中，左侧为排列，右侧为其序数。
-
- 3.使用数据结构 —— 堆，加速挑选最优值。
-
- 4.函数 g 的计算，此状态在搜索树中已经走过的路径的节点数.
-
- 5.估价函数 h ，采用曼哈顿距离, 见代码 calcH 函数。曼哈顿距离的定义是，
+1. 怎么判断是否有解？只要计算出的逆序个数总和为奇数，该数据必然无解
+2. 如何判断某一状态是否到过？本题存在一种完美哈希方案，即用康托展开。
+        详见 http://128kj.iteye.com/blog/1699795
+3.使用优先队列，即堆，加速挑选最优值。
+4.函数 g=此状态在搜索树中已经走过的路径的节点数.
+5.估价函数 h ，采用曼哈顿距离, 见代码 calcH 函数。曼哈顿距离的定义是，
  假设有两个点(x1,y1),(x2,y2)，则曼哈顿距离L1=|x1-x2| + |y1-y2|
  */
 #include <stdio.h>
 #include <string.h>
-#include <stdlib.h>
-
-// 3x3的棋盘，状态最多有 9!种
-// 8位变进制数（空格）能表示0到(9!-1)内的所有自然数,恰好有9!个，
-// 与状态一一对应，因此可以把状态一一映射到一个8位变进制数
-#define     MAX         362880
 
 #define DIGITS 9 // 棋盘中数字的个数，也是变进制数需要的位数
 #define     MATRIX_EDGE 3       // 棋盘边长
+#define RADIX 10
 
-#define     MOD         10      // 按十取模
-
-typedef struct {
-    int state; // 状态
-    int parent;     // 父状态
-    int flag;   // -1 表示已经展开过了closed，0表示死节点，1 表示还未展开, open
-    int g, h, f; // 三个评估函数
-    char choice;  // 左右上下四个方向移动，见全局常量 DI DJ DC
-} state_t;
-
-state_t states[MAX];  // 全局的一条状态变化路径
-
-int  startIndex, goalIndex; // 开始状态，目标状态对应的hash值
+/***** 一些常量 *****/
+const int SPACE_NUMBER = 0; // 空格对应着数字 0
+// 上下左右四个方向
+const int dx[] = {-1, 1, 0, 0};
+const int dy[] = {0, 0, -1, 1};
+const char name[] = { 'u', 'd', 'l', 'r' };
 
 // 目标状态
 const int GOAL = 123456780;
 // 每个数字在棋盘中的位置，例如0，在(2,2)=8这个位置上
 int GOAL_POS[DIGITS];
-const int SPACE_NUMBER = 0; // 空格对应着数字 0
 
-// 上下左右四个方向
-const int DI[] = {-1, 1, 0, 0};
-const int DJ[] = {0, 0, -1, 1};
-const char DC[] = { 'u', 'd', 'l', 'r' };
-
-// 9 位变进制数，每个位数的单位，0!~8!
-const int fac[] = {40320, 5040, 720, 120, 24, 6, 2, 1, 1};
-
-/* 计算GOAL_POS */
-void calc_goal_pos() {
-    int cur = GOAL;
-    int i;
-    for (i = DIGITS-1; i >= 0 ; i--) {
-        int digit = cur % MOD;
-        GOAL_POS[digit] = i;
-        cur /= MOD;
-    }
-}
+#ifndef __cplusplus
+typedef char bool;
+#define false 0
+#define true 1
+#endif
 
 /**
- * @brief 计算状态的hash值，这里用康托展开，是完美哈希.
- *
- * @param[in] s 当前状态
- * @return 序数，作为hash值
+ * @strut 状态
  */
-int hash(int s) {
-    int i, j;
-    int d[DIGITS];
-    int key = 0;
+typedef struct state_t {
+    int board;  /** 状态的数据，即棋局. */
+    int action; /* 由父状态移动到本状态的动作 */
+    int father; /* 父状态在path[]中的下标，也即父状态的哈希值 */
+    int count;  /** 所花费的步骤数（也即路径长度-1），作为g */
+    int h; /** 距离目标状态的估算距离 */
+} state_t;
 
-    for(i = DIGITS - 1; i >=0; i--) {
-        d[i] = s % MOD;
-        s /= MOD;
-    }
+// 3x3的棋盘，状态最多有 9!种
+#define STATE_MAX 362880  /* 状态总数 */
 
-    for (i = 0; i < DIGITS; i++) {
-        int c = 0; // 逆序数
-        for (j = i + 1; j < DIGITS; j++) {
-            if(d[j] < d[i]) {
-                c++;
-            }
-        }
-        key += c * fac[i];
-    }
-
-    return key;
-}
-
+state_t path[STATE_MAX+1];
 
 /**
- * 估价函数h。
+ * @brief 打印动作序列.
+ * @param[in] end 终点状态的哈希值
+ * @return 父状态
+ */
+void print_action(const int end) {
+    if (path[end].father == -1) return;
+
+    print_action(path[end].father);
+    putchar(name[path[end].action]);
+}
+
+int state_hash(const state_t *s);
+
+void history_init();
+
+bool history_contains(const state_t *s);
+
+void history_insert(const state_t *s);
+
+void state_extend_init(const state_t *s);
+
+bool state_extend(const state_t *s, state_t *next);
+
+bool state_is_target(const state_t *s);
+
+typedef state_t heap_elem_t; // 元素的类型
+/** 状态的比较函数 */
+int cmp_state(const state_t *x, const state_t *y) {
+    return (x->count + x->h) - (y->count + y->h);
+}
+
+/* 等价于复制粘贴，这里为了节约篇幅，使用include，在OJ上提交时请用复制粘贴 */
+#include "heap.c"  /* 见“树->堆”这节 */
+// 优先队列
+heap_t q;
+
+/**
+ * 距离目标状态的估算距离h。
  * @param s 状态
- * @return 预估代价
+ * @return h
  */
-int calcH(int s) {
+static int state_get_h(const state_t *state) {
     int i;
     int h = 0;
+    int s = state->board;
 
     for (i = DIGITS - 1; i >= 0; --i) {
-        const int p = s % 10;
-        s /= 10;
-        // 曼哈顿距离
+        const int p = s % RADIX;
+        s /= RADIX;
+        /* 曼哈顿距离 */
         h += abs(i / MATRIX_EDGE - GOAL_POS[p] / MATRIX_EDGE) +
             abs(i % MATRIX_EDGE - GOAL_POS[p] % MATRIX_EDGE);
     }
     return h;
 }
 
+/* 计算 GOAL_POS */
+static void calc_goal_pos() {
+    int cur = GOAL;
+    int i;
+    for (i = DIGITS-1; i >= 0 ; i--) {
+        int digit = cur % RADIX;
+        GOAL_POS[digit] = i;
+        cur /= RADIX;
+    }
+}
+
+int bfs(state_t *start) {
+    calc_goal_pos();
+    heap_init(&q, 16, cmp_state);
+    history_init();
+
+    start->action = -1;
+    start->father = -1;
+    start->count = 0;
+    start->h = state_get_h(start);
+
+    path[state_hash(start)] = *start;
+    history_insert(start);
+    if (state_is_target(start))
+        return state_hash(start);
+    heap_push(&q, *start);
+
+    while (!heap_empty(&q)) {
+        const state_t s = heap_top(&q);
+        state_t next;
+        heap_pop(&q);
+
+        state_extend_init(&s);
+        while (state_extend(&s, &next)) {
+            if (state_is_target(&next)) {
+                // printf("%d\n", next.count);
+                heap_uninit(&q);
+                return state_hash(&next);
+            }
+            heap_push(&q, next);
+            history_insert(&next);
+        }
+    }
+    heap_uninit(&q);
+    return -1;
+}
+
+static void int_to_board(int n, int board[DIGITS]) {
+    int i;
+    for (i = DIGITS - 1; i >= 0; i--) {
+        board[i] = n % RADIX;
+        n /= RADIX;
+    }
+}
+
+static int board_to_int(const int board[DIGITS]) {
+    int i, s = 0;
+    for (i = 0; i < DIGITS; i++)
+        s = s * RADIX + board[i];
+    return s;
+}
+
 /**
  * @brief 输入.
- * @return  成功返回数字，失败返回0
- * @remark 《算法竞赛入门经典》第131页7.5.3节，是用0表示空格，
- * POJ 1077是用'x'表示空格，前者简化了一点，POJ 1077还需要把'x'映射成0
+ * @return 无
  */
-int input() {
+void input(state_t *start) {
     int ch, i;
-    int start = 0;
+    int board[DIGITS];
     for (i = 0; i < DIGITS; ++i) {
         do {
             ch = getchar();
         } while ((ch != EOF) && ((ch < '1') || (ch > '8')) && (ch != 'x'));
-        if (ch == EOF) return 0;
-        if (ch == 'x') start = start * MOD + SPACE_NUMBER; // x 映射成数字 0
-        else             start = start * MOD + ch - '0';
+        if (ch == EOF) return;
+        if (ch == 'x') board[i] = 0; // x 映射成数字 0
+        else           board[i] = ch - '0';
     }
-    return start;
+    start->board = board_to_int(board);
 }
 
 /** for wikioi 1225 */
-int input1() {
-    int start;
-    scanf("%d", &start);
-    return start;
+void input1(state_t *start) {
+    scanf("%d", &start->board);
 }
 
 /**
  * 计算一个排列的逆序数，0 除外.
  */
-int inversion_count(int permutation) {
+static int inversion_count(int permutation) {
     int i, j;
     int d[DIGITS];
     int c = 0; // 逆序数
 
     for(i = DIGITS - 1; i >=0; i--) {
-        d[i] = permutation % MOD;
-        permutation /= MOD;
+        d[i] = permutation % RADIX;
+        permutation /= RADIX;
     }
 
     for (i = 1; i < DIGITS; i++)  if (d[i] != SPACE_NUMBER) {
@@ -1670,7 +1726,7 @@ int inversion_count(int permutation) {
 }
 
 /**
- * 判断是否无解.
+ * 判断是否有解.
  *
  * 求出除0之外所有数字的逆序数之和，也就是每个数字后面比它小的数字的个数的和，
  * 称为这个状态的逆序。
@@ -1680,189 +1736,134 @@ int inversion_count(int permutation) {
  * @param s 目标状态
  * @return 1表示有解，0表示无解
  */
-int solvable(const int s) {
+static int solvable(const int s) {
     return (inversion_count(s) + inversion_count(GOAL)) % 2 == 0;
 }
 
-// 存放 next()的输出结果
-char choice[4]; // 四个防线
-int nextIndex[4]; // 接下来的四个状态
+int main(void) {
+    state_t start;
+    int end; /* 目标状态在path[]中的下标 */
+    input(&start);
 
-/*
- * @brief 向四个方向扩展
- * @param[in] s 状态
- * @return 无
- */
-void next(int s) {
-    int i, j, k;
-    int p[MATRIX_EDGE][MATRIX_EDGE]; // 一个状态对应的矩阵
-    int i0, j0;  // 空格位置
+    if (!solvable(start.board)) return 0;
 
-    for (i = MATRIX_EDGE - 1; i >= 0; i--) {
-        for (j = MATRIX_EDGE - 1; j >= 0; j--) {
-            p[i][j] = s % MOD;
-            s /= MOD;
-            if (p[i][j] == SPACE_NUMBER) {
-                i0 = i;
-                j0 = j;
-            }
-        }
-    }
-    // 向四个方向探索
-    for (k = 0; k < 4; ++k) {
-        const int sx = i0 + DI[k]; // 空格的新位置(sx, sy)
-        const int sy = j0 + DJ[k];
-        if ((sx >= 0) && (sx < 3) && (sy >= 0) && (sy < 3)) {
-            int key;
-            p[i0][j0] = p[sx][sy];
-            p[sx][sy] = SPACE_NUMBER;
-            // 移动空格后，计算新的状态
-            s = 0;
-            for (i = 0; i < MATRIX_EDGE; i++)
-                for (j = 0; j < MATRIX_EDGE; j++)
-                    s = s * MOD + p[i][j];
-            p[sx][sy] = p[i0][j0]; // 将矩阵还原，(i0, j0)可以不管
+    end = bfs(&start);
 
-            key = nextIndex[k] = hash(s);
-            choice[k] = DC[k];
-            if (states[key].state == 0) { // 该状态还没有出现过
-                states[key].state = s;
-                states[key].h = calcH(s);
-            }
-        } else {// 越界了
-            nextIndex[k] = -1;
-        }
-    }
-}
-
-/** 状态的比较函数 */
-int cmp_state(const int *x, const int *y) {
-    return states[*x].f - states[*y].f;
-}
-
-/* 等价于复制粘贴，这里为了节约篇幅，使用include，在OJ上提交时请用复制粘贴 */
-#include "heap.c"  /* 见“树->堆”这节 */
-
-heap_t heap;
-int heapIndex[MAX + 4]; // 状态 x 在heap中的下标
-
-/**
- * @brief A*搜索
- * @param[in] start 初始状态
- * @return 如果无解，返回0，如果有解返回1
- */
-int astar(const int start) {
-    int i, j, k, ng, nf;
-    if (!solvable(start)) return 0;
-
-    startIndex = hash(start);
-    goalIndex  = hash(GOAL);
-    if (start == GOAL) return 1;
-
-    memset(states, 0, sizeof(states));
-    states[startIndex].state = start;
-    states[startIndex].flag    = 1;
-    states[startIndex].g       = 0;
-    states[startIndex].h       = states[startIndex].f = calcH(start);
-
-    heap_push(&heap, startIndex);
-    while(!heap_empty(&heap)) {
-        i = heap_top(&heap); heap_pop(&heap);
-        if (i == goalIndex) return 1; // 找到目标，返回
-
-        states[i].flag = -1;
-        ng = states[i].g + 1;
-        next(states[i].state);
-        for (k = 0; k < 4; ++k) {
-            j = nextIndex[k];
-            if (j < 0) continue;
-            nf = ng + states[j].h;
-            if ((states[j].flag == 0) || ((states[j].flag == 1) &&
-                (nf < states[j].f))) {
-                states[j].parent = i;
-                states[j].choice = choice[k];
-                states[j].g    = ng;
-                states[j].f    = nf;
-                if (states[j].flag > 0) {
-                    heap_sift_up(&heap, heapIndex[j]);
-                    heap_sift_down(&heap, heapIndex[j]);
-                } else {
-                    heap_push(&heap, j);
-                    states[j].flag = 1;
-                }
-            }
-        }
-    }
-    return 0;
-}
-
-/* 等价于复制粘贴，这里为了节约篇幅，使用include，在OJ上提交时请用复制粘贴 */
-#include "stack.c"  /* 见“栈和队列->栈”这节 */
-
-/**
- * @brief 打印移动序列.
- * @return 无
- */
-void output() {
-    int i;
-    stack_t stack;
-    stack_init(&stack, MAX);
-
-    for (i = goalIndex; i != startIndex; i = states[i].parent) {
-        stack_push(&stack, states[i].choice);
-    }
-    while(!stack_empty(&stack)) {
-        printf("%c", stack_top(&stack));
-        stack_pop(&stack);
-    }
-
+    print_action(end);
     printf("\n");
-    stack_uninit(&stack);
+    return 0;
 }
+
+/********** functions implement **************/
+
+/********** 方案1，完美哈希，使用康托展开 **************/
+
+// 9 位变进制数（空格）能表示0到(9!-1)内的所有自然数,恰好有9!个，
+// 与状态一一对应，因此可以把状态一一映射到一个9位变进制数
+
+// 9 位变进制数，每个位数的单位，0!~8!
+const int fac[] = {40320, 5040, 720, 120, 24, 6, 2, 1, 1};
+/* 哈希表容量，要大于状态总数，若存在完美哈希方案，则等于状态总数 */
+#define HASH_CAPACITY STATE_MAX
+
+bool visited[HASH_CAPACITY];
 
 /**
- * @brief 打印棋盘的每次变化.
- * @return 无
+ * @brief 计算状态的hash值，这里用康托展开，是完美哈希.
+ * @param[in] s 当前状态
+ * @return 序数，作为hash值
  */
-void output1() {
-    int i;
-    int d[DIGITS];
-    stack_t stack;
-    stack_init(&stack, MAX);
+int state_hash(const state_t *state) {
+    int i, j;
+    int board[DIGITS];
+    int key = 0;
 
-    for (i = goalIndex; i != startIndex; i = states[i].parent) {
-        stack_push(&stack, states[i].state);
-    }
-    stack_push(&stack, states[startIndex].state);
+    int_to_board(state->board, board);
 
-    while(!stack_empty(&stack)) {
-        stack_elem_t tmp = stack_top(&stack);
-        stack_pop(&stack);
-        for(i = DIGITS - 1; i >=0; i--) {
-            d[i] = tmp % MOD;
-            tmp /= MOD;
-        }
-        for(i = 0; i < DIGITS; i++) {
-            if((i + 1) % MATRIX_EDGE == 0) {
-                printf("%d\n", d[i]);
-            } else {
-                printf("%d ", d[i]);
+    for (i = 0; i < DIGITS; i++) {
+        int c = 0; // 逆序数
+        for (j = i + 1; j < DIGITS; j++) {
+            if(board[j] < board[i]) {
+                c++;
             }
         }
-        printf("\n");
+        key += c * fac[i];
     }
-    stack_uninit(&stack);
+
+    return key;
 }
 
-int main() {
-    calc_goal_pos();
-    const int start = input();
-    heap_init(&heap, MAX + 4, cmp_state);
+void history_init() {
+    memset(visited, 0, sizeof(visited));
+}
 
-    if (astar(start))  output();
-    else printf("no solution\n");
+bool history_contains(const state_t *s) {
+    return visited[state_hash(s)] == true;
+}
 
-    heap_uninit(&heap);
-    return 0;
+void history_insert(const state_t *s) {
+    visited[state_hash(s)] = true;
+}
+
+int action_cur;
+#define ACTION_BEGIN 0
+#define ACTION_END 4
+
+/* 扩展点，即0的位置 */
+int z;
+int board[DIGITS];  /* 棋盘，暂存数据 */
+
+void state_extend_init(const state_t *s) {
+    action_cur = ACTION_BEGIN;
+
+    int_to_board(s->board, board);
+    for (z = 0; z < DIGITS; z++) {
+        if (board[z] == SPACE_NUMBER) {
+            break;  // 找 0 的位置
+        }
+    }
+}
+
+bool state_extend(const state_t *s, state_t *next) {
+    const int x = z / MATRIX_EDGE; // 行
+    const int y = z % MATRIX_EDGE; // 列
+
+    while (action_cur < ACTION_END) {
+        const int newx = x + dx[action_cur];
+        const int newy = y + dy[action_cur];
+        const int newz = newx * MATRIX_EDGE + newy;
+
+        if (newx >= 0 && newx < MATRIX_EDGE && newy >= 0 &&
+                newy < MATRIX_EDGE) { // 没有越界
+            board[z] = board[newz];
+            board[newz] = SPACE_NUMBER;
+            *next = *s;
+            next->board = board_to_int(board);
+            board[newz] = board[z]; /* 恢复s的棋盘 */
+            board[z] = SPACE_NUMBER;
+
+            next->count = s->count + 1;
+            next->h = state_get_h(next);
+            if (!history_contains(next)) { /* 判重 */
+                next->action = action_cur;
+                next->father = state_hash(s);
+                /* 记录路径 */
+                path[state_hash(next)] = *next;
+                action_cur++; /* return前别忘了增1 */
+                return true;
+            }
+        }
+        action_cur++;
+    }
+    return false;
+}
+
+// 目标状态
+const state_t END = {123456780, -1, -1};
+// for wikioi 1225
+const state_t END1 = {123804765, -1, -1};
+
+bool state_is_target(const state_t *s) {
+    return s->board == END.board;
 }
 \end{Codex}
