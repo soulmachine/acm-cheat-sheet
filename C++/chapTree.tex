@@ -419,25 +419,28 @@ typedef struct bt_node_t {
  * @return 无
  */
 void in_order_morris(bt_node_t *root, int(*visit)(elem_t*)) {
-    bt_node_t *cur, *pre;
+    bt_node_t *cur, *prev;
 
     cur = root;
     while (cur != NULL ) {
         if (cur->lchild == NULL ) {
             visit(cur->data);
+            prev = cur;
             cur = cur->rchild;
         } else {
             /* 查找前驱 */
-            pre = cur->lchild;
-            while (pre->rchild != NULL && pre->rchild != cur)
-                pre = pre->rchild;
+            bt_node_t *node = cur->lchild;
+            while (node->rchild != NULL && node->rchild != cur)
+                node = node->rchild;
 
-            if (pre->rchild == NULL ) {    /* 还没线索化，则建立线索 */
-                pre->rchild = cur;
+            if (node->rchild == NULL ) { /* 还没线索化，则建立线索 */
+                node->rchild = cur;
+                prev = cur;
                 cur = cur->lchild;
             } else {    /* 已经线索化，则访问节点，并删除线索  */
                 visit(cur->data);
-                pre->rchild = NULL;
+                node->rchild = NULL;
+                prev = cur;
                 cur = cur->rchild;
             }
         }
@@ -451,27 +454,34 @@ void in_order_morris(bt_node_t *root, int(*visit)(elem_t*)) {
  * @return 无
  */
 void pre_order_morris(bt_node_t *root, int (*visit)(elem_t*)) {
-    bt_node_t *cur = root, *pre = NULL;
+    bt_node_t *cur, *prev;
+
+    cur = root;
     while (cur != NULL ) {
         if (cur->lchild == NULL ) {
             visit(cur->data);
+            prev = cur;
             cur = cur->rchild;
         } else {
-            pre = cur->lchild;
-            while (pre->rchild != NULL && pre->rchild != cur)
-                pre = pre->rchild;
+            /* 查找前驱 */
+            bt_node_t *node = cur->lchild;
+            while (node->rchild != NULL && node->rchild != cur)
+                node = node->rchild;
 
-            if (pre->rchild == NULL ) {
-                visit(cur->data);  // 仅这一行与中序不同
-                pre->rchild = cur;
+            if (node->rchild == NULL ) { /* 还没线索化，则建立线索 */
+                visit(cur->data); /* 仅这一行与中序不同 */
+                node->rchild = cur;
+                prev = cur;
                 cur = cur->lchild;
-            } else {
-                pre->rchild = NULL;
+            } else {    /* 已经线索化，则访问节点，并删除线索  */
+                node->rchild = NULL;
+                prev = cur;
                 cur = cur->rchild;
             }
         }
     }
 }
+
 
 static void reverse(bt_node_t *from, bt_node_t *to);
 static void visit_reverse(bt_node_t* from, bt_node_t *to, int (*visit)(elem_t*));
@@ -484,21 +494,24 @@ static void visit_reverse(bt_node_t* from, bt_node_t *to, int (*visit)(elem_t*))
 void post_order_morris(bt_node_t *root, int (*visit)(elem_t*)) {
     bt_node_t dump = { 0, NULL, NULL };
     dump.lchild = root;
-    bt_node_t *cur = &dump, *pre = NULL;
+    bt_node_t *cur = &dump, *prev = NULL;
     while (cur != NULL ) {
         if (cur->lchild == NULL ) {
+            prev = cur;
             cur = cur->rchild;
         } else {
-            pre = cur->lchild;
-            while (pre->rchild != NULL && pre->rchild != cur)
-                pre = pre->rchild;
+            bt_node_t *node = cur->lchild;
+            while (node->rchild != NULL && node->rchild != cur)
+                node = node->rchild;
 
-            if (pre->rchild == NULL ) {
-                pre->rchild = cur;
+            if (node->rchild == NULL ) { /* 还没线索化，则建立线索 */
+                node->rchild = cur;
+                prev = cur;
                 cur = cur->lchild;
-            } else {
-                visit_reverse(cur->lchild, pre, visit);  // call print
-                pre->rchild = NULL;
+            } else { /* 已经线索化，则访问节点，并删除线索  */
+                visit_reverse(cur->lchild, prev, visit);  // call print
+                prev->rchild = NULL;
+                prev = cur;
                 cur = cur->rchild;
             }
         }
