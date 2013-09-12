@@ -212,6 +212,12 @@ void lcs_print(const char *x, const int m, const char *y, const int n) {
 \end{Code}
 
 \subsubsection{分析}
+当我们从头到尾遍历这个数组的时候，对于数组里的一个整数，它有几种选择呢？它只有两种选择： 1、加入之前的SubArray；2. 自己另起一个SubArray。那什么时候会出现这两种情况呢？
+
+如果之前SubArray的总体和大于0的话，我们认为其对后续结果是有贡献的。这种情况下我们选择加入之前的SubArray
+
+如果之前SubArray的总体和为0或者小于0的话，我们认为其对后续结果是没有贡献，甚至是有害的（小于0时）。这种情况下我们选择以这个数字开始，另起一个SubArray。
+
 设状态为d[j]，表示以S[j]结尾的最大连续子序列和，则状态转移方程如下：
 \begin{eqnarray}
 d[j] &=& \max\left\{d[j-1]+S[j],S[j]\right\}, \text{ 其中 }1 \leq j \leq n \nonumber \\
@@ -228,6 +234,7 @@ target &=& \max\left\{d[j]\right\}, \text{ 其中 }1 \leq j \leq n \nonumber
 \begin{Codex}[label=mcss.c]
 #include <stdio.h>
 #include <stdlib.h>
+#include <limits.h>
 
 #define max(a,b) ((a)>(b)?(a):(b))
 #define min(a,b) ((a)<(b)?(a):(b))
@@ -239,17 +246,21 @@ target &=& \max\left\{d[j]\right\}, \text{ 其中 }1 \leq j \leq n \nonumber
  * @return 最大连续子序列和
  */
 int mcss(int S[], int n) {
-    int i, maxs, mins;
+    int i, result, cur_min;
     int *sum = (int*) malloc((n + 1) * sizeof(int));  // 前n项和
+
     sum[0] = 0;
-    maxs = 0, mins = 0;
-    for (i = 1; i <= n; i++) {
+    result = INT_MIN;
+    cur_min = sum[0];
+    for (i = 1; i <= n; i++) { /* 变成前缀和 */
         sum[i] = sum[i - 1] + S[i - 1];
-        maxs = max(maxs, sum[i]);
-        mins = min(mins, sum[i]);
+    }
+    for (i = 1; i <= n; i++) {
+        result = max(result, sum[i] - cur_min);
+        cur_min = min(cur_min, sum[i]);
     }
     free(sum);
-    return maxs - mins;
+    return result;
 }
 
 /**
@@ -302,7 +313,7 @@ int main() {
 \subsubsection{相关题目}
 与本题相同的题目：
 \begindot
-\item None
+\item LeetCode Maximum Subarray, \myurl{http://leetcode.com/onlinejudge\#question_53}
 \myenddot
 
 与本题相似的题目：
