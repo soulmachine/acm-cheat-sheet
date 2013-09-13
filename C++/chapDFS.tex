@@ -15,11 +15,16 @@
 
 深搜，是逻辑意义上的算法，递归，是一种物理意义上的实现。深搜，可以用递归来实现，也可以用栈来实现；而递归，一般总是用来实现深搜。可以说，\textbf{递归一定是深搜，深搜不一定用递归}。
 
-递归有两种加速策略，一种是\textbf{剪枝(prunning)}，对中间结果进行判断，提前返回；一种是\textbf{加缓存(cache)}，缓存中间结果，防止重复计算，用空间换时间，和动规中自顶向下的记忆化搜索类似。
+递归有两种加速策略，一种是\textbf{剪枝(prunning)}，对中间结果进行判断，提前返回；一种是\textbf{加缓存}（即memoization优化技术），缓存中间结果，防止重复计算，用空间换时间，和动规中自顶向下的记忆化搜索类似。
 
 剪枝的手段五花八门，要具体问题具体分析，要充分观察，充分利用各种信息来剪枝，在中间节点提前返回。
 
 加缓存，可以用数组或HashMap。维度简单的，用数组；维度复杂的，用HashMap，C++有\fn{std::map}，C++ 11以后有\fn{std::unordered_map}，比\fn{std::map}快。
+
+其实，递归+缓存，就是一种 memorization 。所谓\textbf{memorization}（翻译为记忆化搜索，见第 \S \ref{sec:dp-vs-memorization}节），就是"top-down with cache"（自顶向下+缓存），它是Donald Michie 在1968年创造的术语，表示一种优化技术，在top-down 形式的程序中，使用缓存来避免重复计算，从而达到加速的目的。
+
+\textbf{memorization不一定用递归}，就像深搜不一定用递归一样，可以在迭代(iterative)中使用memorization。\textbf{递归也不一定用memorization}，可以用memorization来加速，但不是必须的。只有当递归使用了缓存，它才是memorization。
+
 
 \section{四色问题} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
