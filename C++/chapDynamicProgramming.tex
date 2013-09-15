@@ -21,7 +21,7 @@
 递归的定义最优解的值。第3步和第4步就是写代码实现了。
 
 写代码实现时有两种方式，“递归(recursive)+自顶向下(top-down)+表格”和
-“自底向上(bottom-up)+表格”。前者属于一种 memorization （翻译为记忆化搜索），后者才是正宗的动规。
+“自底向上(bottom-up)+表格”。前者属于一种 memorization （翻译为备忘录法），后者才是正宗的动规。
 
 动规用表格将各个子问题的最优解存起来，避免重复计算，是一种空间换时间。
 
@@ -33,14 +33,14 @@
 分治和贪心的相同点：disjoint subproblems。
 
 
-\section{动规和记忆化搜索的区别} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{动规和备忘录法的区别} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \label{sec:dp-vs-memorization}
 
-动规(dynamic programming)一定是自底向上的，记忆化搜索(memorization)一定是自顶向下的。
+动规(dynamic programming)一定是自底向上的，备忘录法(memorization)一定是自顶向下的。
 
 动规不是lazy的， memorization 是lazy的，是按需(on-demand)计算的。所以，如果所有的子问题至少会碰到一次，则动规有优势；如果有些子问题在搜索过程中不会被碰到（即有剪枝），则 memorization 有优势。更详细的解释请参考StackOverflow上的这个帖子 \myurl{http://t.cn/z80ZS6B} 。
 
-记忆化搜索可以实现跟动规类似的功能，但它不是动规。两者的方向是反的，一个是自顶向下，一个自底向上，我们应该区分开这两个概念。本书后面提到的动规，都是指自底向上的动规。
+备忘录法可以实现跟动规类似的功能，但它不是动规。两者的方向是反的，一个是自顶向下，一个自底向上，我们应该区分开这两个概念。本书后面提到的动规，都是指自底向上的动规。
 
 
 \section{最长公共子序列} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1215,7 +1215,7 @@ int G[MAXN][MAXN]; // 矩形包含关系
 int d[MAXN]; // 表格
 
 /**
- * @brief 记忆化搜索.
+ * @brief 备忘录法.
  * @param[in] i 起点
  * @return 以i为起点，能达到的最长路径
  */
@@ -1451,7 +1451,7 @@ $$d[i]=\max\left\{d[j]+1,(i,j) \in E\right\}$$
 价值均为1。求背包中物品的最小价值和最大价值。
 
 \subsubsection{代码}
-版本1，记忆化搜索。
+版本1，备忘录法。
 
 \begin{Codex}[label=coin_change.c]
 #include<stdio.h>
@@ -2270,7 +2270,7 @@ int main() {
 $$d[i][j]=a[i][j]+\max\left\{d[i+1][j], d[i+1][j+1]\right\}$$
 
 \subsubsection{代码}
-版本1，记忆化搜索。
+版本1，备忘录法。
 
 \begin{Codex}[label=numbers_triangle1.c]
 #include<stdio.h>
@@ -3002,7 +3002,7 @@ int build_tree() {
 }
 
 /**
- * 动规过程，记忆化搜索.
+ * 备忘录法.
  * @param[in] root 开始节点
  * @param[in] 剩余时间
  * @return 偷到得画的数量
