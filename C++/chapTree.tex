@@ -14,90 +14,88 @@
 
 
 \begin{Codex}[label=binary_tree.cpp]
+#include <iostream>
 #include <stack>
 #include <queue>
 
+/** 结点的数据 */
+typedef int tree_node_value_t;
  /*
   *@struct
   *@brief 二叉树结点
   */
 typedef struct binary_tree_node_t {
-    binary_tree_node_t *lchild;   /* 左孩子*/
-    binary_tree_node_t *rchild;   /* 右孩子*/
-    void* data; /* 结点的数据*/
-}binary_tree_node_t;
+    binary_tree_node_t *left;   /* 左孩子*/
+    binary_tree_node_t *right;   /* 右孩子*/
+    tree_node_value_t value; /* 结点的数据*/
+} binary_tree_node_t;
 
-/** 
+/**
   * @brief 先序遍历，递归.
   * @param[in] root 根结点
   * @param[in] visit 访问数据元素的函数指针
   * @return 无
   */
-void pre_order_r(const binary_tree_node_t *root, 
-                 int (*visit)(void*)) {
-    if(root != NULL) {
-        (void)visit(root->data);
-        pre_order_r(root->lchild, visit);
-        pre_order_r(root->rchild, visit);
-    }
+void pre_order_r(const binary_tree_node_t *root,
+                 int (*visit)(const binary_tree_node_t*)) {
+    if (root == NULL) return;
+
+    visit(root);
+    pre_order_r(root->left, visit);
+    pre_order_r(root->right, visit);
 }
 
-/** 
+/**
   * @brief 中序遍历，递归.
   */
-void in_order_r(const binary_tree_node_t *root, 
-                int (*visit)(void*)) {
-    if(root != NULL) {
-        in_order_r(root->lchild, visit);
-        (void)visit(root->data);
-        in_order_r(root->rchild, visit);
-    }
+void in_order_r(const binary_tree_node_t *root,
+                int (*visit)(const binary_tree_node_t*)) {
+    if(root == NULL) return;
+
+    in_order_r(root->left, visit);
+    visit(root);
+    in_order_r(root->right, visit);
 }
 
-/** 
+/**
   * @brief 后序遍历，递归.
   */
-void post_order_r(const binary_tree_node_t *root, 
-                  int (*visit)(void*)) {
-    if(root != NULL) {
-        post_order_r(root->lchild, visit);
-        post_order_r(root->rchild, visit);
-        (void)visit(root->data);
-    }
+void post_order_r(const binary_tree_node_t *root,
+                  int (*visit)(const binary_tree_node_t*)) {
+    if(root == NULL) return;
+
+    post_order_r(root->left, visit);
+    post_order_r(root->right, visit);
+    visit(root);
 }
 
-/** 
+/**
  * @brief 先序遍历，非递归.
  */
-void pre_order(const binary_tree_node_t *root, 
-               int (*visit)(void*)) {
+void pre_order(const binary_tree_node_t *root,
+               int (*visit)(const binary_tree_node_t*)) {
     const binary_tree_node_t *p;
     std::stack<const binary_tree_node_t *> s;
 
     p = root;
 
-    if(p != NULL) {
-        s.push(p);
-    }
+    if(p != NULL) s.push(p);
 
     while(!s.empty()) {
         p = s.top();
         s.pop();
-        visit(p->data);
-        if(p->rchild != NULL) {
-            s.push(p->rchild);
-        }
-        if(p->lchild != NULL) {
-            s.push(p->lchild);
-        }
+        visit(p);
+
+        if(p->right != NULL) s.push(p->right);
+        if(p->left != NULL) s.push(p->left);
     }
 }
 
-/** 
+/**
  * @brief 中序遍历，非递归.
  */
-void in_order(const binary_tree_node_t *root, 
-              int (*visit)(void*)) {
+void in_order(const binary_tree_node_t *root,
+              int (*visit)(const binary_tree_node_t*)) {
     const binary_tree_node_t *p;
     std::stack<const binary_tree_node_t *> s;
 
@@ -106,21 +104,21 @@ void in_order(const binary_tree_node_t *root,
     while(!s.empty() || p!=NULL) {
         if(p != NULL) {
             s.push(p);
-            p = p->lchild;
+            p = p->left;
         } else {
             p = s.top();
             s.pop();
-            visit(p->data);
-            p = p->rchild;
+            visit(p);
+            p = p->right;
         }
     }
 }
 
-/** 
+/**
  * @brief 后序遍历，非递归.
  */
-void post_order(const binary_tree_node_t *root, 
-                int (*visit)(void*)) {
+void post_order(const binary_tree_node_t *root,
+                int (*visit)(const binary_tree_node_t*)) {
     /* p，正在访问的结点，q，刚刚访问过的结点*/
     const binary_tree_node_t *p, *q;
     std::stack<const binary_tree_node_t *> s;
@@ -130,53 +128,49 @@ void post_order(const binary_tree_node_t *root,
     do {
         while(p != NULL) { /* 往左下走*/
             s.push(p);
-            p = p->lchild;
+            p = p->left;
         }
         q = NULL;
         while(!s.empty()) {
             p = s.top();
             s.pop();
             /* 右孩子不存在或已被访问，访问之*/
-            if(p->rchild == q) {
-                visit(p->data);
+            if(p->right == q) {
+                visit(p);
                 q = p; /* 保存刚访问过的结点*/
             } else {
                 /* 当前结点不能访问，需第二次进栈*/
                 s.push(p);
                 /* 先处理右子树*/
-                p = p->rchild;
+                p = p->right;
                 break;
             }
         }
-    }while(!s.empty());
+    } while(!s.empty());
 }
 
-/** 
+/**
  * @brief 层次遍历，也即BFS.
  *
  * 跟先序遍历一模一样，唯一的不同是栈换成了队列
  */
-void level_order(const binary_tree_node_t *root, 
-                 int (*visit)(void*)) {
+void level_order(const binary_tree_node_t *root,
+                int (*visit)(const binary_tree_node_t*)) {
     const binary_tree_node_t *p;
     std::queue<const binary_tree_node_t *> q;
 
     p = root;
 
-    if(p != NULL) {
-        q.push(p);
-    }
+    if(p != NULL) q.push(p);
 
     while(!q.empty()) {
         p = q.front();
         q.pop();
-        visit(p->data);
-        if(p->lchild != NULL) { /*先左后右或先右后左无所谓*/
-            q.push(p->lchild);
-        }
-        if(p->rchild != NULL) {
-            q.push(p->rchild);
-        }
+        visit(p);
+
+        /*先左后右或先右后左无所谓*/
+        if(p->left != NULL) q.push(p->left);
+        if(p->right != NULL) q.push(p->right);
     }
 }
 \end{Codex}
