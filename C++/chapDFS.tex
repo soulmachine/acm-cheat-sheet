@@ -1,6 +1,67 @@
 \chapter{深度优先搜索}
 
 
+\section{算法框架} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\label{sec:dfs-template}
+
+
+\subsubsection{适用场景}
+注意，这里的总结是一种经验，一种概率，不是绝对的结论！
+
+\textbf{输入数据}：递归数据结构，有单链表，二叉树，集合，如果是非递归数据结构，如一维数组，二维数组，字符串，图，则不太可能用深搜。
+
+\textbf{状态转换图}：树或者图。
+
+\textbf{求解目标}：必须要走到最深（例如对于树，必须要走到叶子节点）才能得到一个解，这种情况适合用深搜。
+
+
+\subsubsection{思考的步骤}
+\begin{enumerate}
+\item 是求路径长度，还是路径本身（或动作序列）？
+    \begin{enumerate}
+    \item 如果是求长度，则要用一个函数参数记录当前长度。
+    \item 如果是求路径或动作序列，则要用一个数组\fn{path[]}存储路径。跟宽搜不同，宽搜虽然最终求的也是一条路径，但是需要存储扩展过程中的所有路径，在没找到答案之前所有路径都不能放弃；而深搜，在搜索过程中始终只有一条路径，因此用一个数组就足够了。
+    \end{enumerate}
+\item 只要求一个解，还是要求所有解？如果只要求一个解，那找到一个就可以返回；如果要求所有解，找到了一个后，还要继续扩展，直到遍历完。广搜一般只要求一个解，因而不需要考虑这个问题。
+\item 如何表示状态？即一个状态需要存储哪些些必要的数据，就可以完整表示该状态？这一步不考虑是其他问题，纯粹考虑状态本身的数据。不过深搜的惯用写法，不是把数据记录在状态\fn{struct}里，而是添加函数参数。状态所带的数据，构成了处理当前状态和扩展到下一步状态的完整环境。
+\item 如何扩展状态？这一步跟上一步相关。状态里记录的数据不同，扩展方法就不同。对于固定不变的数据结构（一般题目直接给出，作为输入数据），如二叉树，图等，扩展方法很简单，直接往下一层走，对于隐式图，要先在第1步里想清楚状态所带的数据，想清楚了这点，那如何扩展就很简单了。
+\item 关于判重
+    \begin{enumerate}
+    \item 如果状态转换图是一棵树，则不需要判重，因为在遍历过程中不可能重复。
+    \item 如果状态转换图是一个图，则需要判重，方法跟广搜相同，见第 \S \ref{sec:bfs-template} 节。
+    \end{enumerate}
+\item 终止条件是什么？要在函数接口里用一个参数记录距离目标还有多远。函数的开始一段代码就要写终止条件，接着才能递归。且如果是求一个解，直接返回这个解；如果是求所有解，要在这里收集解，即把第一步中表示路径的数组\fn{path[]}复制到解集合里。
+\item 如何剪枝？深搜一定要好好考虑怎么剪枝，成本小收益大，加几行代码，就能大大加速。这里没有通用方法，只能具体问题具体分析，要充分观察，充分利用各种信息来剪枝，在中间节点提前返回。
+\end{enumerate}
+
+
+\subsubsection{代码模板}
+\begin{Codex}[label=dfs_template.c]
+/**
+ * dfs模板.
+ * @param[in] input 输入数据指针
+ * @param[inout] step or gap 标记当前走的步骤数或距离目标的距离
+ * @param[out] path 当前路径，也是中间结果
+ * @param[out] result 存放最终结果
+ * @return 路径长度，如果是求路径本身，则不需要返回长度
+ */
+void dfs(type *input, type *path, int step or gap, type *result) {
+    if (数据非法) return 0;
+    if (step == input.size( or gap == 0)) { // 终止条件
+        将path放入result
+    }
+
+    if (可以剪枝) return;
+
+    for(...) { // 执行所有可能的扩展
+        执行动作，修改path
+        dfs(input, step + 1 or gap--, result);
+        恢复path
+    }
+}
+\end{Codex}
+
+
 \section{深搜与回溯法的区别}
 深搜(Depth-first search, DFS)的定义见\myurl{http://en.wikipedia.org/wiki/Depth_first_search}，回溯法(backtracking)的定义见\myurl{http://en.wikipedia.org/wiki/Backtracking}
 
