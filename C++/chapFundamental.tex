@@ -29,38 +29,43 @@ void next_permutation(int num[], int len);
 
 \begin{Codex}[label=next_permutation.c]
 static void swap(int array[], int i, int j) {
-    const int temp = array[i];
+    const int tmp = array[i];
     array[i] = array[j];
-    array[j] = temp;
+    array[j] = tmp;
 }
 
-static void reverse(int array[], int begin, int end) { //左闭右开区间
-    end--;
-    while (begin < end)
-        swap(array, begin++, end--);
+static void reverse(int array[], int first, int last) { //左闭右开区间
+    last--;
+    while (first < last)
+        swap(array, first++, last--);
 }
 
 /**
  * @brief 返回下一个排列，例如当前排列是12345，下一个是12354
  * @param[inout] num 当前排列，例如 12345
- * @param[in] len num的长度
- * @return 成功返回1，失败返回0
+ * @param[in] first 开始位置
+ * @param[in] last 结束位置，左闭右开区间
+ * @return 成功返回 0，失败返回 -1
  */
-int next_permutation(int num[], int len) {
-    int i = len - 2;  // partition number's index
+int next_permutation(int num[], int first, int last) {
+    int i, j;
+
+    i = last - 2;  // partition number's index
     while (i >= 0 && num[i] >= num[i + 1])
         i--;
-    if(i == -1) return 0;
-    if (i >= 0) {
-        int j = len - 1;  // change number's index
-        while (num[j] <= num[i])
-            --j;
-        swap(num, i, j);
-        reverse(num, i + 1, len);
-    } else {
-        reverse(num, i + 1, len);
+
+    if (i == -1) {
+        reverse(num, first, last);
+        return -1;
     }
-    return 1;
+
+    j = last - 1;  // change number's index
+    while (num[j] <= num[i])
+        --j;
+    swap(num, i, j);
+    reverse(num, i + 1, last);
+
+    return 0;
 }
 \end{Codex}
 

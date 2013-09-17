@@ -22,16 +22,37 @@
     \item 如果是求长度，则要用一个函数参数记录当前长度。
     \item 如果是求路径或动作序列，则要用一个数组\fn{path[]}存储路径。跟宽搜不同，宽搜虽然最终求的也是一条路径，但是需要存储扩展过程中的所有路径，在没找到答案之前所有路径都不能放弃；而深搜，在搜索过程中始终只有一条路径，因此用一个数组就足够了。
     \end{enumerate}
+
 \item 只要求一个解，还是要求所有解？如果只要求一个解，那找到一个就可以返回；如果要求所有解，找到了一个后，还要继续扩展，直到遍历完。广搜一般只要求一个解，因而不需要考虑这个问题。
-\item 如何表示状态？即一个状态需要存储哪些些必要的数据，就可以完整表示该状态？这一步不考虑是其他问题，纯粹考虑状态本身的数据。不过深搜的惯用写法，不是把数据记录在状态\fn{struct}里，而是添加函数参数。状态所带的数据，构成了处理当前状态和扩展到下一步状态的完整环境。
+
+\item 如何表示状态？即一个状态需要存储哪些些必要的数据，就可以完整表示该状态？这一步不考虑是其他问题，纯粹考虑状态本身的数据。不过深搜的惯用写法，不是把数据记录在状态\fn{struct}里，而是添加函数参数（有时为了节省递归堆栈，用全局变量）。状态所带的数据，构成了处理当前状态和扩展到下一步状态的完整环境。
+
 \item 如何扩展状态？这一步跟上一步相关。状态里记录的数据不同，扩展方法就不同。对于固定不变的数据结构（一般题目直接给出，作为输入数据），如二叉树，图等，扩展方法很简单，直接往下一层走，对于隐式图，要先在第1步里想清楚状态所带的数据，想清楚了这点，那如何扩展就很简单了。
+
 \item 关于判重
     \begin{enumerate}
     \item 如果状态转换图是一棵树，则不需要判重，因为在遍历过程中不可能重复。
     \item 如果状态转换图是一个图，则需要判重，方法跟广搜相同，见第 \S \ref{sec:bfs-template} 节。
     \end{enumerate}
-\item 终止条件是什么？要在函数接口里用一个参数记录距离目标还有多远。函数的开始一段代码就要写终止条件，接着才能递归。且如果是求一个解，直接返回这个解；如果是求所有解，要在这里收集解，即把第一步中表示路径的数组\fn{path[]}复制到解集合里。
-\item 如何剪枝？深搜一定要好好考虑怎么剪枝，成本小收益大，加几行代码，就能大大加速。这里没有通用方法，只能具体问题具体分析，要充分观察，充分利用各种信息来剪枝，在中间节点提前返回。
+
+\item 终止条件是什么？终止条件是指到了不能扩展的末端节点。对于树，是叶子节点，对于图或隐式图，是出度为0的节点。
+
+\item {收敛条件是什么？收敛条件是指找到了一个合法解的时刻。如果是正向深搜（父状态处理完了才进行递归，即父状态不依赖子状态，递归语句一定是在最后，尾递归），则是指是否达到目标状态；如果是逆向深搜（处理父状态时需要先知道子状态的结果，此时递归语句不在最后），则是指是否到达初始状态。
+
+由于很多时候终止条件和收敛条件是是合二为一的，因此很多人不区分这两种条件。仔细区分这两种条件，还是很有必要的。
+
+为了判断是否到了收敛条件，要在函数接口里用一个参数记录当前的位置（或距离目标还有多远）。如果是求一个解，直接返回这个解；如果是求所有解，要在这里收集解，即把第一步中表示路径的数组\fn{path[]}复制到解集合里。}
+
+\item 如何加速？
+    \begin{enumerate}
+    \item 剪枝。深搜一定要好好考虑怎么剪枝，成本小收益大，加几行代码，就能大大加速。这里没有通用方法，只能具体问题具体分析，要充分观察，充分利用各种信息来剪枝，在中间节点提前返回。
+    \item 缓存。如果子问题的解会被重复利用，可以考虑使用缓存。
+        \begin{enumerate}
+            \item 前提条件：子问题的解会被重复利用，即子问题之间的依赖关系是有向无环图(DAG)。如果依赖关系是树状的（例如正向深搜），没必要加缓存，因为子问题只会一层层往下，用一次就再也不会用到，加了缓存也没什么加速效果。
+            \item 具体实现：可以用数组或HashMap。维度简单的，用数组；维度复杂的，用HashMap，C++有\fn{std::map}，C++ 11以后有\fn{std::unordered_map}，比\fn{std::map}快。
+        \end{enumerate}
+    
+    \end{enumerate}
 \end{enumerate}
 
 
@@ -40,20 +61,20 @@
 /**
  * dfs模板.
  * @param[in] input 输入数据指针
- * @param[inout] step or gap 标记当前走的步骤数或距离目标的距离
+ * @param[inout] cur or gap 标记当前位置或距离目标的距离
  * @param[out] path 当前路径，也是中间结果
  * @param[out] result 存放最终结果
  * @return 路径长度，如果是求路径本身，则不需要返回长度
  */
-void dfs(type *input, type *path, int step or gap, type *result) {
-    if (数据非法) return 0;
-    if (step == input.size( or gap == 0)) { // 终止条件
+void dfs(type *input, type *path, int cur or gap, type *result) {
+    if (数据非法) return 0;   // 终止条件
+    if (cur == input.size( or gap == 0)) { // 收敛条件
         将path放入result
     }
 
     if (可以剪枝) return;
 
-    for(...) { // 执行所有可能的扩展
+    for(...) { // 执行所有可能的扩展动作
         执行动作，修改path
         dfs(input, step + 1 or gap--, result);
         恢复path
@@ -76,13 +97,7 @@ void dfs(type *input, type *path, int step or gap, type *result) {
 
 深搜，是逻辑意义上的算法，递归，是一种物理意义上的实现，它和迭代(iteration)是对应的。深搜，可以用递归来实现，也可以用栈来实现；而递归，一般总是用来实现深搜。可以说，\textbf{递归一定是深搜，深搜不一定用递归}。
 
-递归有两种加速策略，一种是\textbf{剪枝(prunning)}，对中间结果进行判断，提前返回；一种是\textbf{加缓存}（就变成了memoization，备忘录法），缓存中间结果，防止重复计算，用空间换时间，和动规中自顶向下的备忘录法类似。
-
-剪枝的手段五花八门，要具体问题具体分析，要充分观察，充分利用各种信息来剪枝，在中间节点提前返回。
-
-加缓存，可以用数组或HashMap。维度简单的，用数组；维度复杂的，用HashMap，C++有\fn{std::map}，C++ 11以后有\fn{std::unordered_map}，比\fn{std::map}快。
-
-加缓存的前提条件是，子问题的结果会被重复利用，即子问题之间形成有向无环图，这样才有效果，如果是树状的，没必要加缓存，因为子问题用一次就再也不会用到，加了缓存也没什么加速效果。
+递归有两种加速策略，一种是\textbf{剪枝(prunning)}，对中间结果进行判断，提前返回；一种是\textbf{加缓存}（就变成了memoization，备忘录法），缓存中间结果，防止重复计算，用空间换时间。
 
 其实，递归+缓存，就是一种 memorization 。所谓\textbf{memorization}（翻译为备忘录法，见第 \S \ref{sec:dp-vs-memorization}节），就是"top-down with cache"（自顶向下+缓存），它是Donald Michie 在1968年创造的术语，表示一种优化技术，在top-down 形式的程序中，使用缓存来避免重复计算，从而达到加速的目的。
 
@@ -374,30 +389,31 @@ int check(const int row, const int column) {
 }
 
 /**
- * @brief 八皇后，回溯法
+ * @brief 八皇后，深搜
  *
  * @param[in] row 搜索当前行，该在哪一列上放一个皇后
  * @return 可行解的个数
  */
 int search(const int row) {
-    if(row == N) {  // 递归边界，只要走到了这里，意味着找到了一个可行解
+    int j;
+    if (row == N) { // 终止条件，也是收敛条件，意味着找到了一个可行解
         ++total;
         output();
-    } else {
-        int j;
-        for(j = 0; j < N; ++j) {  // 一列一列的试
-            const int ok = check(row, j);
-            if(ok) {  // 如果合法，继续递归
-                C[row] = j;
-                search(row + 1);
-            }
+        return total;
+    }
+
+    for (j = 0; j < N; ++j) {  // 一列一列的试
+        const int ok = check(row, j);
+        if (ok) {  // 如果合法，继续递归
+            C[row] = j;
+            search(row + 1);
         }
     }
+
     return total;
 }
 
-// 表示已经放置的皇后
-// 占据了哪些列
+// 表示已经放置的皇后占据了哪些列
 int columns[N];
 // 占据了哪些主对角线
 int principal_diagonals[2 * N];
@@ -416,30 +432,34 @@ int check2(const int row, const int column) {
 }
 
 /**
- * @brief 八皇后，回溯法，更优化的版本，用空间换时间
+ * @brief 八皇后，深搜，更优化的版本，用空间换时间
  *
  * @param[in] row 搜索当前行，该在哪一列上放一个皇后
  * @return 可行解的个数
  */
 int search2(const int row) {
-    if(row == N) {  // 递归边界，只要走到了这里，意味着找到了一个可行解
+    int j;
+    if (row == N) { // 终止条件，也是收敛条件，意味着找到了一个可行解
         ++total;
         output();
-    } else {
-        int j;
-        for(j = 0; j < N; ++j) {  // 一列一列的试
-            const int ok = check2(row, j);
-            if(ok) {  // 如果合法，继续递归
-                C[row] = j;
-                columns[j] = principal_diagonals[row + j] =
+        return total;
+    }
+
+    for (j = 0; j < N; ++j) {  // 一列一列的试
+        const int ok = check2(row, j);
+        if (ok) {  // 如果合法，继续递归
+            // 执行扩展动作
+            C[row] = j;
+            columns[j] = principal_diagonals[row + j] =
                     counter_diagonals[row - j + N] = 1;
-                search2(row + 1);
-                // 恢复环境
-                columns[j] = principal_diagonals[row + j] =
+            search2(row + 1);
+            // 撤销动作
+            C[row] = -1;  // 这句可以省略，因为C[row]会被覆盖掉
+            columns[j] = principal_diagonals[row + j] =
                     counter_diagonals[row - j + N] = 0;
-            }
         }
     }
+
     return total;
 }
 

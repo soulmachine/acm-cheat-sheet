@@ -46,21 +46,22 @@ C语言实现如下：
  */
 static void print_permutation_r(int n, int cur, int P[]) {
     int i, j;
-    if (cur == n) { // 递归边界
+    if (cur == n) { // 收敛条件
         for (i = 0; i < n; i++)
             printf("%d", P[i]);
         printf("\n");
-    } else {
-        // 尝试在A[cur]中填各种整数i，按从小到大的顺序
-        for (i = 1; i <= n; i++) {
-            int ok = 1;
-            for (j = 0; j < cur; j++)
-                if (P[j] == i)
-                    ok = 0; // 如果i已经在A[0]~A[cur-1]出现过，则不能再选
-            if (ok) {
-                P[cur] = i;
-                print_permutation_r(n, cur + 1, P); // 递归调用
-            }
+    }
+
+    // 扩展状态，尝试在A[cur]中填各种整数i，按从小到大的顺序
+    for (i = 1; i <= n; i++) {
+        int used = 0;
+        for (j = 0; j < cur; j++)
+            if (P[j] == i)
+                used = 1; // 如果i已经在A[0]~A[cur-1]出现过，则不能再选
+        if (!used) {
+            P[cur] = i;
+            print_permutation_r(n, cur + 1, P); // 递归调用
+            // 不需要恢复P[cur]，返回上层时时会被覆盖
         }
     }
 }
@@ -76,6 +77,7 @@ void print_permutation(int n) {
     free(P);
     return;
 }
+
 //test
 int main() {
     print_permutation(3);
@@ -169,59 +171,59 @@ int main() {
 #include <stdlib.h>
 
 /*
- * @brief 输出集合的全排列
- * @param[in] S 字符集合
+ * @brief 输出1到n的全排列
  * @param[in] n n
  * @param[in] cur 当前进行到哪个位置
  * @param[out] 存放一个排列
  * @return 无
  */
-static void print_permutation_r(char S[], int n, int cur, char P[]) {
+static void print_permutation_r(int n, int cur, int P[]) {
     int i, j;
-    if (cur == n) { // 递归边界
+    if (cur == n) { // 收敛条件
         for (i = 0; i < n; i++)
-            printf("%c", P[i]);
+            printf("%d", P[i]);
         printf("\n");
-    } else {
-        // 尝试在A[cur]中填各种元素，按从小到大的顺序
-        for (i = 0; i < n; i++) if(i == 0 || S[i] != S[i-1]){
-            int c1 = 0, c2 = 0;
-            for (j = 0; j < cur; j++) if (P[j] == S[i]) ++c1;
-            for (j = 0; j < n; j++) if (S[j] == S[i]) ++c2;
-            if (c1 < c2) {
-                P[cur] = S[i];
-                print_permutation_r(S, n, cur + 1, P); // 递归调用
+    }
+
+    // 扩展状态，尝试在A[cur]中填各种整数i，按从小到大的顺序
+    for (i = 1; i <= n; i++) {
+        int used = 0;
+        for (j = 0; j < cur; j++) {
+            if (P[j] == i) {
+                used = 1; // 如果i已经在A[0]~A[cur-1]出现过，则不能再选
+                break;
             }
+        }
+        if (!used) {
+            P[cur] = i;
+            print_permutation_r(n, cur + 1, P); // 递归调用
+            // 不需要恢复P[cur]，返回上层时时会被覆盖
         }
     }
 }
 
 /**
- * @brief 输出字符集合的全排列
- * @param[in] S 字符集合
+ * @brief 输出1到n的全排列
  * @param[in] n n
  * @return 无
  */
-void print_permutation(char S[], int n) {
-    char *P = (char*)malloc(n * sizeof(char));
-    print_permutation_r(S, n, 0, P);
+void print_permutation(int n) {
+    int *P = (int*)malloc(n * sizeof(int));
+    print_permutation_r(n, 0, P);
     free(P);
     return;
 }
 
 //test
 int main() {
-    char *S="ABC";
-    char *S1="AAA";
-    print_permutation(S,3);
-    print_permutation(S1,3); // 可以正确处理可重集
+    print_permutation(3);
     return 0;
 }
 \end{Codex}
 
 
 \subsection{下一个排列}
-还可以利用STL中的\fn{std::next_permutation()}或第 \S \ref{sec:nextpermutation}节的\fn{next_permutation()}。
+还可以利用STL中的\fn{std::next_permutation()}，或者自己实现，见第 \S \ref{sec:nextpermutation}节的\fn{next_permutation()}。
 
 \subsubsection{代码}
 
