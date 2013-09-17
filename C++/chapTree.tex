@@ -1021,63 +1021,99 @@ int main() {
 并查集的C语言实现如下。
 
 \begin{Codex}[label=ufs.c]
+#include <stdlib.h>
+
+/** 并查集. */
+typedef struct ufs_t {
+    int *p;     /** 树的双亲表示法 */
+    int size;   /** 大小. */
+} ufs_t;
+
 /**
  * @brief 初始化并查集.
- * @param[in] s 双亲表示法的数组
- * @param[in] n 数组s的元素个数
+ * @param[in] ufs 并查集
+ * @param[in] n 数组的容量
  * @return 无
  */
-void ufs_init(int s[], int n) {
+void ufs_init(ufs_t *ufs, int n) {
     int i;
-    for(i = 0; i < n; i++) s[i] = -1;
+    ufs->p = (int*)malloc(n * sizeof(int));
+    for(i = 0; i < n; i++) {
+        ufs->p[i] = -1;
+    }
 }
 
-/** Find操作，朴素版. */
-int ufs_find_naive(const int s[], int x) {
-    while (s[x] >= 0) {
-        x = s[x];
+/**
+ * @brief 销毁并查集.
+ * @param[in] ufs 并查集
+ * @return 无
+ */
+void ufs_uninit(ufs_t *ufs) {
+    free(ufs->p);
+    ufs->p = NULL;
+    ufs->size = 0;
+}
+
+/**
+ * @brief Find操作，带路径压缩，递归版.
+ * @param[in] s 并查集
+ * @param[in] x 要查找的元素
+ * @return 包含元素x的树的根
+ */
+int ufs_find(ufs_t *ufs, int x) {
+    if (ufs->p[x] < 0) return x; // 终止条件
+
+    return ufs->p[x] = ufs_find(ufs, ufs->p[x]); /* 回溯时的压缩路径 */
+}
+
+/** Find操作，朴素版, deprecated. */
+static int ufs_find_naive(ufs_t *ufs, int x) {
+    while (ufs->p[x] >= 0) {
+        x = ufs->p[x];
     }
     return x;
 }
 
-/**
- * @brief Find操作，带路径压缩.
- * @param[in] s 双亲表示法的数组
- * @param[in] x 要查找的元素
- * @return 包含元素x的树的根
- */
-int ufs_find(int s[], int x) {
+/** Find操作，带路径压缩，迭代版. */
+static int ufs_find_iterative(ufs_t *ufs, int x) {
     int oldx = x; /* 记录原始x */
-    while (s[x] >= 0) {
-        x = s[x];
+    while (ufs->p[x] >= 0) {
+        x = ufs->p[x];
     }
     while (oldx != x) {
-        int temp = s[oldx];
-        s[oldx] = x;
+        int temp = ufs->p[oldx];
+        ufs->p[oldx] = x;
         oldx = temp;
     }
     return x;
 }
 
-/* 带路径压缩的find，递归版. */
-int ufs_find1(int s[], int x) {
-    if (s[x] < 0) return x;
-    s[x] = ufs_find1(s, s[x]); /* 回溯时的压缩路径 */
-    return s[x];
+/**
+ * @brief Union操作，将y并入到x所在的集合.
+ * @param[in] s 并查集
+ * @param[in] x 一个元素
+ * @param[in] y 另一个元素
+ * @return 如果二者已经在同一集合，并失败，返回-1，否则返回0
+ */
+int ufs_union(ufs_t *ufs, int x, int y) {
+    const int rx = ufs_find(ufs, x);
+    const int ry = ufs_find(ufs, y);
+    if(rx == ry) return -1;
+
+    ufs->p[rx] += ufs->p[ry];
+    ufs->p[ry] = rx;
+    return 0;
 }
 
 /**
- * @brief Union操作，将root2并入到root1.
- * @param[in] s 双亲表示法的数组
- * @param[in] root1 一棵树的根
- * @param[in] root2 另一棵树的根
- * @return 如果二者已经在同一集合，并失败，返回0，否则返回1
+ * @brief 获取元素所在的集合的大小
+ * @param[in] ufs 并查集
+ * @param[in] x 元素
+ * @return 元素所在的集合的大小
  */
-int ufs_union(int s[], int root1, int root2) {
-    if(root1 == root2) return 0;
-    s[root1] += s[root2];
-    s[root2] = root1;
-    return 1;
+int ufs_set_size(ufs_t *ufs, int x) {
+    const int rx = ufs_find(ufs, x);
+    return -ufs->p[rx];
 }
 \end{Codex}
 
@@ -1122,7 +1158,6 @@ int ufs_union(int s[], int root1, int root2) {
 #include <stdio.h>
 
 #define MAXN 30000
-int s[MAXN];
 
 /* 等价于复制粘贴，这里为了节约篇幅，使用include，在OJ上提交时请用复制粘贴 */
 #include "ufs.c"  /* 见“树->并查集”这节 */
@@ -1130,7 +1165,8 @@ int s[MAXN];
 int main() {
     int n, m, k;
     while (scanf("%d%d", &n, &m) && n > 0) {
-        ufs_init(s, MAXN);
+        ufs_t ufs;
+        ufs_init(&ufs, MAXN);
         while (m--) {
             int x, y; /* 两个学生 */
             int rx, ry; /* x, y 所属的集合的根 */
@@ -1138,15 +1174,15 @@ int main() {
 
             k--;
             scanf("%d", &x);
-            rx = ufs_find(s, x);
+            rx = ufs_find(&ufs, x);
             while (k--) {
                 scanf("%d", &y);
-                ry = ufs_find(s, y);
-                ufs_union(s, rx, ry);  /* 只要是跟x同一个集合的都并进去 */
+                ry = ufs_find(&ufs, y);
+                ufs_union(&ufs, rx, ry);  /* 只要是跟x同一个集合的都并进去 */
             }
         }
         /* 最后搜索0属于哪个集合，这个集合有多少人 */
-        printf("%d\n", -s[ufs_find(s, 0)]);
+        printf("%d\n", ufs_set_size(&ufs, 0));
     }
     return 0;
 }
@@ -1203,53 +1239,90 @@ In the same gang.
 
 \subsubsection{代码}
 \begin{Codex}[label=two_gangs.c]
-/* POJ 2524 Find them, Catch them, http://poj.org/problem?id=1703 */
+/* POJ 1703 Find them, Catch them, http://poj.org/problem?id=1703 */
 #include <stdio.h>
+#include <stdlib.h>
 
 #define MAXN 1000001
-int s[MAXN]; /* 0位置未用 */
-char dist[MAXN];  /* 到根节点的距离的奇偶性 */
+
+/** 并查集. */
+typedef struct ufs_t {
+    int *p;     /** 树的双亲表示法 */
+    int *dist;  /** 到根节点的距离的奇偶性 */
+    int size;   /** 大小. */
+} ufs_t;
 
 /**
  * @brief 初始化并查集.
- * @param[in] s 双亲表示法的数组
- * @param[in] n 数组s的元素个数
+ * @param[in] ufs 并查集
+ * @param[in] n 数组的容量
  * @return 无
  */
-void ufs_init(int s[], int n) {
+void ufs_init(ufs_t *ufs, int n) {
     int i;
+    ufs->p = (int*)malloc(n * sizeof(int));
+    ufs->dist = (int*)malloc(n * sizeof(int));
     for(i = 0; i < n; i++) {
-        s[i] = -1;
-        dist[i] = 0;
+        ufs->p[i] = -1;
+        ufs->dist[i] = 0;
     }
 }
 
 /**
- * @brief Find操作.
- * @param[in] s 双亲表示法的数组
+ * @brief 销毁并查集.
+ * @param[in] ufs 并查集
+ * @return 无
+ */
+void ufs_uninit(ufs_t *ufs) {
+    free(ufs->p);
+    free(ufs->dist);
+    ufs->p = NULL;
+    ufs->dist = NULL;
+    ufs->size = 0;
+}
+
+/**
+ * @brief Find操作，带路径压缩，递归版.
+ * @param[in] s 并查集
  * @param[in] x 要查找的元素
  * @return 包含元素x的树的根
  */
-int ufs_find(const int s[], int x) {
-    while (s[x] >= 0) {
-        dist[x] = (dist[x] + dist[s[x]]) % 2;
-        x = s[x];
-    }
-    return x;
+int ufs_find(ufs_t *ufs, int x) {
+    if (ufs->p[x] < 0) return x; // 终止条件
+
+    const int parent = ufs->p[x];
+    ufs->p[x] = ufs_find(ufs, ufs->p[x]); /* 回溯时的压缩路径 */
+    ufs->dist[x] = (ufs->dist[x] + ufs->dist[parent]) % 2;
+    return ufs->p[x];
 }
 
 /**
  * @brief Union操作，将root2并入到root1.
- * @param[in] s 双亲表示法的数组
+ * @param[in] s 并查集
  * @param[in] root1 一棵树的根
  * @param[in] root2 另一棵树的根
- * @return 如果二者已经在同一集合，并失败，返回0，否则返回1
+ * @return 如果二者已经在同一集合，并失败，返回-1，否则返回0
  */
-int ufs_union(int s[], int root1, int root2) {
-    if (root1 == root2) return 0;
-    s[root1] += s[root2];
-    s[root2] = root1;
-    return 1;
+int ufs_union(ufs_t *ufs, int root1, int root2) {
+    if(root1 == root2) return -1;
+    ufs->p[root1] += ufs->p[root2];
+    ufs->p[root2] = root1;
+    return 0;
+}
+
+/**
+ * @brief 添加一对敌人.
+ * @param[inout] s 并查集
+ * @param[in] x 一对敌人的一个
+ * @param[in] y 一对敌人的另一个
+ * @return 无
+ */
+void ufs_add_opponent(ufs_t *ufs, int x, int y) {
+    const int rx = ufs_find(ufs, x);
+    const int ry = ufs_find(ufs, y);
+    ufs_union(ufs, rx, ry);
+    /* ry与y关系 + y与x的关系 + x与rx的关系 = ry与rx的关系 */
+    ufs->dist[ry] = (ufs->dist[y] + 1 + ufs->dist[x]) % 2;
 }
 
 int main() {
@@ -1257,31 +1330,31 @@ int main() {
 
     scanf("%d", &T);
     while (T--) {
+        ufs_t ufs;
         int n, m;
         char c;
         int x, y, rx, ry;
         scanf("%d%d%*c", &n, &m);
-        ufs_init(s, MAXN);
+        ufs_init(&ufs, MAXN);
 
         while (m--) {
             scanf("%c%d%d%*c", &c, &x, &y); //注意输入
-            rx = ufs_find(s, x);
-            ry = ufs_find(s, y);
+            rx = ufs_find(&ufs, x);
+            ry = ufs_find(&ufs, y);
 
             if (c == 'A') {
                 if (rx == ry) { //如果根节点相同，则表示能判断关系
-                    if (dist[x] != dist[y])
+                    if (ufs.dist[x] != ufs.dist[y])
                         printf("In different gangs.\n");
                     else
                         printf("In the same gang.\n");
                 } else
                     printf("Not sure yet.\n");
             } else if (c == 'D') {
-                ufs_union(s, rx, ry);
-                /* ry与y关系 + y与x的关系 + x与rx的关系 = ry与rx的关系 */
-                dist[ry] = (dist[y] + 1 + dist[x]) % 2;
+                ufs_add_opponent(&ufs, x, y);
             }
         }
+        ufs_uninit(&ufs);
     }
     return 0;
 }
