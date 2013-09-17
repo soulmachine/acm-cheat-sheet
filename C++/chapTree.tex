@@ -1425,7 +1425,125 @@ int main() {
 
 \subsubsection{代码}
 \begin{Codex}[label=food_chain.c]
+/* POJ 1182 食物链, Catch them, http://poj.org/problem?id=1182 */
+#include <stdio.h>
+#include <stdlib.h>
 
+/** 并查集. */
+typedef struct ufs_t {
+    int *p;     /** 树的双亲表示法 */
+    int *dist;  /** 表示x与父节点p[x]的关系，0表示x与p[x]是同类，
+                    1表示x吃p[x]，2表示p[x]吃x */
+    int size;   /** 大小. */
+} ufs_t;
+
+/**
+ * @brief 初始化并查集.
+ * @param[in] ufs 并查集
+ * @param[in] n 数组的容量
+ * @return 无
+ */
+void ufs_init(ufs_t *ufs, int n) {
+    int i;
+    ufs->p = (int*)malloc(n * sizeof(int));
+    ufs->dist = (int*)malloc(n * sizeof(int));
+    for(i = 0; i < n; i++) {
+        ufs->p[i] = -1;
+        ufs->dist[i] = 0; // 自己与自己是同类
+    }
+}
+
+/**
+ * @brief 销毁并查集.
+ * @param[in] ufs 并查集
+ * @return 无
+ */
+void ufs_uninit(ufs_t *ufs) {
+    free(ufs->p);
+    free(ufs->dist);
+    ufs->p = NULL;
+    ufs->dist = NULL;
+    ufs->size = 0;
+}
+
+/**
+ * @brief Find操作，带路径压缩，递归版.
+ * @param[in] s 并查集
+ * @param[in] x 要查找的元素
+ * @return 包含元素x的树的根
+ */
+int ufs_find(ufs_t *ufs, int x) {
+    if (ufs->p[x] < 0) return x; // 终止条件
+
+    const int parent = ufs->p[x];
+    ufs->p[x] = ufs_find(ufs, ufs->p[x]); /* 回溯时的压缩路径 */
+    /* 更新关系 */
+    ufs->dist[x] = (ufs->dist[x] + ufs->dist[parent]) % 3;
+    return ufs->p[x];
+}
+
+/**
+ * @brief Union操作，将root2并入到root1.
+ * @param[in] s 并查集
+ * @param[in] root1 一棵树的根
+ * @param[in] root2 另一棵树的根
+ * @return 如果二者已经在同一集合，并失败，返回-1，否则返回0
+ */
+int ufs_union(ufs_t *ufs, int root1, int root2) {
+    if(root1 == root2) return -1;
+    ufs->p[root1] += ufs->p[root2];
+    ufs->p[root2] = root1;
+    return 0;
+}
+
+/**
+ * @brief 添加一对关系.
+ * @param[inout] s 并查集
+ * @param[in] x 一个
+ * @param[in] y 另一个
+ * @param[in] len
+ * @return 无
+ */
+void ufs_add_relation(ufs_t *ufs, int x, int y, int relation) {
+    const int rx = ufs_find(ufs, x);
+    const int ry = ufs_find(ufs, y);
+    ufs_union(ufs, ry, rx); /* 注意顺序！ */
+    /* rx与x关系 + x与y的关系 + y与ry的关系 = rx与ry的关系 */
+    ufs->dist[rx] = (ufs->dist[y] - ufs->dist[x] + 3 + relation) % 3;
+}
+
+int main() {
+    int n, k;
+    int result = 0; /* 假话的数目 */
+    ufs_t ufs;
+
+    scanf("%d%d", &n, &k);
+    ufs_init(&ufs, n+1);
+
+    while(k--) {
+        int d, x, y;
+        scanf("%d%d%d", &d, &x, &y);
+
+        if (x > n || y > n || (d == 2 && x == y)) {
+            result++;
+        } else {
+            const int rx = ufs_find(&ufs, x);
+            const int ry = ufs_find(&ufs, y);
+
+            if (rx == ry) { /* 若在同一个集合则可确定x和y的关系 */
+                if((ufs.dist[x] - ufs.dist[y] + 3) % 3 != d - 1)
+                    result++;
+            } else {
+                ufs_add_relation(&ufs, x, y, d-1);
+            }
+        }
+    }
+
+    printf("%d\n", result);
+
+    ufs_uninit(&ufs);
+    return 0;
+}
 \end{Codex}
 
 \subsubsection{相关的题目}
