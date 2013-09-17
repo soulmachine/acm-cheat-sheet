@@ -8,7 +8,7 @@
 \subsubsection{适用场景}
 注意，这里的总结是一种经验，一种概率，不是绝对的结论！
 
-\textbf{输入数据}：递归数据结构，有单链表，二叉树，集合，如果是非递归数据结构，如一维数组，二维数组，字符串，图，则不太可能用深搜。
+\textbf{输入数据}：如果是递归数据结构，如单链表，二叉树，集合，则百分之百可以用深搜；如果是非递归数据结构，如一维数组，二维数组，字符串，图，则概率小一些。
 
 \textbf{状态转换图}：树或者图。
 
@@ -17,22 +17,22 @@
 
 \subsubsection{思考的步骤}
 \begin{enumerate}
-\item 是求路径长度，还是路径本身（或动作序列）？
+\item 是求路径条数，还是路径本身（或动作序列）？深搜最常见的三个问题，求可行解的总数，求一个可行解，求所有可行解。
     \begin{enumerate}
-    \item 如果是求长度，则要用一个函数参数记录当前长度。
-    \item 如果是求路径或动作序列，则要用一个数组\fn{path[]}存储路径。跟宽搜不同，宽搜虽然最终求的也是一条路径，但是需要存储扩展过程中的所有路径，在没找到答案之前所有路径都不能放弃；而深搜，在搜索过程中始终只有一条路径，因此用一个数组就足够了。
+    \item 如果是求路径本身，则要用一个数组\fn{path[]}存储路径。跟宽搜不同，宽搜虽然最终求的也是一条路径，但是需要存储扩展过程中的所有路径，在没找到答案之前所有路径都不能放弃；而深搜，在搜索过程中始终只有一条路径，因此用一个数组就足够了。
+    \item 如果是路径条数，则不需要存储路径。
     \end{enumerate}
 
-\item 只要求一个解，还是要求所有解？如果只要求一个解，那找到一个就可以返回；如果要求所有解，找到了一个后，还要继续扩展，直到遍历完。广搜一般只要求一个解，因而不需要考虑这个问题。
+\item 只要求一个解，还是要求所有解？如果只要求一个解，那找到一个就可以返回；如果要求所有解，找到了一个后，还要继续扩展，直到遍历完。广搜一般只要求一个解，因而不需要考虑这个问题（广搜当然也可以求所有解，这时需要扩展到所有叶子节点，相当于在内存中存储整个状态转换图，非常占内存，因此广搜不适合解这类问题）。
 
-\item 如何表示状态？即一个状态需要存储哪些些必要的数据，就可以完整表示该状态？这一步不考虑是其他问题，纯粹考虑状态本身的数据。不过深搜的惯用写法，不是把数据记录在状态\fn{struct}里，而是添加函数参数（有时为了节省递归堆栈，用全局变量）。状态所带的数据，构成了处理当前状态和扩展到下一步状态的完整环境。
+\item 如何表示状态？即一个状态需要存储哪些些必要的数据，才能够完整提供如何扩展到下一步状态的所有信息。跟广搜不同，深搜的惯用写法，不是把数据记录在状态\fn{struct}里，而是添加函数参数（有时为了节省递归堆栈，用全局变量），\fn{struct}里的字段与函数参数一一对应。
 
 \item 如何扩展状态？这一步跟上一步相关。状态里记录的数据不同，扩展方法就不同。对于固定不变的数据结构（一般题目直接给出，作为输入数据），如二叉树，图等，扩展方法很简单，直接往下一层走，对于隐式图，要先在第1步里想清楚状态所带的数据，想清楚了这点，那如何扩展就很简单了。
 
 \item 关于判重
     \begin{enumerate}
     \item 如果状态转换图是一棵树，则不需要判重，因为在遍历过程中不可能重复。
-    \item 如果状态转换图是一个图，则需要判重，方法跟广搜相同，见第 \S \ref{sec:bfs-template} 节。
+    \item 如果状态转换图是一个图，则需要判重，方法跟广搜相同，见第 \S \ref{sec:bfs-template} 节。这里跟第8步中的加缓存是相同的，如果有重叠子问题，则需要判重，此时加缓存自然也是有效果的。
     \end{enumerate}
 
 \item 终止条件是什么？终止条件是指到了不能扩展的末端节点。对于树，是叶子节点，对于图或隐式图，是出度为0的节点。
@@ -48,7 +48,7 @@
     \item 剪枝。深搜一定要好好考虑怎么剪枝，成本小收益大，加几行代码，就能大大加速。这里没有通用方法，只能具体问题具体分析，要充分观察，充分利用各种信息来剪枝，在中间节点提前返回。
     \item 缓存。如果子问题的解会被重复利用，可以考虑使用缓存。
         \begin{enumerate}
-            \item 前提条件：子问题的解会被重复利用，即子问题之间的依赖关系是有向无环图(DAG)。如果依赖关系是树状的（例如正向深搜），没必要加缓存，因为子问题只会一层层往下，用一次就再也不会用到，加了缓存也没什么加速效果。
+            \item 前提条件：子问题的解会被重复利用，即子问题之间的依赖关系是有向无环图(DAG)。如果依赖关系是树状的（例如树，单链表），没必要加缓存，因为子问题只会一层层往下，用一次就再也不会用到，加了缓存也没什么加速效果。
             \item 具体实现：可以用数组或HashMap。维度简单的，用数组；维度复杂的，用HashMap，C++有\fn{std::map}，C++ 11以后有\fn{std::unordered_map}，比\fn{std::map}快。
         \end{enumerate}
     
@@ -498,52 +498,47 @@ int main() {
 
 \subsubsection{代码}
 \begin{Codex}[label=restore_ip_adresses.cpp]
-#include <iostream>
-#include <vector>
-using namespace std;
-
+// LeetCode, Restore IP Addresses
 class Solution {
 public:
     vector<string> restoreIpAddresses(string s) {
         vector<string> result;
-        string ip;
+        string ip; // 存放中间结果
         dfs(s, 0, 0, ip, result);
         return result;
     }
 
     /**
      * @brief 解析字符串
-     * @param[in] s 字符串
+     * @param[in] s 字符串，输入数据
      * @param[in] startIndex 从s的哪里开始
      * @param[in] step 当前步骤编号，从0开始编号，取值为0,1,2,3,4表示结束了
-     * @param[in] intermediate 当前解析出来的中间结果
+     * @param[out] intermediate 当前解析出来的中间结果
      * @param[out] result 存放所有可能的IP地址
      * @return 无
      */
-    void dfs(string s, int startIndex, int step, string intermediate,
+    void dfs(string s, int start, int step, string ip,
             vector<string> &result) {
-        if (s.size() - startIndex > (4 - step) * 3)
+        if (s.size() - start > (4 - step) * 3)
             return;  // 非法结果，剪枝
-        if (s.size() - startIndex < (4 - step))
+        if (s.size() - start < (4 - step))
             return;  // 非法结果，剪枝
 
-        if (startIndex == s.size() && step == 4) {  // 找到一个合法解
-            intermediate.resize(intermediate.size() - 1);
-            result.push_back(intermediate);
+        if (start == s.size() && step == 4) {  // 找到一个合法解
+            ip.resize(ip.size() - 1);
+            result.push_back(ip);
             return;
         }
 
         int num = 0;
-        for (int i = startIndex; i < startIndex + 3; i++) {
+        for (int i = start; i < start + 3; i++) {
             num = num * 10 + (s[i] - '0');
 
             if (num <= 255) {  // 当前结点合法，则继续往下递归
-                intermediate += s[i];
-                dfs(s, i + 1, step + 1, intermediate + '.', result);
+                ip += s[i];
+                dfs(s, i + 1, step + 1, ip + '.', result);
             }
-            if (num == 0) {  // 非法结果，剪枝
-                break;
-            }
+            if (num == 0) break;  // 不允许前缀0，但允许单个0
         }
     }
 };
@@ -578,27 +573,33 @@ public:
 \subsubsection{代码}
 
 \begin{Codex}[label=combination_sum.cpp]
+// LeetCode, Combination Sum
+class Solution {
+public:
     vector<vector<int> > combinationSum(vector<int> &nums, int target) {
         std::sort(nums.begin(), nums.end());
-        vector<vector<int> > result;
-        vector<int> intermediate;
+        vector<vector<int> > result; // 最终结果
+        vector<int> intermediate; // 中间结果
         dfs(nums, target, 0, intermediate, result);
         return result;
     }
-    void dfs(vector<int>& nums, int gap, int level,
-            vector<int>& intermediate, vector<vector<int> > &result) {
+
+private:
+    void dfs(vector<int>& nums, int gap, int level, vector<int>& intermediate,
+            vector<vector<int> > &result) {
         if (gap == 0) {  // 找到一个合法解
             result.push_back(intermediate);
             return;
         }
-        for (int i = level; i < nums.size(); i++) {
+        for (size_t i = level; i < nums.size(); i++) { // 扩展状态
             if (gap < nums[i]) return; // 剪枝
 
-            intermediate.push_back(nums[i]);
+            intermediate.push_back(nums[i]); // 执行扩展动作
             dfs(nums, gap - nums[i], i, intermediate, result);
-            intermediate.pop_back();  // 恢复环境
+            intermediate.pop_back();  // 撤销动作
         }
     }
+};
 \end{Codex}
 
 
@@ -614,14 +615,20 @@ public:
 
 \subsubsection{代码}
 \begin{Codex}[label=combination_sum2.cpp]
+// LeetCode, Combination Sum II
+class Solution {
+public:
     vector<vector<int> > combinationSum2(vector<int> &nums, int target) {
-        sort(nums.begin(), nums.end());
+        std::sort(nums.begin(), nums.end()); // 跟第 50 行配合，
+                                             // 确保每个元素最多只用一次
         vector<vector<int> > result;
         vector<int> intermediate;
         dfs(nums, target, 0, intermediate, result);
         return result;
     }
-    void dfs(vector<int> &nums, int gap, int index,
+private:
+    // 使用nums[index, nums.size())之间的元素，能找到的所有可行解
+    static void dfs(vector<int> &nums, int gap, int index,
             vector<int> &intermediate, vector<vector<int> > &result) {
         if (gap == 0) {  //  找到一个合法解
             result.push_back(intermediate);
@@ -629,10 +636,11 @@ public:
         }
 
         int previous = -1;
-        for (int i = index; i < nums.size(); i++) {
-            // 如果当前循环没有选nums[i]，则下一次循环就不能再选nums[i]
-            if (previous == nums[i])
-                continue;
+        for (size_t i = index; i < nums.size(); i++) {
+            // 如果上一轮循环没有选nums[i]，则本次循环就不能再选nums[i]，
+            // 确保nums[i]最多只用一次
+            if (previous == nums[i]) continue;
+
             if (gap < nums[i]) return;  // 剪枝
 
             previous = nums[i];
@@ -642,4 +650,5 @@ public:
             intermediate.pop_back();  // 恢复环境
         }
     }
+};
 \end{Codex}
