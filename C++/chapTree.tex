@@ -2180,3 +2180,384 @@ int main() {
 \begindot
 \item None
 \myenddot
+
+
+\section{Trie 树} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\subsection{原理和实现}
+
+\begin{Codex}[label=trie_tree.c]
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+
+#ifndef __cplusplus
+typedef char bool;
+#define false 0
+#define true 1
+#endif
+
+#define MAXN 10000   /** 输入的编码的最大个数. */
+#define CHAR_COUNT  10 /** 字符的种类，也即单个节点的子树的最大个数 */
+#define MAX_CODE_LEN 10 /** 编码的最大长度. */
+#define MAX_NODE_COUNT  (MAXN * MAX_CODE_LEN + 1)  /** 字典树的最大节点个数. */
+                   /* 如果没有指定MAXN，则是 CHAR_COUNT^(MAX_CODE_LEN+1)-1 */
+
+/** 字典树的节点 */
+typedef struct trie_node_t {
+    struct trie_node_t* next[CHAR_COUNT];
+    bool is_tail; /** 标记当前字符是否位于某个串的尾部 */
+} trie_node_t;
+
+/** 字典树. */
+typedef struct trie_tree_t {
+    trie_node_t *root; /** 树的根节点 */
+    int size; /** 树中实际出现的节点数 */
+
+    trie_node_t nodes[MAX_NODE_COUNT]; /* 开一个大数组，加快速度 */
+} trie_tree_t;
+
+/** 创建. */
+trie_tree_t* trie_tree_create(void) {
+    trie_tree_t *tree = (trie_tree_t*)malloc(sizeof(trie_tree_t));
+    tree->root = &(tree->nodes[0]);
+    memset(tree->nodes, 0, sizeof(tree->nodes));
+    tree->size = 1;
+    return tree;
+}
+
+/** 销毁. */
+void trie_tree_destroy(trie_tree_t *tree) {
+    free(tree);
+    tree = NULL;
+}
+
+/** 将当前字典树中的所有节点信息清空 */
+void trie_tree_clear(trie_tree_t *tree) {
+    memset(tree->nodes, 0, sizeof(tree->nodes));
+    tree->size = 1; // 清空时一定要注意这一步！
+}
+
+/** 在当前树中插入word字符串，若出现非法，返回false */
+bool trie_tree_insert(trie_tree_t *tree, char *word) {
+    int i;
+    trie_node_t *p = tree->root;
+    while (*word) {
+        int curword = *word - '0';
+        if (p->next[curword] == NULL) {
+            p->next[curword] = &(tree->nodes[tree->size++]);
+        }
+        p = p->next[curword];
+        if (p->is_tail) return false; // 某串是当前串的前缀
+
+        word++; // 指针下移
+    }
+
+    p->is_tail = true; // 标记当前串已是结尾
+
+    // 判断当前串是否是某个串的前缀
+    for (i = 0; i < CHAR_COUNT; i++)
+        if (p->next[i] != NULL)
+            return false;
+    return true;
+}
+\end{Codex}
+
+
+\subsection{Immediate Decodebility}
+
+
+\subsubsection{描述}
+An encoding of a set of symbols is said to be immediately decodable if no code for one symbol is the prefix of a code for another symbol. We will assume for this problem that all codes are in binary, that no two codes within a set of codes are the same, that each code has at least one bit and no more than ten bits, and that each set has at least two codes and no more than eight. 
+
+Examples: Assume an alphabet that has symbols \fn{\{A, B, C, D\}}.
+
+The following code is immediately decodable: 
+\begin{Code}
+A:01 B:10 C:0010 D:0000 
+\end{Code}
+
+but this one is not: 
+\begin{Code}
+A:01 B:10 C:010 D:0000 (Note that A is a prefix of C) 
+\end{Code}
+
+
+\subsubsection{输入}
+Write a program that accepts as input a series of groups of records from standard input. Each record in a group contains a collection of zeroes and ones representing a binary code for a different symbol. Each group is followed by a single separator record containing a single 9; the separator records are not part of the group. Each group is independent of other groups; the codes in one group are not related to codes in any other group (that is, each group is to be processed independently).
+
+
+\subsubsection{输出}
+For each group, your program should determine whether the codes in that group are immediately decodable, and should print a single output line giving the group number and stating whether the group is, or is not, immediately decodable.
+
+\subsubsection{样例输入}
+\begin{Code}
+01
+10
+0010
+0000
+9
+01
+10
+010
+0000
+9
+\end{Code}
+
+\subsubsection{样例输出}
+\begin{Code}
+Set 1 is immediately decodable
+Set 2 is not immediately decodable
+\end{Code}
+
+\subsubsection{分析}
+判断一个串是否是另一个串的前缀，这正是Trie树（即字典树）的用武之地。
+
+
+\subsubsection{代码}
+\begin{Codex}[label=immediate_decodebility.c]
+/* POJ 1056 IMMEDIATE DECODABILITY, http://poj.org/problem?id=1056 */
+
+#define CHAR_COUNT  2
+#define MAX_CODE_LEN 10
+/** 字典树的最大节点个数.
+ * 本题中每个code不超过10bit，即树的高度不超过11，因此最大节点个数为2^11-1
+ */
+#define MAX_NODE_COUNT  ((1<<(MAX_CODE_LEN+1))-1)
+
+/* 等价于复制粘贴，这里为了节约篇幅，使用include，在OJ上提交时请用复制粘贴 */
+#include "trie_tree.c"  /* 见“树->Trie树”这节 */
+
+int main() {
+    int T = 0;  // 测试用例编号
+    char line[MAX_NODE_COUNT]; // 输入的一行
+    trie_tree_t *trie_tree = trie_tree_create();
+    bool islegal = true;
+
+    while (scanf("%s", line) != EOF) {
+        if (strcmp(line, "9") == 0) {
+            if (islegal)
+                printf("Set %d is immediately decodable\n", ++T);
+            else
+                printf("Set %d is not immediately decodable\n", ++T);
+            trie_tree_clear(trie_tree);
+            islegal = true;
+        } else {
+            if (islegal)
+                islegal = trie_tree_insert(trie_tree, line);
+        }
+    }
+    trie_tree_destroy(trie_tree);
+    return 0;
+}
+\end{Codex}
+
+
+\subsubsection{相关的题目}
+与本题相同的题目：
+\begindot
+\item POJ 1056 IMMEDIATE DECODABILITY, \myurl{http://poj.org/problem?id=1056}
+\myenddot
+
+与本题相似的题目：
+\begindot
+\item POJ 3630 Phone List, \myurl{http://poj.org/problem?id=3630} \\参考代码 \myurl{https://gist.github.com/soulmachine/6609332}
+\myenddot
+
+
+\subsection{Hardwood Species}
+
+
+\subsubsection{描述}
+现在通过卫星扫描，扫描了很多区域的树，并获知了每棵树的种类，求每个种类的百分比。
+
+
+\subsubsection{输入}
+一行一棵树，表示该树的种类。每个名字不超过30字符，树的种类不超过10,000，不超过1,000,000棵树。
+
+
+\subsubsection{输出}
+按字母顺序，打印每个种类的百分比，精确到小数点后4位。
+
+\subsubsection{样例输入}
+\begin{Code}
+Red Alder
+Ash
+Aspen
+Basswood
+Ash
+Beech
+Yellow Birch
+Ash
+Cherry
+Cottonwood
+Ash
+Cypress
+Red Elm
+Gum
+Hackberry
+White Oak
+Hickory
+Pecan
+Hard Maple
+White Oak
+Soft Maple
+Red Oak
+Red Oak
+White Oak
+Poplan
+Sassafras
+Sycamore
+Black Walnut
+Will
+\end{Code}
+
+\subsubsection{样例输出}
+\begin{Code}
+Ash 13.7931
+Aspen 3.4483
+Basswood 3.4483
+Beech 3.4483
+Black Walnut 3.4483
+Cherry 3.4483
+Cottonwood 3.4483
+Cypress 3.4483
+Gum 3.4483
+Hackberry 3.4483
+Hard Maple 3.4483
+Hickory 3.4483
+Pecan 3.4483
+Poplan 3.4483
+Red Alder 3.4483
+Red Elm 3.4483
+Red Oak 6.8966
+Sassafras 3.4483
+Soft Maple 3.4483
+Sycamore 3.4483
+White Oak 10.3448
+Willow 3.4483
+Yellow Birch 3.4483
+\end{Code}
+
+\subsubsection{分析}
+无
+
+
+\subsubsection{代码}
+\begin{Codex}[label=hardwood_species.c]
+/* POJ 2418 Hardwood Species, http://poj.org/problem?id=2418 */
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+
+#ifndef __cplusplus
+typedef char bool;
+#define false 0
+#define true 1
+#endif
+
+#define MAXN 1000   /**  no more than 10,000 species，会MLE，因此减一个0 */
+#define CHAR_COUNT  128 /** ASCII 编码范围 */
+#define MAX_WORD_LEN 30 /** 编码的最大长度. */
+#define MAX_NODE_COUNT  (MAXN * MAX_WORD_LEN + 1)  /** 字典树的最大节点个数. */
+
+
+/** 字典树的节点 */
+typedef struct trie_node_t {
+    struct trie_node_t* next[CHAR_COUNT];
+    int count;  /** 该单词出现的次数 */
+} trie_node_t;
+
+/** 字典树. */
+typedef struct trie_tree_t {
+    trie_node_t *root; /** 树的根节点 */
+    int size; /** 树中实际出现的节点数 */
+
+    trie_node_t nodes[MAX_NODE_COUNT]; /* 开一个大数组，加快速度 */
+} trie_tree_t;
+
+/** 创建. */
+trie_tree_t* trie_tree_create(void) {
+    trie_tree_t *tree = (trie_tree_t*)malloc(sizeof(trie_tree_t));
+    tree->root = &(tree->nodes[0]);
+    memset(tree->nodes, 0, sizeof(tree->nodes));
+    tree->size = 1;
+    return tree;
+}
+
+/** 销毁. */
+void trie_tree_destroy(trie_tree_t *tree) {
+    free(tree);
+    tree = NULL;
+}
+
+/** 将当前字典树中的所有节点信息清空 */
+void trie_tree_clear(trie_tree_t *tree) {
+    memset(tree->nodes, 0, sizeof(tree->nodes));
+    tree->size = 1; // 清空时一定要注意这一步！
+}
+
+/** 在当前树中插入word字符串 */
+void trie_tree_insert(trie_tree_t *tree, char *word) {
+    trie_node_t *p = tree->root;
+    while (*word) {
+        if (p->next[*word] == NULL) {
+            p->next[*word] = &(tree->nodes[tree->size++]);
+        }
+        p = p->next[*word];
+
+        word++; // 指针下移
+    }
+    p->count++;
+    return;
+}
+
+
+int n = 0;  // 输入的行数
+
+/** 深度优先遍历. */
+void dfs_travel(trie_node_t *root) {
+    static char word[MAX_WORD_LEN + 1]; /* 中间结果 */
+    static int pos;  /* 当前位置 */
+    int i;
+
+    if (root->count) { /* 如果count不为0，则肯定找到了一个单词 */
+        word[pos] = '\0';
+        printf("%s %0.4f\n", word, ((float)root->count * 100) / n);
+    }
+    for (i = 0; i < CHAR_COUNT; i++) {  /* 扩展 */
+        if (root->next[i]) {
+            word[pos++] = i;
+            dfs_travel(root->next[i]);
+            pos--; /* 返回上一层时恢复位置 */
+        }
+    }
+}
+
+int main() {
+    char line[MAX_WORD_LEN + 1];
+    trie_tree_t *trie_tree = trie_tree_create();
+
+    while (gets(line)) {
+        trie_tree_insert(trie_tree, line);
+        n++;
+    }
+    dfs_travel(trie_tree->root);
+
+    trie_tree_destroy(trie_tree);
+    return 0;
+}
+\end{Codex}
+
+
+\subsubsection{相关的题目}
+与本题相同的题目：
+\begindot
+\item POJ 2418 Hardwood Species, \myurl{http://poj.org/problem?id=2418}
+\myenddot
+
+与本题相似的题目：
+\begindot
+\item 无
+\myenddot
