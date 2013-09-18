@@ -618,12 +618,11 @@ int mgraph_prim(const mgraph_t *g){
     int u = 0; /* 从0号顶点出发 */
     int i, count = 1;
     edge_t e;
-    heap_t h;
+    heap_t *h = heap_create(g->ne, edge_cmp);
     const int n = g->nv;
     /* 判断顶点是否已经加入最小生成树*/
     int* U = (int *)malloc(n * sizeof(int));
     for(i = 0; i < n; i++) U[i] = 0;
-    heap_init(&h, g->ne, edge_cmp);
 
     /* 开始顶点加入U(所以count初始为1) */
     U[u] = 1;
@@ -634,11 +633,11 @@ int mgraph_prim(const mgraph_t *g){
             e.head = v;
             /* tail在树内，head不在树内*/
             e.w = g->matrix[u][v];
-            heap_push(&h, e);
+            heap_push(h, e);
         }
-        while(!heap_empty(&h) && count < n) {
+        while(!heap_empty(h) && count < n) {
             /* 从堆中退出最小权值边，存入ed */
-            e = heap_top(&h); heap_pop(&h);
+            e = heap_top(h); heap_pop(h);
             if(!U[e.head]) {
                 /* 输出生成树TE的边，即此边加入TE */
                 printf("%c - %c: %d\n", 'A' + e.tail, 'A' + e.head,
@@ -654,7 +653,7 @@ int mgraph_prim(const mgraph_t *g){
     }
 
     free(U);
-    heap_uninit(&h);
+    heap_destroy(h);
     return sum;
 }
 
@@ -703,7 +702,6 @@ typedef struct edge_t{
 } edge_t;
 
 edge_t edges[MAX_EDGES];
-int s[MAX_VERTICES_NO]; /* 并查集，0位置未用  */
 
 static int edge_cmp(const edge_t *e1, const edge_t *e2) {
     return e1->w - e2->w;
@@ -713,7 +711,6 @@ typedef edge_t heap_elem_t; // 元素的类型
 
 /* 等价于复制粘贴，这里为了节约篇幅，使用include，在OJ上提交时请用复制粘贴 */
 #include "heap.c"  /* 见“树->堆”这节 */
-
 
 /*
   * @brief Kruskal算法，求图的最小生成树.
@@ -725,22 +722,20 @@ typedef edge_t heap_elem_t; // 元素的类型
 graph_weight_t kruskal(const edge_t edges[], int n, int m) {
     int i;
     graph_weight_t sum = 0;
-    heap_t h;
+    heap_t *h = heap_create(n, edge_cmp);
+    ufs_t *s = ufs_create(MAX_VERTICES_NO);  /* 并查集，0位置未用  */
     if (n < m - 1) return -1;
-
-    ufs_init(s, MAX_VERTICES_NO);
-    heap_init(&h, n, edge_cmp);
 
     /* 把所有边插入堆中*/
     for (i = 0; i < n; i++) {
-        heap_push(&h, edges[i]);
+        heap_push(h, edges[i]);
     }
 
     for (i = 0; i < n; i++) {
         /* 从堆中退出最小权值边 */
-        const edge_t e = heap_top(&h);
+        const edge_t e = heap_top(h);
         int u, v;
-        heap_pop(&h);
+        heap_pop(h);
         /* 取两顶点所在集合的根*/
         u = ufs_find(s, e.u);
         v = ufs_find(s, e.v);
@@ -752,7 +747,8 @@ graph_weight_t kruskal(const edge_t edges[], int n, int m) {
         }
     }
 
-    heap_uninit(&h);
+    heap_destroy(h);
+    ufs_destroy(s);
     return sum;
 }
 
@@ -766,9 +762,9 @@ static int edge_cmp1(const void *e1, const void *e2) {
 graph_weight_t kruskal1(edge_t edges[], int n, int m) {
     int i;
     graph_weight_t sum = 0;
+    ufs_t *s = ufs_create(MAX_VERTICES_NO);  /* 并查集，0位置未用  */
     if (n < m - 1) return -1;
 
-    ufs_init(s, MAX_VERTICES_NO);
     qsort(edges, n, sizeof(edge_t), edge_cmp1);
 
     for (i = 0; i < n; i++) {
@@ -784,7 +780,7 @@ graph_weight_t kruskal1(edge_t edges[], int n, int m) {
             sum += e.w;
         }
     }
-
+    ufs_destroy(s);
     return sum;
 }
 
@@ -1830,7 +1826,7 @@ int mgraph_topo_sort(const mgraph_t *g, int topological[]) {
     const int n = g->nv;
     /* in_degree[i]是顶点i的入度 */
     int *in_degree = (int*)malloc(n * sizeof(int));
-    stack_t s;
+    stack_t *s = stack_create(n * sizeof(int));
 
     memset(in_degree, 0, n * sizeof(int));
     for (i = 0; i < n; i++) {
@@ -1840,21 +1836,21 @@ int mgraph_topo_sort(const mgraph_t *g, int topological[]) {
         }
     }
 
-    stack_init(&s, n * sizeof(int));
     for(i = 0; i < n; i ++) {
         if(in_degree[i] == 0)
-            stack_push(&s, i);
+            stack_push(s, i);
     }
 
-    while(!stack_empty(&s)) {
-        u = stack_top(&s); stack_pop(&s);
+    while(!stack_empty(s)) {
+        u = stack_top(s); stack_pop(s);
         topological[count++] = u;
         for (i = 0; i < n; i++) if (g->matrix[u][i] < GRAPH_INF) {
-            if(--in_degree[i] == 0) stack_push(&s, i);
+            if(--in_degree[i] == 0) stack_push(s, i);
         }
     }
 
     free(in_degree);
+    stack_destroy(s);
     if(count != n) { /* 有环*/
         return 0;
     } else { /* 无环*/
@@ -2023,7 +2019,7 @@ int mgraph_topological_sort(const mgraph_t *g, int topological[]) {
     const int n = g->nv;
     /* in_degree[i]是顶点i的入度 */
     int *in_degree = (int*)malloc(n * sizeof(int));
-    stack_t s;
+    stack_t *s = stack_create(n * sizeof(int));
 
     memset(in_degree, 0, n * sizeof(int));
     for (i = 0; i < n; i++) {
@@ -2033,18 +2029,17 @@ int mgraph_topological_sort(const mgraph_t *g, int topological[]) {
         }
     }
 
-    stack_init(&s, n * sizeof(int));
     for(i = 0; i < n; i ++) {
         if(in_degree[i] == 0) {
-            stack_push(&s, i);
+            stack_push(s, i);
         }
     }
 
-    while(!stack_empty(&s)) {
+    while(!stack_empty(s)) {
         // 栈内应该始终只有一个元素
-        if (stack_size(&s) > 1) insufficient = 1;
+        if (stack_size(s) > 1) insufficient = 1;
         // 删除顶点u
-        u = stack_top(&s); stack_pop(&s);
+        u = stack_top(s); stack_pop(s);
         topological[count++] = u;
         --in_degree[u];  // 变成 -1，表示已经输出
         // 更新入度
@@ -2053,11 +2048,12 @@ int mgraph_topological_sort(const mgraph_t *g, int topological[]) {
         }
         // 选择入度为0的顶点
         for (i = 0; i < n; i++) if (g->matrix[u][i] < GRAPH_INF) {
-            if (in_degree[i] == 0) stack_push(&s, i);
+            if (in_degree[i] == 0) stack_push(s, i);
         }
     }
 
     free(in_degree);
+    stack_destroy(s);
     if(count < n) { /* 有环*/
         return 0;
     } else { /* 无环*/
@@ -2234,7 +2230,7 @@ static int mgraph_toposort_ve(const mgraph_t *g, int topological[],
     const int n = g->nv;
     /* in_degree[i]是顶点i的入度 */
     int *in_degree = (int*)malloc(n * sizeof(int));
-    stack_t s;
+    stack_t *s = stack_create(n * sizeof(int));
 
     memset(in_degree, 0, n * sizeof(int));
     for (i = 0; i < n; i++) {
@@ -2244,18 +2240,17 @@ static int mgraph_toposort_ve(const mgraph_t *g, int topological[],
         }
     }
 
-    stack_init(&s, n * sizeof(int));
     for(i = 0; i < n; i ++) {
         if(in_degree[i] == 0) {
-            stack_push(&s, i);
+            stack_push(s, i);
         }
     }
 
     memset(ve, 0, n * sizeof(graph_weight_t));
 
-    while(!stack_empty(&s)) {
+    while(!stack_empty(s)) {
         // 删除顶点u
-        u = stack_top(&s); stack_pop(&s);
+        u = stack_top(s); stack_pop(s);
         topological[count++] = u;
         --in_degree[u];  // 变成 -1，表示已经输出
         // 更新入度
@@ -2269,11 +2264,12 @@ static int mgraph_toposort_ve(const mgraph_t *g, int topological[],
         }
         // 选择入度为0的顶点
         for (i = 0; i < n; i++) if (g->matrix[u][i] < GRAPH_INF) {
-            if (in_degree[i] == 0) stack_push(&s, i);
+            if (in_degree[i] == 0) stack_push(s, i);
         }
     }
 
     free(in_degree);
+    stack_destroy(s);
     if(count < n) { /* 有环*/
         return 0;
     } else { /* 无环*/

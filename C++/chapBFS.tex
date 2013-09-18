@@ -178,8 +178,6 @@ bool state_is_target(const state_t *s);
 typedef state_t queue_elem_t; // 元素的类型
 /* 等价于复制粘贴，这里为了节约篇幅，使用include，在OJ上提交时请用复制粘贴 */
 #include "queue.c"  /* 见“栈和队列->队列”这节，如果是C++，则使用std::queue */
-// 队列
-queue_t q;
 
 /*
  * @brief 广搜
@@ -189,7 +187,7 @@ queue_t q;
  * @return 目标状态在path[]中的下标，如果不需要求路径，则声明为 void
  */
 int bfs(state_t *start) {
-    queue_init(&q, 16);
+    queue_t *q = queue_create(16);
     history_init();
 
     start->action = -1;   /* 起点状态没有动作 */
@@ -201,25 +199,25 @@ int bfs(state_t *start) {
     history_insert(start); // 千万别忘记了标记此处的访问记录
     if (state_is_target(start)) /* 如果起点就是终点，返回 */
         return state_hash(start) or start->index;
-    queue_push(&q, *start);
+    queue_push(q, *start);
 
-    while (!queue_empty(&q)) {
-        const state_t s = queue_front(&q);
+    while (!queue_empty(q)) {
+        const state_t s = queue_front(q);
         state_t next;
-        queue_pop(&q);
+        queue_pop(q);
 
         state_extend_init(&s);
         while (state_extend(&s, &next)) {
             if (state_is_target(&next)) {
                 // printf("%d\n", next.count);
-                queue_uninit(&q);
+                queue_destroy(q);
                 return next.index or state_hash(&next);
             }
-            queue_push(&q, next);
+            queue_push(q, next);
             history_insert(&next);
         }
     }
-    queue_uninit(&q);
+    queue_destroy(q);
     return -1;
 }
 
@@ -437,10 +435,9 @@ bool state_is_target(const state_t *s);
 typedef state_t queue_elem_t; // 元素的类型
 /* 等价于复制粘贴，这里为了节约篇幅，使用include，在OJ上提交时请用复制粘贴 */
 #include "queue.c"  /* 见“栈和队列->队列”这节，如果是C++，则使用std::queue */
-queue_t q;
 
 int bfs(state_t *start) {
-    queue_init(&q, 16);
+    queue_t *q = queue_create(16);
     history_init();
 
     start->action = -1;
@@ -450,23 +447,23 @@ int bfs(state_t *start) {
     history_insert(start);
     if (state_is_target(start))
         return state_hash(start);
-    queue_push(&q, *start);
+    queue_push(q, *start);
 
-    while (!queue_empty(&q)) {
-        const state_t s = queue_front(&q);
-        queue_pop(&q);
+    while (!queue_empty(q)) {
+        const state_t s = queue_front(q);
+        queue_pop(q);
         state_t next;
         state_extend_init(&s);
         while (state_extend(&s, &next)) {
             if (state_is_target(&next)) {
-                queue_uninit(&q);
+                queue_destroy(q);
                 return state_hash(&next);
             }
-            queue_push(&q, next);
+            queue_push(q, next);
             history_insert(&next);
         }
     }
-    queue_uninit(&q);
+    queue_destroy(q);
     return -1;
 }
 
@@ -696,11 +693,9 @@ bool state_is_target(const state_t *s);
 typedef state_t queue_elem_t; // 元素的类型
 /* 等价于复制粘贴，这里为了节约篇幅，使用include，在OJ上提交时请用复制粘贴 */
 #include "queue.c"  /* 见“栈和队列->队列”这节，如果是C++，则使用std::queue */
-// 队列
-queue_t q;
 
 int bfs(state_t *start) {
-    queue_init(&q, 16);
+    queue_t *q = queue_create(16);
     history_init();
 
     start->action = -1;
@@ -711,25 +706,25 @@ int bfs(state_t *start) {
     history_insert(start);
     if (state_is_target(start))
         return state_hash(start);
-    queue_push(&q, *start);
+    queue_push(q, *start);
 
-    while (!queue_empty(&q)) {
-        const state_t s = queue_front(&q);
+    while (!queue_empty(q)) {
+        const state_t s = queue_front(q);
         state_t next;
-        queue_pop(&q);
+        queue_pop(q);
 
         state_extend_init(&s);
         while (state_extend(&s, &next)) {
             if (state_is_target(&next)) {
                 // printf("%d\n", next.count);
-                queue_uninit(&q);
+                queue_destroy(q);
                 return state_hash(&next);
             }
-            queue_push(&q, next);
+            queue_push(q, next);
             history_insert(&next);
         }
     }
-    queue_uninit(&q);
+    queue_destroy(q);
     return -1;
 }
 
@@ -935,11 +930,9 @@ bool state_is_target(const state_t *s);
 typedef state_t queue_elem_t; // 元素的类型
 /* 等价于复制粘贴，这里为了节约篇幅，使用include，在OJ上提交时请用复制粘贴 */
 #include "queue.c"  /* 见“栈和队列->队列”这节，如果是C++，则使用std::queue */
-// 队列
-queue_t q;
 
 int bfs(state_t *start) {
-    queue_init(&q, 16);
+    queue_t *q = queue_create(16);
     history_init();
 
     start->action = -1;
@@ -951,25 +944,25 @@ int bfs(state_t *start) {
     history_insert(start);
     if (state_is_target(start))
         return state_hash(start);
-    queue_push(&q, *start);
+    queue_push(q, *start);
 
-    while (!queue_empty(&q)) {
-        const state_t s = queue_front(&q);
+    while (!queue_empty(q)) {
+        const state_t s = queue_front(q);
         state_t next;
-        queue_pop(&q);
+        queue_pop(q);
 
         state_extend_init(&s);
         while (state_extend(&s, &next)) {
             if (state_is_target(&next)) {
                 // printf("%d\n", next.count);
-                queue_uninit(&q);
+                queue_destroy(q);
                 return next.index;
             }
-            queue_push(&q, next);
+            queue_push(q, next);
             history_insert(&next);
         }
     }
-    queue_uninit(&q);
+    queue_destroy(q);
     return -1;
 }
 
@@ -1292,43 +1285,41 @@ bool state_is_target(const state_t *s);
 typedef state_t queue_elem_t; // 元素的类型
 /* 等价于复制粘贴，这里为了节约篇幅，使用include，在OJ上提交时请用复制粘贴 */
 #include "queue.c"  /* 见“栈和队列->队列”这节，如果是C++，则使用std::queue */
-// 队列
-queue_t q;
 
 void bfs(state_t *start) {
-    queue_init(&q, 16);
+    queue_t *q = queue_create(16);
     history_init();
 
     start->count = 0;
     start->color = 1;
 
     history_insert(start);
-    queue_push(&q, *start);
+    queue_push(q, *start);
 
     start->color = 2;
 
     history_insert(start); // 千万别忘记了标记此处的访问记录
     if (state_is_target(start)) /* 如果起点就是终点，返回 */
         return;
-    queue_push(&q, *start);
+    queue_push(q, *start);
 
-    while (!queue_empty(&q)) {
-        const state_t s = queue_front(&q);
+    while (!queue_empty(q)) {
+        const state_t s = queue_front(q);
         state_t next;
-        queue_pop(&q);
+        queue_pop(q);
 
         state_extend_init(&s);
         while (state_extend(&s, &next)) {
             if (state_is_target(&next)) {
                 printf("%d\n", next.count);
-                queue_uninit(&q);
+                queue_destroy(q);
                 return;
             }
-            queue_push(&q, next);
+            queue_push(q, next);
             history_insert(&next);
         }
     }
-    queue_uninit(&q);
+    queue_destroy(q);
 }
 
 int main() {
@@ -1346,7 +1337,7 @@ int main() {
     }
 
     bfs(&start);
-    queue_uninit(&q);
+    queue_destroy(q);
     return 0;
 }
 
@@ -1606,8 +1597,6 @@ int cmp_state(const state_t *x, const state_t *y) {
 
 /* 等价于复制粘贴，这里为了节约篇幅，使用include，在OJ上提交时请用复制粘贴 */
 #include "heap.c"  /* 见“树->堆”这节 */
-// 优先队列
-heap_t q;
 
 /**
  * 距离目标状态的估算距离h。
@@ -1641,8 +1630,8 @@ static void calc_goal_pos() {
 }
 
 int bfs(state_t *start) {
+    heap_t *q = heap_create(16, cmp_state); /* 优先队列 */
     calc_goal_pos();
-    heap_init(&q, 16, cmp_state);
     history_init();
 
     start->action = -1;
@@ -1654,25 +1643,25 @@ int bfs(state_t *start) {
     history_insert(start);
     if (state_is_target(start))
         return state_hash(start);
-    heap_push(&q, *start);
+    heap_push(q, *start);
 
-    while (!heap_empty(&q)) {
-        const state_t s = heap_top(&q);
+    while (!heap_empty(q)) {
+        const state_t s = heap_top(q);
         state_t next;
-        heap_pop(&q);
+        heap_pop(q);
 
         state_extend_init(&s);
         while (state_extend(&s, &next)) {
             if (state_is_target(&next)) {
                 // printf("%d\n", next.count);
-                heap_uninit(&q);
+                heap_destroy(q);
                 return state_hash(&next);
             }
-            heap_push(&q, next);
+            heap_push(q, next);
             history_insert(&next);
         }
     }
-    heap_uninit(&q);
+    heap_destroy(q);
     return -1;
 }
 

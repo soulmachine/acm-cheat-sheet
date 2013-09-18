@@ -10,12 +10,10 @@
 C++可以直接使用\fn{std::stack}。
 
 \begin{Codex}[label=stack.c]
-/** 
+/**
  * @file stack.c
  * @brief 栈，顺序存储.
  * @author soulmachine@gmail.com
- * @date 2010-7-31
- * @version 1.0
  */
 #include <stdlib.h>  /* for malloc() */
 #include <string.h>  /* for memcpy() */
@@ -32,31 +30,30 @@ typedef struct stack_t {
     stack_elem_t  *elems;   /** 栈的数组 */
 }stack_t;
 
-/** 
- * @brief 初始化栈.
- * @param[inout] s 栈对象的指针
+/**
+ * @brief 创建栈.
  * @param[in] capacity 初始容量
- * @return 无
+ * @return 栈对象的指针
  */
-void stack_init(stack_t *s, const int capacity) {
+stack_t* stack_create(const int capacity) {
+    stack_t *s = (stack_t*)malloc(sizeof(stack_t));
     s->size = 0;
     s->capacity = capacity;
     s->elems = (stack_elem_t*)malloc(capacity * sizeof(stack_elem_t));
+    return s;
 }
 
-/** 
- * @brief 释放栈.
+/**
+ * @brief 销毁栈.
  * @param[inout] s 栈对象的指针
  * @return 无
  */
-void stack_uninit(stack_t *s) {
-    s->size = 0;
-    s->capacity = 0;
+void stack_destroy(stack_t *s) {
     free(s->elems);
-    s->elems = NULL;
+    free(s);
 }
 
-/** 
+/**
  * @brief 判断栈是否为空.
  * @param[in] s 栈对象的指针
  * @return 是空，返回 1，否则返回 0
@@ -65,7 +62,7 @@ int stack_empty(const stack_t *s) {
     return s->size == 0;
 }
 
-/** 
+/**
  * @brief 获取元素个数.
  * @param[in] s 栈对象的指针
  * @return 元素个数
@@ -74,7 +71,7 @@ int stack_size(const stack_t *s) {
     return s->size;
 }
 
-/** 
+/**
  * @brief 进栈.
  * @param[in] s 栈对象的指针
  * @param[in] x 要进栈的元素
@@ -83,7 +80,7 @@ int stack_size(const stack_t *s) {
 void stack_push(stack_t *s, const stack_elem_t x)
 {
     if(s->size == s->capacity) { /*已满，重新分配内存*/
-        stack_elem_t* tmp = (stack_elem_t*)realloc(s->elems, 
+        stack_elem_t* tmp = (stack_elem_t*)realloc(s->elems,
             s->capacity * 2 * sizeof(stack_elem_t));
         s->capacity *= 2;
         s->elems = tmp;
@@ -91,7 +88,7 @@ void stack_push(stack_t *s, const stack_elem_t x)
     s->elems[s->size++] = x;
 }
 
-/** 
+/**
  * @brief 进栈.
  * @param[in] s 栈对象的指针
  * @return 无
@@ -100,7 +97,7 @@ void stack_pop(stack_t *s) {
     s->size--;
 }
 
-/** 
+/**
  * @brief 获取栈顶元素.
  * @param[in] s 栈对象的指针
  * @return 栈顶元素
@@ -250,13 +247,11 @@ C++可以直接使用\fn{std::queue}。
 /** @file queue.c
   * @brief 队列，顺序存储，循环队列.
   * @author soulmachine@gmail.com
-  * @date 2010-7-30
-  * @version 1.0
   */
 #include <stdlib.h> /* for malloc(), free() */
 #include <string.h> /* for memcpy() */
 
-#ifndef __cplusplus 
+#ifndef __cplusplus
 typedef char bool;
 #define false 0
 #define true 1
@@ -276,33 +271,31 @@ typedef struct queue_t {
     queue_elem_t *elems; /* 存放数据的内存块*/
 }queue_t;
 
-/** 
-  * @brief 初始化队列.
-  * @param[out] q 队列结构体的指针
+/**
+  * @brief 创建队列.
   * @param[in] capacity 初始容量
-  * @return 无
+  * @return 队列
   */
-void queue_init(queue_t *q, const int capacity) {
+queue_t* queue_create(int capacity) {
+    queue_t *q = (queue_t*)malloc(sizeof(queue_t));
     q->front = 0;
     q->rear = 0;
     q->capacity = capacity;
     q->elems = (queue_elem_t*)malloc(capacity * sizeof(queue_elem_t));
+    return q;
 }
 
-/** 
-  * @brief 释放队列.
-  * @param[inout] q 队列对象的指针
+/**
+  * @brief 销毁队列.
+  * @param[in] q 队列对象的指针
   * @return 无
   */
-void queue_uninit(queue_t *q) {
-    q->front = 0;
-    q->rear = 0;
-    q->capacity = 0;
+void queue_destroy(queue_t *q) {
     free(q->elems);
-    q->elems = NULL;
+    free(q);
 }
 
-/** 
+/**
   * @brief 判断队列是否为空.
   * @param[in] q 队列结构体的指针
   * @return 是空，返回TRUE，否则返回FALSE
@@ -311,7 +304,7 @@ bool queue_empty(const queue_t *q) {
     return q->front == q->rear;
 }
 
-/** 
+/**
  * @brief 获取元素个数.
  * @param[in] s 栈对象的指针
  * @return 元素个数
@@ -320,7 +313,7 @@ int queue_size(const queue_t *q) {
     return (q->rear - q->front + q->capacity) % q->capacity;
 }
 
-/** 
+/**
   * @brief 在队尾添加元素.
   * @param[in] q 指向队列结构体的指针
   * @param[in] x 要添加的元素
@@ -331,17 +324,17 @@ void queue_push(queue_t *q, const queue_elem_t x) {
         queue_elem_t* tmp = (queue_elem_t*)malloc(
             q->capacity * 2 * sizeof(queue_elem_t));
         if(q->front < q->rear) {
-            memcpy(tmp, q->elems + q->front, 
+            memcpy(tmp, q->elems + q->front,
                 (q->rear - q->front) * sizeof(queue_elem_t));
             q->rear -= q->front;
             q->front = 0;
         } else if(q->front > q->rear) {
             /* 拷贝q->front 到q->capacity 之间的数据*/
-            memcpy(tmp, q->elems + q->front, 
+            memcpy(tmp, q->elems + q->front,
                 (q->capacity - q->front) * sizeof(queue_elem_t));
             /* 拷贝q->data[0] 到q->data[rear] 之间的数据*/
-            memcpy(tmp + 
-                (q->capacity - q->front), 
+            memcpy(tmp +
+                (q->capacity - q->front),
                 q->elems, q->rear * sizeof(queue_elem_t));
             q->rear += q->capacity - q->front;
             q->front = 0;
@@ -354,17 +347,17 @@ void queue_push(queue_t *q, const queue_elem_t x) {
     q->rear = (q->rear + 1) % q->capacity;
 }
 
-/** 
+/**
   * @brief 在队头删除元素.
   * @param[in] q 队列结构体的指针
   * @param[out] x 存放退出队列的元素
   * @return 无
   */
 void queue_pop(queue_t *q) {
-    q->front = (q->front + 1) % q->capacity;    
+    q->front = (q->front + 1) % q->capacity;
 }
 
-/** 
+/**
  * @brief 获取队首元素.
  * @param[in] q 队列对象的指针
  * @return 队首元素
@@ -373,7 +366,7 @@ queue_elem_t queue_front(const queue_t *q) {
     return q->elems[q->front];
 }
 
-/** 
+/**
  * @brief 获取队首元素.
  * @param[in] q 队列对象的指针
  * @return 队首元素

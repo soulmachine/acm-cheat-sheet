@@ -281,28 +281,26 @@ void simple_selection_sort(elem_t a[], int start, int end) {
 void heap_sort(heap_elem_t *a, const int n, 
                int (*cmp)(const heap_elem_t*, const heap_elem_t*)) {
     int i;
-    heap_t h;
+    heap_t *h;
     heap_elem_t tmp;
 
-    /* 替代heap_init() */
-    h.size = n;
-    h.capacity = n;
-    h.elems = a;
-    h.cmp = cmp;
+    h = heap_create(n, cmp);
+    h->elems = a;
 
-    i = (h.size - 2)/2;   /* 找最初调整位置：最后分支结点*/
+    i = (h->size - 2)/2;   /* 找最初调整位置：最后分支结点*/
     while (i >= 0) {  /* 自底向上逐步扩大形成堆*/
-        heap_sift_down(&h, i);
+        heap_sift_down(h, i);
         i--;
     }
 
-    for (i = h.size - 1; i > 0; i--) {
-        tmp = h.elems[i];
-        h.elems[i] = h.elems[0];
-        h.elems[0] = tmp;
-        h.size = i; /* 相当于h.size -- */
-        heap_sift_down(&h, 0);
+    for (i = h->size - 1; i > 0; i--) {
+        tmp = h->elems[i];
+        h->elems[i] = h->elems[0];
+        h->elems[0] = tmp;
+        h->size = i; /* 相当于h.size -- */
+        heap_sift_down(h, 0);
     }
+    heap_destroy(h);
 }
 \end{Codex}
 

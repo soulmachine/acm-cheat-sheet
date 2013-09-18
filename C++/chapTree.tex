@@ -709,8 +709,6 @@ C++可以直接使用\fn{std::priority_queue}。
 /** @file heap.c
  * @brief 堆，默认为小根堆，即堆顶为最小.
  * @author soulmachine@gmail.com
- * @date 2010-8-1
- * @version 1.0
  */
 #include <stdlib.h>  /* for malloc() */
 #include <string.h>  /* for memcpy() */
@@ -741,41 +739,36 @@ int cmp_int(const int *x, const int *y) {
     }
 }
 
-/** 
- * @brief 堆的初始化.
- * @param[out] h 堆对象的指针
+/**
+ * @brief 创建堆.
  * @param[out] capacity 初始容量
  * @param[in] cmp cmp 比较函数，小于返回-1，等于返回0
- * 大于返回1，反过来则是大根堆
- * @return 成功返回0，失败返回错误码
+ *            大于返回1，反过来则是大根堆
+ * @return 成功返回堆对象的指针，失败返回 NULL
  */
-int heap_init(heap_t *h, const int capacity, 
-              int (*cmp)(const heap_elem_t*, const heap_elem_t*)) {
+heap_t* heap_create(const int capacity,
+        int (*cmp)(const heap_elem_t*, const heap_elem_t*)) {
+    heap_t *h = (heap_t*)malloc(sizeof(heap_t));
     h->size = 0;
     h->capacity = capacity;
     h->elems = (heap_elem_t*)malloc(capacity * sizeof(heap_elem_t));
     h->cmp = cmp;
-    
-    return 0;
+
+    return h;
 }
 
-/** 
- * @brief 释放堆.
+/**
+ * @brief 销毁堆.
  * @param[inout] h 堆对象的指针
- * @return 成功返回0，失败返回错误码
+ * @return 无
  */
-int heap_uninit(heap_t *h) {
-    h->size = 0;
-    h->capacity = 0;
+void heap_destroy(heap_t *h) {
     free(h->elems);
-    h->elems = NULL;
-    h->cmp = NULL;
-
-    return 0;
+    free(h);
 }
 
 
-/** 
+/**
  * @brief 判断堆是否为空.
  * @param[in] h 堆对象的指针
  * @return 是空，返回 1，否则返回 0
@@ -784,7 +777,7 @@ int heap_empty(const heap_t *h) {
     return h->size == 0;
 }
 
-/** 
+/**
  * @brief 获取元素个数.
  * @param[in] s 堆对象的指针
  * @return 元素个数
@@ -803,9 +796,9 @@ void heap_sift_down(const heap_t *h, const int start) {
     int i = start;
     int j;
     const heap_elem_t tmp = h->elems[start];
-       
+
     for(j = 2 * i + 1; j < h->size; j = 2 * j + 1) {
-        if(j < (h->size - 1) && 
+        if(j < (h->size - 1) &&
             // h->elems[j] > h->elems[j + 1]
             h->cmp(&(h->elems[j]), &(h->elems[j + 1])) > 0) {
                 j++; /* j 指向两子女中小者*/
@@ -820,8 +813,8 @@ void heap_sift_down(const heap_t *h, const int start) {
     }
     h->elems[i] = tmp;
 }
- 
-/* 
+
+/*
  * @brief 小根堆的自下向上筛选算法.
  * @param[in] h 堆对象的指针
  * @param[in] start 开始结点
@@ -831,7 +824,7 @@ void heap_sift_up(const heap_t *h, const int start) {
     int j = start;
     int i= (j - 1) / 2;
     const heap_elem_t tmp = h->elems[start];
- 
+
     while(j > 0) {
         // h->data[i] <= tmp
         if(h->cmp(&(h->elems[i]), &tmp) <= 0) {
@@ -845,7 +838,7 @@ void heap_sift_up(const heap_t *h, const int start) {
     h->elems[j] = tmp;
 }
 
-/** 
+/**
  * @brief 添加一个元素.
  * @param[in] h 堆对象的指针
  * @param[in] x 要添加的元素
@@ -853,19 +846,19 @@ void heap_sift_up(const heap_t *h, const int start) {
  */
 void heap_push(heap_t *h, const heap_elem_t x) {
     if(h->size == h->capacity) { /*已满，重新分配内存*/
-        heap_elem_t* tmp = 
+        heap_elem_t* tmp =
             (heap_elem_t*)realloc(h->elems, h->capacity * 2 * sizeof(heap_elem_t));
         h->elems = tmp;
         h->capacity *= 2;
     }
- 
+
     h->elems[h->size] = x;
     h->size++;
 
     heap_sift_up(h, h->size - 1);
 }
 
-/** 
+/**
  * @brief 弹出堆顶元素.
  * @param[in] h 堆对象的指针
  * @return 无
@@ -876,7 +869,7 @@ void heap_pop(heap_t *h) {
     heap_sift_down(h, 0);
 }
 
-/** 
+/**
  * @brief 获取堆顶元素.
  * @param[in] h 堆对象的指针
  * @return 堆顶元素
@@ -944,29 +937,29 @@ typedef node_t heap_elem_t; // 元素的类型
 #include "heap.c"
 
 void k_merge() {
-    heap_t h;
+    heap_t *h;
     int i;
     node_t tmp;
 
     qsort(a, N, sizeof(int), cmp_int);
     qsort(b, N, sizeof(int), cmp_int);
-    heap_init(&h, N, cmp_node);
+    h = heap_create(N, cmp_node);
 
     for (i = 0; i < N; i++) {
         tmp.sum = a[i]+b[0];
         tmp.b = 0;
-        heap_push(&h, tmp);
+        heap_push(h, tmp);
     }
 
     for (i = 0; i < N; i++) {
-        tmp = heap_top(&h); heap_pop(&h);
+        tmp = heap_top(h); heap_pop(h);
         printf("%d ", tmp.sum);
         tmp.sum = tmp.sum - b[tmp.b] + b[tmp.b + 1];
         tmp.b++;
-        heap_push(&h, tmp);
+        heap_push(h, tmp);
     }
 
-    heap_uninit(&h);
+    heap_destroy(h);
     return;
 }
 
@@ -1030,17 +1023,17 @@ typedef struct ufs_t {
 } ufs_t;
 
 /**
- * @brief 初始化并查集.
- * @param[in] ufs 并查集
+ * @brief 创建并查集.
  * @param[in] n 数组的容量
- * @return 无
+ * @return 并查集
  */
-void ufs_init(ufs_t *ufs, int n) {
+ufs_t* ufs_create(int n) {
+    ufs_t *ufs = (ufs_t*)malloc(sizeof(ufs_t));
     int i;
     ufs->p = (int*)malloc(n * sizeof(int));
-    for(i = 0; i < n; i++) {
+    for(i = 0; i < n; i++)
         ufs->p[i] = -1;
-    }
+    return ufs;
 }
 
 /**
@@ -1048,10 +1041,9 @@ void ufs_init(ufs_t *ufs, int n) {
  * @param[in] ufs 并查集
  * @return 无
  */
-void ufs_uninit(ufs_t *ufs) {
+void ufs_destroy(ufs_t *ufs) {
     free(ufs->p);
-    ufs->p = NULL;
-    ufs->size = 0;
+    free(ufs);
 }
 
 /**
@@ -1165,8 +1157,7 @@ int ufs_set_size(ufs_t *ufs, int x) {
 int main() {
     int n, m, k;
     while (scanf("%d%d", &n, &m) && n > 0) {
-        ufs_t ufs;
-        ufs_init(&ufs, MAXN);
+        ufs_t *ufs = ufs_create(MAXN);
         while (m--) {
             int x, y; /* 两个学生 */
             int rx, ry; /* x, y 所属的集合的根 */
@@ -1174,15 +1165,16 @@ int main() {
 
             k--;
             scanf("%d", &x);
-            rx = ufs_find(&ufs, x);
+            rx = ufs_find(ufs, x);
             while (k--) {
                 scanf("%d", &y);
-                ry = ufs_find(&ufs, y);
-                ufs_union(&ufs, rx, ry);  /* 只要是跟x同一个集合的都并进去 */
+                ry = ufs_find(ufs, y);
+                ufs_union(ufs, rx, ry);  /* 只要是跟x同一个集合的都并进去 */
             }
         }
         /* 最后搜索0属于哪个集合，这个集合有多少人 */
-        printf("%d\n", ufs_set_size(&ufs, 0));
+        printf("%d\n", ufs_set_size(ufs, 0));
+        ufs_destroy(ufs);
     }
     return 0;
 }
@@ -1253,19 +1245,22 @@ typedef struct ufs_t {
 } ufs_t;
 
 /**
- * @brief 初始化并查集.
+ * @brief 创建并查集.
+ * @param[in] ufs 并查集
  * @param[in] ufs 并查集
  * @param[in] n 数组的容量
- * @return 无
+ * @return 并查集
  */
-void ufs_init(ufs_t *ufs, int n) {
+ufs_t* ufs_create(int n) {
     int i;
+    ufs_t *ufs = (ufs_t*)malloc(sizeof(ufs_t));
     ufs->p = (int*)malloc(n * sizeof(int));
     ufs->dist = (int*)malloc(n * sizeof(int));
     for(i = 0; i < n; i++) {
         ufs->p[i] = -1;
         ufs->dist[i] = 0;
     }
+    return ufs;
 }
 
 /**
@@ -1273,12 +1268,10 @@ void ufs_init(ufs_t *ufs, int n) {
  * @param[in] ufs 并查集
  * @return 无
  */
-void ufs_uninit(ufs_t *ufs) {
+void ufs_destroy(ufs_t *ufs) {
     free(ufs->p);
     free(ufs->dist);
-    ufs->p = NULL;
-    ufs->dist = NULL;
-    ufs->size = 0;
+    free(ufs);
 }
 
 /**
@@ -1330,31 +1323,30 @@ int main() {
 
     scanf("%d", &T);
     while (T--) {
-        ufs_t ufs;
+        ufs_t *ufs = ufs_create(MAXN);
         int n, m;
         char c;
         int x, y, rx, ry;
         scanf("%d%d%*c", &n, &m);
-        ufs_init(&ufs, MAXN);
 
         while (m--) {
             scanf("%c%d%d%*c", &c, &x, &y); //注意输入
-            rx = ufs_find(&ufs, x);
-            ry = ufs_find(&ufs, y);
+            rx = ufs_find(ufs, x);
+            ry = ufs_find(ufs, y);
 
             if (c == 'A') {
                 if (rx == ry) { //如果根节点相同，则表示能判断关系
-                    if (ufs.dist[x] != ufs.dist[y])
+                    if (ufs->dist[x] != ufs->dist[y])
                         printf("In different gangs.\n");
                     else
                         printf("In the same gang.\n");
                 } else
                     printf("Not sure yet.\n");
             } else if (c == 'D') {
-                ufs_add_opponent(&ufs, x, y);
+                ufs_add_opponent(ufs, x, y);
             }
         }
-        ufs_uninit(&ufs);
+        ufs_destroy(ufs);
     }
     return 0;
 }
@@ -1438,19 +1430,21 @@ typedef struct ufs_t {
 } ufs_t;
 
 /**
- * @brief 初始化并查集.
+ * @brief 创建并查集.
  * @param[in] ufs 并查集
  * @param[in] n 数组的容量
- * @return 无
+ * @return 并查集
  */
-void ufs_init(ufs_t *ufs, int n) {
+ufs_t* ufs_create(int n) {
     int i;
+    ufs_t *ufs = (ufs_t*)malloc(sizeof(ufs_t));
     ufs->p = (int*)malloc(n * sizeof(int));
     ufs->dist = (int*)malloc(n * sizeof(int));
     for(i = 0; i < n; i++) {
         ufs->p[i] = -1;
         ufs->dist[i] = 0; // 自己与自己是同类
     }
+    return ufs;
 }
 
 /**
@@ -1458,12 +1452,10 @@ void ufs_init(ufs_t *ufs, int n) {
  * @param[in] ufs 并查集
  * @return 无
  */
-void ufs_uninit(ufs_t *ufs) {
+void ufs_destroy(ufs_t *ufs) {
     free(ufs->p);
     free(ufs->dist);
-    ufs->p = NULL;
-    ufs->dist = NULL;
-    ufs->size = 0;
+    free(ufs);
 }
 
 /**
@@ -1515,10 +1507,10 @@ void ufs_add_relation(ufs_t *ufs, int x, int y, int relation) {
 int main() {
     int n, k;
     int result = 0; /* 假话的数目 */
-    ufs_t ufs;
+    ufs_t *ufs;
 
     scanf("%d%d", &n, &k);
-    ufs_init(&ufs, n+1);
+    ufs = ufs_create(n + 1);
 
     while(k--) {
         int d, x, y;
@@ -1527,21 +1519,21 @@ int main() {
         if (x > n || y > n || (d == 2 && x == y)) {
             result++;
         } else {
-            const int rx = ufs_find(&ufs, x);
-            const int ry = ufs_find(&ufs, y);
+            const int rx = ufs_find(ufs, x);
+            const int ry = ufs_find(ufs, y);
 
             if (rx == ry) { /* 若在同一个集合则可确定x和y的关系 */
-                if((ufs.dist[x] - ufs.dist[y] + 3) % 3 != d - 1)
+                if((ufs->dist[x] - ufs->dist[y] + 3) % 3 != d - 1)
                     result++;
             } else {
-                ufs_add_relation(&ufs, x, y, d-1);
+                ufs_add_relation(ufs, x, y, d-1);
             }
         }
     }
 
     printf("%d\n", result);
 
-    ufs_uninit(&ufs);
+    ufs_destroy(ufs);
     return 0;
 }
 \end{Codex}
