@@ -1,0 +1,380 @@
+\chapter{数学方法与常见模型}
+数学对于算法很重要。没有好的数学基础，很难在算法上达到一定高度。本章介绍算法竞赛中常用的数学方法和模型。
+
+\section{数论} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{欧几里德算法}
+
+求最大公约数(greates common divisor)有很多方法，最经典的方法是欧几里德算法(Euclidean algorithm\footnote{\myurl{http://en.wikipedia.org/wiki/Euclid_algorithm}})，又称辗转相除法。
+
+\begin{Codex}[label=gcd.c]
+/**
+ * @brief 求最大公约数，欧几里德算法，也即辗转相除法
+ *
+ * @param[in] a a
+ * @param[in] b b
+ * @return a和b的最大公约数
+ */
+unsigned int gcd(unsigned int a, unsigned int b) {
+    if (b == 0) return a;
+    return gcd(b, a % b);
+}
+
+/**
+ * @brief 求最大公约数，欧几里德算法，迭代版本
+ *
+ * @param[in] a a
+ * @param[in] b b
+ * @return a和b的最大公约数
+ */
+unsigned int gcd1(unsigned int a, unsigned int b) {
+    while (b != 0) {
+        unsigned int tmp = b;
+        b = a % b;
+        a = tmp;
+    }
+    return a;
+}
+
+/**
+ * @brief 求最大公约数，欧几里德算法，迭代版本，基于减法
+ *
+ * @param[in] a a
+ * @param[in] b b
+ * @return a和b的最大公约数
+ */
+unsigned int gcd2(unsigned int a, unsigned int b) {
+    while (a != b) {
+        if (a > b) {
+            a -= b;
+        } else {
+            b -= a;
+        }
+    }
+    return a;
+}
+\end{Codex}
+
+求出了最大公约数，可以利用它来求最小公倍数(least common multiple), $\mathrm{lcm}(a,b)=a \times b / \gcd(a,b)$。
+
+\subsubsection{例题}
+\begindot
+\item wikioi 1212 最大公约数 ，\myurl{http://www.wikioi.com/problem/1212/}
+\myenddot
+
+
+\subsection{扩展欧几里德算法}
+定理：对于不完全为$0$的非负整数$a,b$，必然存在整数对 $x,y$ ，使得 $\gcd(a,b)=ax+by$。
+
+这里$x$和$y$不一定是正数。扩展欧几里德算法(Extended Euclidean algorithm\footnote{\myurl{http://en.wikipedia.org/wiki/Extended_Euclidean_algorithm}})就是用来求$x$和$y$的。
+
+\begin{Codex}[label=ex_gcd.c]
+/**
+ * @brief 扩展欧几里德算法
+ * @param[in] a a
+ * @param[in] b b
+ * @param[out] x
+ * @param[out] y
+ * @return gcd(a,b)
+ */
+unsigned int ex_gcd(unsigned int a, unsigned int b, int *x, int *y) {
+    if(b == 0) {
+        *x = 1; *y = 0; return a;
+    } else {
+        const unsigned int tmp = ex_gcd(b, a % b, y, x);
+        *y -= (*x)*(a/b);
+        return tmp;
+    }
+}
+\end{Codex}
+
+扩展欧几里德算法的应用主要有以下三个：
+\begindot
+\item 求解不定方程；
+\item 求解模线性方程（线性同余方程）；
+\item 求解模的逆元；
+\myenddot
+
+
+\subsubsection{求解不定方程}
+求不定方程$ax+by=c$的整数解$x,y$，其中$a > b \geq c \geq 0$。
+
+设$g=\gcd(a,b)$，方程$ax+by=g$的一组解是$(x_0,y_0)$，则当$c$是$g$的倍数时$ax+by=c$的一组解是$(x_0,y_0)$。证明略。
+
+\begin{Code}
+/**
+ * @brief 求解不定方程ax+by=c
+ * @param[in] a a
+ * @param[in] b b
+ * @param[in] c c
+ * @param[out] x x
+ * @param[out] y y
+ * @return 是否有解，1表示有解，0表示无解
+ */
+int linear_equation(unsigned int a, unsigned int b, unsigned int c,
+        int *x, int *y) {
+    unsigned int k;
+    const unsigned int g = ex_gcd(a, b, x, y);
+    if (c % g) return 0;
+
+    k = c / g;
+    (*x) *= k; (*y) *= k;
+    return 1;
+}
+\end{Code}
+
+
+\subsubsection{求解模线性方程}
+解方程$ax \equiv b\bmod n$，其中$a,b,n$是正整数。
+
+$ax \equiv b\bmod n$的含义是“$ax$和$b$除以$n$的余数相同”，设这个倍数为$y$，则$ax-b=ny$，这恰好就是前面介绍过的不定方程。接下来的步骤就不用说了吧。
+
+\begin{Code}
+/**
+ * @brief 求解模线性方程 ax = b mod n
+ * @param[in] a
+ * @param[in] b
+ * @param[in] n n>0
+ */
+int modular_linear_equation(unsigned int a, unsigned int b, unsigned int n) {
+    int x, y, x0, i;
+    unsigned int k;
+    unsigned int g = ex_gcd(a, n, &x, &y);
+    if(b % g) return 0;
+
+    k = b / g;
+    x0 = (k * x) % n;   //特解
+    for (i = 0; i < g; i++)
+        printf("%d\n", (x0 + i * (n/g)) % n);
+    return 1;
+}
+\end{Code}
+
+
+\subsubsection{求解模的逆元}
+有一个特殊情况要引起读者重视，当$b=1$时，$ax \equiv 1\bmod n$的解称为$a$关于模$n$的逆(inverse)，它类似于“倒数”的概念。什么时候$a$的逆存在呢？根据上面的讨论，方程$ax-ny=1$要有解，这样，1必须是$\gcd(a,n)$的倍数，因此$a$和$n$必须互素。
+
+\subsection{素数判定}
+素数判定，又称素数测试(Primality test\footnote{\myurl{http://en.wikipedia.org/wiki/Primality_test}})，即给定一个正整数$n$，判断它是否是素数。
+
+\subsubsection{暴力枚举法}
+从2到$n$，依次作为除数，让$n$除以它们，只要有一个能整除$n$，则$n$不是素数。
+
+\begin{Code}
+/**
+ * @brief 判断正整数n是否是素数
+ * @param[in] n 正整数
+ * @return 是，返回1，否，返回0
+ */
+int is_prime(unsigned int n) {
+    int i;
+    if (n < 2) return 0;
+    for (i = 2; i < n; i++) {
+        if (n % i == 0) return 0;
+    }
+    return 1;
+}
+\end{Code}
+
+可以稍微做一点改进，从1到$\sqrt n$，依次作为除数。
+
+\begin{Code}
+/**
+ * @brief 判断正整数n是否是素数，上界改为sqrt(n)
+ * @param[in] n 正整数
+ * @return 是，返回1，否，返回0
+ */
+int is_prime(unsigned int n) {
+    int i;
+    if (n < 2) return 0;
+    const int upper = sqrt(n);
+
+    for (i = 2; i <= upper; i++) {
+        if (n % i == 0) return 0;
+    }
+    return 1;
+}
+
+/**
+ * @brief 判断正整数n是否是素数，上界改为sqrt(n)，但不使用sqrt()函数
+ * @param[in] n 正整数
+ * @return 是，返回1，否，返回0
+ */
+int is_prime1(unsigned int n) {
+    int i;
+    if (n < 2) return 0;
+    for (i = 2; i*i <= n; i++) {
+        if (n % i == 0) return 0;
+    }
+    return 1;
+}
+\end{Code}
+
+\subsubsection{Eratosthenes筛法}
+更高效的素数判定方法应该是预先计算出一张素数表，当判断一个数是否是素数时，直接查表即可。
+
+怎样计算？用Eratosthenes筛法(Sieve of Eratosthenes\footnote{\myurl{http://en.wikipedia.org/wiki/Sieve_of_Eratosthenes}})
+
+给出要筛数值的范围$n$，找出$\sqrt{n}$以内的素数$p_{1},p_{2},\dots,p_{k}$。先用2去筛，即把2留下，把2的倍数剔除掉；再用下一个质数，也就是3筛，把3留下，把3的倍数剔除掉；接下去用下一个质数5筛，把5留下，把5的倍数剔除掉；不断重复下去......。
+
+\begin{Code}
+#define MAXN 30000
+/** prime_table[i]==1表示i是素数，等于0则不是素数 */
+int prime_table[MAXN+1];
+
+void compute_prime_table() {
+    int i, j;
+    const int upper = sqrt(MAXN);
+
+    for (i = 2; i <= MAXN; i++) prime_table[i] = 1;
+    prime_table[0] = 0;
+    prime_table[1] = 0;
+
+    for (i = 2; i < upper; i++) if(prime_table[i]) {
+        for (j = 2; j * i <= MAXN; j++) prime_table[j*i] = 0;
+    }
+}
+
+int is_prime(unsigned int n) {
+    return prime_table[n];
+}
+\end{Code}
+
+\subsubsection{暴力枚举法优化版}
+下面这段代码是从 GNU GMP(\myurl{http://gmplib.org/})的源代码中抠出来的。
+
+\begin{Code}
+int is_prime(unsigned int n) {
+    unsigned int q, r, d;    /* 商，余数，除数 */
+
+    /* 把这个常数展开成二进制就容易理解了 */
+    if (n < 32) return (0xa08a28acUL >> n) & 1;
+    if ((n & 1) == 0) return 0;
+    if (n % 3 == 0) return 0;
+    if (n % 5 == 0) return 0;
+    if (n % 7 == 0) return 0;
+
+    for (d = 11;;) {
+        q = n / d;
+        r = n - q * d;
+        if (q < d) return 1;    /* 保证 d 不超过 sqrt(n) */
+        if (r == 0) break;
+
+        d += 2;
+        q = n / d;
+        r = n - q * d;
+        if (q < d) return 1;
+        if (r == 0) break;
+
+        d += 4;
+    }
+    return 0;
+}
+\end{Code}
+
+
+\subsubsection{例题}
+\begindot
+\item wikioi 1430 素数判定，\myurl{http://www.wikioi.com/problem/1430/}
+\myenddot
+
+
+\subsection{大整数取模} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{描述}
+求$a \bmod b, 1 \leq a \leq 10^{1000},1 \leq b \leq 100000$。
+
+\subsubsection{输入}
+每行2个整数$a$和$b$
+
+\subsubsection{输出}
+对每一行输出结果 $a \bmod b$
+
+\subsubsection{样例输入}
+\begin{Code}
+2 3
+12 7
+152455856554521 3250
+\end{Code}
+
+\subsubsection{样例输出}
+\begin{Code}
+2
+5
+1521
+\end{Code}
+
+\subsubsection{代码}
+\begin{Codex}[label=bigint_mod.c]
+#include<stdio.h>
+#include<string.h>
+
+/* 一个数组元素表示4个十进制位，即数组是万进制的 */
+#define BIGINT_MOD 10000
+#define MOD_LEN 4
+#define MAX_LEN (1000/MOD_LEN+1)  /* 整数的最大位数 */
+
+char    a[MAX_LEN * MOD_LEN];
+int     x[MAX_LEN], y;
+
+/**
+ * @brief 将输入的字符串转化为大整数，用数组表示，低位在低地址.
+ * @param[in] s 输入的字符串
+ * @param[out] x 大整数
+ * @return 无
+ */
+void bigint_input(const char s[], int x[]) {
+    int i, j = 0;
+    const int len = strlen(s);
+    for (i = 0; i < MAX_LEN; i++) x[i] = 0;
+
+    /* for (i = len - 1; i >= 0; i--) a[j++] = s[i] - '0'; */
+    for (i = len; i > 0; i -= MOD_LEN) {  /* [i-MOD_LEN, i) */
+        int temp = 0;
+        int k;
+        const int low = i-MOD_LEN > 0 ? i-MOD_LEN : 0;
+        for (k = low; k < i; k++) {
+            temp = temp * 10 + s[k] - '0';
+        }
+
+        x[j++] = temp;
+    }
+}
+
+/**
+ * @brief 计算 x mod y
+ * @param[in] x 大整数
+ * @param[in] y 模
+ * @return x mod y
+ */
+int bigint_mod(const int x[MAX_LEN], int y) {
+    int ret = 0;
+    int i;
+    for (i = MAX_LEN-1; i >= 0; i--) {
+        ret = (ret * BIGINT_MOD + x[i]) % y;
+    }
+    return ret;
+}
+
+int main() {
+    while(scanf("%s%d", a, &y) > 1) {
+        bigint_input(a, x);
+        printf("%d\n", bigint_mod(x, y));
+    }
+    return 0;
+}
+\end{Codex}
+
+\subsubsection{相关的题目}
+与本题相同的题目：
+\begindot
+\item HDU 1212 Big Number, \myurl{http://acm.hdu.edu.cn/showproblem.php?pid=1212}
+\myenddot
+
+与本题相似的题目：
+\begindot
+\item  None
+\myenddot
+
+
+\section{组合数学} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+

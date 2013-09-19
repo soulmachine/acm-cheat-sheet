@@ -1,0 +1,290 @@
+\chapter{查找}
+
+\section{折半查找} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{Codex}[label=binary_search.c]
+/** 数组元素的类型 */
+typedef int elem_t;
+/**
+  * @brief 有序顺序表的折半查找算法.
+  *
+  * @param[in] a 存放数据元素的数组，已排好序
+  * @param[in] n 数组的元素个数
+  * @param[in] x 要查找的元素
+  * @return 查找成功则返回元素所在下标，否则返回-1
+  */
+int binary_search(const elem_t a[], const int n, const elem_t x) {
+    int left = 0, right = n -1, mid;
+    while(left <= right) {
+        mid = left + (right - left) / 2;
+        if(x > a[mid]) {
+            left = mid + 1;
+        } else if(x < a[mid]) {
+            right = mid - 1;
+        } else {
+            return mid;
+        }
+    }
+    return -1;
+}
+\end{Codex}
+
+
+\section{哈希表} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\subsection{原理和实现}
+\label{sec:hash-set}
+哈希表处理冲突有两种方式，开地址法(Open Addressing)和闭地址法(Closed Addressing)。
+
+闭地址法也即拉链法(Chaining)，每个哈希地址里不再是一个元素，而是链表的首地址。
+
+开地址法有很多方案，有线性探测法(Linear Probing)、二次探测法(Quodratic Probing)和双散列法(Double Hashing)等。
+
+下面是拉链法的C语言实现。
+
+\subsubsection{代码}
+\begin{Codex}[label=hash_set.c]
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+
+#ifndef __cplusplus
+typedef char bool;
+#define false 0
+#define true 1
+#endif
+
+/** 每个元素所带的数据 */
+typedef int hash_set_elem_t;
+
+/** 哈希表容量，一定要大于元素最大个数  */
+#define HASH_SET_CAPACITY  100001
+/** 哈希表取模的质数，也即哈希桶的个数，小于 HASH_SET_CAPACITY. */
+#define PRIME  99997
+
+/** 哈希集合. */
+typedef struct hash_set_t {
+    int head[PRIME];  /** 首节点下标 */
+
+    struct {
+        hash_set_elem_t elem;
+        int next;
+    } node[HASH_SET_CAPACITY];  /** 静态链表 */
+
+    int size; /** 实际元素个数 */
+
+    int (*hash)(const hash_set_elem_t *elem); /** 元素的哈希函数 */
+    bool (*cmp)(const hash_set_elem_t *elem1,
+            const hash_set_elem_t *elem2);  /** 元素的比较函数 */
+} hash_set_t;
+
+/** 创建一个哈希集合. */
+hash_set_t* hash_set_create(int (*hash)(const hash_set_elem_t *elem),
+        bool (*cmp)(const hash_set_elem_t *elem1,
+                const hash_set_elem_t *elem2)) {
+    hash_set_t *result = (hash_set_t*)malloc(sizeof(hash_set_t));
+    memset(result->head, -1, sizeof(result->head));
+    memset(result->node, -1, sizeof(result->node));
+    result->size = 0;
+    result->hash = hash;
+    result->cmp = cmp;
+    return result;
+}
+
+/** 销毁哈希集合. */
+void hash_set_destroy(hash_set_t *set) {
+    free(set);
+    set = NULL;
+}
+
+/** 查找某个元素是否存在. */
+bool hash_set_find(const hash_set_t *set, const hash_set_elem_t *elem) {
+    int i;
+    int hash = set->hash(elem);
+
+    for (i = set->head[hash]; i != -1; i = set->node[i].next) {
+        if (set->cmp(elem, &(set->node[i].elem))) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/** 添加一个元素，如果已存在则添加失败. */
+bool hash_set_add(hash_set_t *set, const hash_set_elem_t *elem) {
+    int i;
+    int hash = set->hash(elem);
+
+    for (i = set->head[hash]; i != -1; i = set->node[i].next) {
+        if (set->cmp(elem, &(set->node[i].elem))) {
+            return false; /* 已经存在 */
+        }
+    }
+    /* 不存在，则插入在首节点之前 */
+    set->node[set->size].next = set->head[hash];
+    set->node[set->size].elem = *elem;
+    set->head[hash] = set->size++;
+    return true;
+}
+\end{Codex}
+
+
+\subsection{Babelfish}
+
+
+\subsubsection{描述}
+You have just moved from Waterloo to a big city. The people here speak an incomprehensible dialect of a foreign language. Fortunately, you have a dictionary to help you understand them.
+
+
+\subsubsection{输入}
+Input consists of up to 100,000 dictionary entries, followed by a blank line, followed by a message of up to 100,000 words. Each dictionary entry is a line containing an English word, followed by a space and a foreign language word. No foreign word appears more than once in the dictionary. The message is a sequence of words in the foreign language, one word on each line. Each word in the input is a sequence of at most 10 lowercase letters.
+
+
+\subsubsection{输出}
+Output is the message translated to English, one word per line. Foreign words not in the dictionary should be translated as "eh".
+
+
+\subsubsection{样例输入}
+\begin{Code}
+dog ogday
+cat atcay
+pig igpay
+froot ootfray
+loops oopslay
+
+atcay
+ittenkay
+oopslay
+\end{Code}
+
+
+\subsubsection{样例输出}
+\begin{Code}
+cat
+eh
+loops
+\end{Code}
+
+
+\subsubsection{分析}
+最简单的方法是，把输入的单词对，存放在一个数组，排好序，查找的时候每次进行二分查找。
+
+更快的方法是，用HashMap。C++有\fn{std::map}，C++ 11以后有\fn{std::unordered_map}，比\fn{std::map}快。也可以自己实现哈希表。
+
+
+\subsubsection{代码}
+使用 \fn{std::map} 。
+
+\begin{Codex}[label=babelfish_map.cpp]
+/* POJ 2503 Babelfish , http://poj.org/problem?id=2503 */
+#include <cstdio>
+#include <map>
+#include <string>
+#include <cstring>
+
+using namespace std;
+
+/** 字符串最大长度 */
+const int MAX_WORD_LEN = 10;
+
+int main() {
+    char line[MAX_WORD_LEN * 2 + 1];
+    char s1[MAX_WORD_LEN + 1], s2[MAX_WORD_LEN + 1];
+    map<string, string> dict;
+
+    while (gets(line) && line[0] != 0) {
+        sscanf(line, "%s %s", s1, s2);
+        dict[s2] = s1;
+    }
+
+    while (gets(line)) {
+        if (dict[line].length() == 0) puts("eh");
+        else printf("%s\n", dict[line].c_str());
+    }
+    return 0;
+}
+\end{Codex}
+
+
+自己实现哈希表。
+
+\begin{Codex}[label=babelfish.c]
+/* POJ 2503 Babelfish , http://poj.org/problem?id=2503 */
+/** 单词最大长度. */
+#define MAX_WORD_LEN   11
+
+/** 每个元素所带的数据 */
+typedef struct hash_set_elem_t {
+    char english[MAX_WORD_LEN];
+    char foreign[MAX_WORD_LEN];
+} hash_set_elem_t;
+
+/** 哈希表容量，一定要大于元素最大个数  */
+#define HASH_SET_CAPACITY  100001
+/** 哈希表取模的质数，也即哈希桶的个数，小于 HASH_SET_CAPACITY. */
+#define PRIME  99997
+
+/* 等价于复制粘贴，这里为了节约篇幅，使用include，在OJ上提交时请用复制粘贴 */
+#include "hash_set.c"  /* 见“查找->哈希表”这节 */
+
+/* 与hash_set_find() 略有不同，用类似于HashMap的方式 */
+bool hash_set_get(const hash_set_t *set, hash_set_elem_t *elem) {
+    int i;
+    int hash = set->hash(elem);
+
+    for (i = set->head[hash]; i != -1; i = set->node[i].next) {
+        if (set->cmp(elem, &(set->node[i].elem))) {
+            // 返回对应 english, foreigh 作为key, english作为value
+            strncpy(elem->english, set->node[i].elem.english, MAX_WORD_LEN-1);
+            return true;
+        }
+    }
+    return false;
+}
+
+int elem_hash(const hash_set_elem_t *elem) {
+    const char *str = elem->foreign;
+    unsigned int r = 0;
+    int len = strlen(str);
+    int i;
+
+    for (i = 0; i < len; i++) {
+        r = (r * 31 + str[i]) % PRIME;
+    }
+    return r % PRIME;
+}
+
+bool elem_cmp(const hash_set_elem_t *elem1, const hash_set_elem_t *elem2) {
+    return strcmp(elem1->foreign, elem2->foreign) == 0;
+}
+
+int main() {
+    char line[MAX_WORD_LEN * 2];
+    hash_set_t *set = hash_set_create(elem_hash, elem_cmp);
+    hash_set_elem_t e;
+
+    while (gets(line) && line[0] != 0) {
+        sscanf(line, "%s %s", e.english, e.foreign);
+        hash_set_add(set, &e);
+    }
+    while (gets(e.foreign)) {
+        if (hash_set_get(set, &e)) printf("%s\n", e.english);
+        else printf("eh\n");
+    }
+    hash_set_destroy(set);
+    return 0;
+}
+\end{Codex}
+
+
+\subsubsection{相关的题目}
+与本题相同的题目：
+\begindot
+\item POJ 2503 Babelfish, \myurl{http://poj.org/problem?id=2503}
+\myenddot
+
+与本题相似的题目：
+\begindot
+\item  无
+\myenddot

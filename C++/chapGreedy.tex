@@ -1,0 +1,94 @@
+\chapter{贪心法}
+我们前面见过的一些算法，比如单源最短路径、最小生成树等都属于贪心法(greedy algorithm)。
+
+如果一个问题具有以下两个要素：
+\begindot
+\item 最优子结构(optimal substructure)
+\item 贪心选择性质(greedy-choice property)
+\myenddot
+则可以用贪心法求最优解。
+
+
+\section{最优装载} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\section{哈弗曼编码} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{描述}
+给定一个英文字符串，使用0和1对其进行编码，求最优前缀编码，使其所需要的比特数最少。
+
+\subsubsection{分析}
+题目很长，不过就是哈弗曼编码。
+
+\subsubsection{代码}
+\begin{Codex}[label=poj1521_entropy.cpp]
+// 本题考查哈弗曼编码，但只需要统计哈弗曼编码后的总码长即可，
+// 没必要建哈弗曼树得出哈弗曼编码
+#include <stdio.h>
+#include <string.h>
+#include <queue>
+#include <functional>
+
+const int LINE_MAX = 256; // 一行最大字符数
+const int MAX_ASCII = 128; // ASCII码最大值
+
+int main_entropy() {
+    char    s[LINE_MAX];
+    int     count[MAX_ASCII] = {0}; // count[i]记录ASCII码为i的字符的出现次数
+    int     sum;
+    // 小根堆，队列头为最小元素
+    std::priority_queue<int, std::vector<int>, std::greater<int> >    pq;
+
+    while (scanf("%s", s) > 0) {
+        sum = 0; // 清零
+        const int len = strlen(s);
+
+        if (strcmp(s,"END") == 0) {
+            break;
+        }
+
+        for (int i = 0; i < len; i++) {
+            count[s[i]]++;
+        }
+
+        for (int i = 0;i < MAX_ASCII; i++) {
+            if (count[i] > 0) {
+                pq.push(count[i]);
+                count[i] = 0;
+            }
+        }
+        while (pq.size() > 1) {
+            const int a = pq.top(); pq.pop();
+            const int b = pq.top(); pq.pop();
+            sum += a + b; 
+            pq.push(a + b);
+        }
+        if (sum == 0) {
+            sum = len; // 此时pq中只有一个元素
+        }
+        
+        while (!pq.empty()) { // clear
+            pq.pop();
+        }
+        // 注意精度设置
+        printf("%d %d %.1f\n", 8 * len, sum, ((double)8 * len) / sum);
+    }
+    return 0;
+}
+\end{Codex}
+
+\subsubsection{相关的题目}
+与本题相同的题目：
+\begindot
+\item POJ 1521 Entropy, \myurl{http://poj.org/problem?id=1521}
+\myenddot
+
+与本题相似的题目：
+\begindot
+\item  POJ 3253 Fence Repair, \myurl{http://poj.org/problem?id=3253}
+\item 《算法竞赛入门经典》\footnote{刘汝佳,算法竞赛入门经典，清华大学出版社，2009} 第155页例题8-5
+\item  《Introduction to Algorithms》\footnote{CLRS,Introduction to Algorithms(3rd Edition), 2009} 第16.3节
+\item 《算法设计与分析(第3版)》\footnote{王晓东,计算机算法设计与分析(第3版), 2007} 第109页4.4节
+\myenddot
+
+
+\section{部分背包问题} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

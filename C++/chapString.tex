@@ -1,0 +1,335 @@
+\chapter{字符串}
+
+
+\section{字符串排序} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\section{单词查找树} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\section{子串查找} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+字符串的一种基本操作就是\textbf{子串查找}(substring search)：给定一个长度为$N$的文本和一个长度为$M$的模式串(pattern string)，在文本中找到一个与该模式相符的子字符串。
+
+最简单的算法是暴力查找，时间复杂度是$O(MN)$。下面介绍两个更高效的算法。
+
+
+\subsection{KMP算法}
+KMP算法是Knuth、Morris和Pratt在1976年发表的。它的基本思想是，当出现不匹配时，就能知晓一部分文本的内容（因为在匹配失败之前它们已经和模式相匹配）。我们可以利用这些信息避免将指针回退到所有这些已知的字符之前。这样，当出现不匹配时，可以提前判断如何重新开始查找，而这种判断只取决于模式本身。
+
+详细解释请参考《算法》\footnote{《算法》，Robert Sedgewick，人民邮电出版社，\myurl{http://book.douban.com/subject/10432347/}}第5.3.3节。这本书讲的是确定有限状态自动机(DFA)的方法。
+
+推荐网上的几篇比较好的博客，讲的是部分匹配表(partial match table)的方法（即next数组），“字符串匹配的KMP算法” \myurl{http://t.cn/zTOPfdh}，图文并茂，非常通俗易懂，作者是阮一峰；“KMP算法详解” \myurl{http://www.matrix67.com/blog/archives/115}，作者是顾森 Matrix67；"Knuth-Morris-Pratt string matching" \myurl{http://www.ics.uci.edu/~eppstein/161/960227.html}。
+
+使用next数组的KMP算法的C语言实现如下。
+\begin{Codex}[label=kmp.c]
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+/*
+ * @brief 计算部分匹配表，即next数组.
+ *
+ * @param[in] pattern 模式串
+ * @param[in] m 模式串的长度
+ * @param[out] next next数组
+ * @return 无
+ */
+void compute_prefix(const char pattern[], const int m, int next[]) {
+    int i;
+    int j = -1;
+
+    next[0] = j;
+    for (i = 1; i < m; i++) {
+        while (j > -1 && pattern[j + 1] != pattern[i]) j = next[j];
+
+        if (pattern[i] == pattern[j + 1]) j++;
+        next[i] = j;
+    }
+}
+
+/*
+ * @brief KMP算法.
+ *
+ * @param[in] text 文本
+ * @param[in] n 文本的长度
+ * @param[in] pattern 模式串
+ * @param[in] m 模式串的长度
+ * @return 成功则返回第一次匹配的位置，失败则返回-1
+ */
+int kmp(const char text[], const int n, const char pattern[], const int m) {
+    int i;
+    int j = -1;
+    int *next = (int*)malloc(sizeof(int) * m);
+
+    compute_prefix(pattern, m, next);
+
+    for (i = 0; i < n; i++) {
+        while (j > -1 && pattern[j + 1] != text[i]) j = next[j];
+
+        if (text[i] == pattern[j + 1]) j++;
+        if (j == m - 1) {
+            free(next);
+            return i-j;
+        }
+    }
+
+    free(next);
+    return -1;
+}
+
+
+int main(int argc, char *argv[]) {
+    char text[] = "ABC ABCDAB ABCDABCDABDE";
+    char pattern[] = "ABCDABD";
+    char *ch = text;
+    int i = kmp(text, strlen(text), pattern, strlen(pattern));
+
+    if (i >= 0) printf("matched @: %s\n", ch + i);
+    return 0;
+}
+\end{Codex}
+
+
+\subsection{Boyer-Moore算法}
+详细解释请参考《算法》\footnote{《算法》，Robert Sedgewick，人民邮电出版社，\myurl{http://book.douban.com/subject/10432347/}}第5.3.4节。
+
+推荐网上的几篇比较好的博客，“字符串匹配的Boyer-Moore算法” \myurl{http://www.ruanyifeng.com/blog/2013/05/boyer-moore_string_search_algorithm.html}，图文并茂，非常通俗易懂，作者是阮一峰；Boyer-Moore algorithm, \myurl{http://www-igm.univ-mlv.fr/~lecroq/string/node14.html}。
+
+有兴趣的读者还可以看原始论文\footnote{BOYER R.S., MOORE J.S., 1977, A fast string searching algorithm. Communications of the ACM. 20:762-772.}。
+
+Boyer-Moore算法的C语言实现如下。
+\begin{Codex}[label=boyer_moore.c]
+/**
+ * 本代码参考了 http://www-igm.univ-mlv.fr/~lecroq/string/node14.html
+ * 精力有限的话，可以只计算坏字符的后移，好后缀的位移是可选的，因此可以删除
+ * suffixes(), pre_gs() 函数
+ */
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define ASIZE 256  /* ASCII字母的种类 */
+
+/*
+ * @brief 预处理，计算每个字母最靠右的位置.
+ *
+ * @param[in] pattern 模式串
+ * @param[in] m 模式串的长度
+ * @param[out] right 每个字母最靠右的位置
+ * @return 无
+ */
+static void pre_right(const char pattern[], const int m, int right[]) {
+    int i;
+
+    for (i = 0; i < ASIZE; ++i) right[i] = -1;
+    for (i = 0; i < m; ++i) right[pattern[i]] = i;
+}
+
+
+static void suffixes(const char pattern[], const int m, int suff[]) {
+    int f, g, i;
+
+    suff[m - 1] = m;
+    g = m - 1;
+    for (i = m - 2; i >= 0; --i) {
+        if (i > g && suff[i + m - 1 - f] < i - g)
+            suff[i] = suff[i + m - 1 - f];
+        else {
+            if (i < g)
+                g = i;
+            f = i;
+            while (g >= 0 && pattern[g] == pattern[g + m - 1 - f])
+                --g;
+            suff[i] = f - g;
+        }
+    }
+}
+
+/*
+ * @brief 预处理，计算好后缀的后移位置.
+ *
+ * @param[in] pattern 模式串
+ * @param[in] m 模式串的长度
+ * @param[out] gs 好后缀的后移位置
+ * @return 无
+ */
+static void pre_gs(const char pattern[], const int m, int gs[]) {
+    int i, j;
+    int *suff = (int*)malloc(sizeof(int) * (m + 1));
+
+    suffixes(pattern, m, suff);
+
+    for (i = 0; i < m; ++i) gs[i] = m;
+
+    j = 0;
+    for (i = m - 1; i >= 0; --i) if (suff[i] == i + 1)
+        for (; j < m - 1 - i; ++j) if (gs[j] == m)
+            gs[j] = m - 1 - i;
+    for (i = 0; i <= m - 2; ++i) 
+        gs[m - 1 - suff[i]] = m - 1 - i;
+    free(suff);
+}
+
+/**
+ * @brief Boyer-Moore算法.
+ *
+ * @param[in] text 文本
+ * @param[in] n 文本的长度
+ * @param[in] pattern 模式串
+ * @param[in] m 模式串的长度
+ * @return 成功则返回第一次匹配的位置，失败则返回-1
+ */
+int boyer_moore(const char text[], const int n, 
+                const char pattern[], const int m) {
+    int i, j;
+    int right[ASIZE];  /* bad-character shift */
+    int *gs = (int*)malloc(sizeof(int) * (m + 1));  /* good-suffix shift */
+
+    /* Preprocessing */
+    pre_right(pattern, m, right);
+    pre_gs(pattern, m, gs);
+
+    /* Searching */
+    j = 0;
+    while (j <= n - m) {
+        for (i = m - 1; i >= 0 && pattern[i] == text[i + j]; --i);
+
+        if (i < 0) { /* 找到一个匹配 */
+            /* printf("%d ", j);
+            j += bmGs[0]; */
+            free(gs);
+            return j;
+        } else {
+            const int max = gs[i] > right[text[i + j]] - m + 1 + i ?
+                gs[i] : i - right[text[i + j]];
+            j += max;
+        }
+    }
+    free(gs);
+    return -1;
+}
+
+
+int main() {
+    const char text[]="HERE IS A SIMPLE EXAMPLE";
+    const char pattern[] = "EXAMPLE";
+    const int pos = boyer_moore(text, strlen(text), pattern, strlen(pattern));
+    printf("%d\n", pos); /* 17 */
+    return 0;
+}
+\end{Codex}
+
+
+\subsection{Rabin-Karp算法}
+详细解释请参考《算法》\footnote{《算法》，Robert Sedgewick，人民邮电出版社，\myurl{http://book.douban.com/subject/10432347/}}第5.3.5节。
+
+Rabin-Karp算法的C语言实现如下。
+\begin{Codex}[label=rabin_karp.c]
+#include <stdio.h>
+#include <string.h>
+
+const int R = 256;  /** ASCII字母表的大小，R进制 */
+/** 哈希表的大小，选用一个大素数，这里用16位整数范围内最大的素数 */
+const long Q = 0xfff1;
+
+/*
+ * @brief 哈希函数.
+ *
+ * @param[in] key 待计算的字符串
+ * @param[int] M 字符串的长度
+ * @return 长度为M的子字符串的哈希值
+ */
+static long hash(const char key[], const int M) {
+    int j;
+    long h = 0;
+    for (j = 0; j < M; ++j) h = (h * R + key[j]) % Q;
+    return h;
+}
+
+/*
+ * @brief 计算新的hash.
+ *
+ * @param[int] h 该段子字符串所对应的哈希值
+ * @param[in] first 长度为M的子串的第一个字符
+ * @param[in] next 长度为M的子串的下一个字符
+ * @param[int] RM R^(M-1) % Q
+ * @return 起始于位置i+1的M个字符的子字符串所对应的哈希值
+ */
+static long rehash(const long h, const char first, const char next, 
+                   const long RM) {
+    long newh = (h + Q - RM * first % Q) % Q;
+    newh = (newh * R + next) % Q;
+    return newh;
+}
+
+/*
+ * @brief 用蒙特卡洛算法，判断两个字符串是否相等.
+ * 
+ * @param[in] pattern 模式串
+ * @param[in] substring 原始文本长度为M的子串
+ * @param[in] M 模式串的长度，也是substring的长度
+ * @return 两个字符串相同，返回1，否则返回0
+ */
+static int check(const char pattern[], const char substring[], const int M) {
+    return 1;
+}
+
+/**
+ * @brief Rabin-Karp算法.
+ *
+ * @param[in] text 文本
+ * @param[in] n 文本的长度
+ * @param[in] pattern 模式串
+ * @param[in] m 模式串的长度
+ * @return 成功则返回第一次匹配的位置，失败则返回-1
+ */
+int rabin_karp(const char text[], const int n, 
+               const char pattern[], const int m) {
+    int i;
+    const long pattern_hash = hash(pattern, m);
+    long text_hash = hash(text, m);
+    int RM = 1;
+    for (i = 0; i < m - 1; ++i) RM = (RM * R) % Q;
+
+    for (i = 0; i <= n - m; ++i) {
+        if (text_hash == pattern_hash) {
+            if (check(pattern, &text[i], m)) return i;
+        }
+        text_hash = rehash(text_hash, text[i], text[i + m], RM);
+    }
+    return -1;
+}
+
+
+int main() {
+    const char text[]="HERE IS A SIMPLE EXAMPLE";
+    const char pattern[] = "EXAMPLE";
+    const int pos = rabin_karp(text, strlen(text), pattern, strlen(pattern));
+    printf("%d\n", pos); /* 17 */
+    return 0;
+}
+\end{Codex}
+
+\subsection{总结}
+\vspace{1ex}
+\begin{center}
+\begin{tabular}{llccccc}
+\hline
+\multirow{2}{*}{\textbf{算法}} & \multirow{2}{*}{\textbf{版本}} & \multicolumn{2}{c}{\textbf{复杂度}} & \textbf{在文本} & \multirow{2}{*}{\textbf{正确性}} & \textbf{辅助}\\
+\cline{3-4} & & \textbf{最坏情况} & \textbf{平均情况} & \textbf{中回退} & & \textbf{空间}\\
+\hline
+\multirow{3}{*}{KMP算法} & 完整的DFA & 2N & 1.1N & 否 & 是 & MR\\
+                         & 部分匹配表 & 3N & 1.1N & 否 & 是 & M\\
+						 & 完整版本 & 3N & N/M & 是 & 是 & R\\
+\hline
+Boyer-Moore算法 & 坏字符向后位移 & MN & N/M & 是 & 是 & R\\
+\hline
+\multirow{2}{*}{Rabin-Karp算法$^*$} & 蒙特卡洛算法 & 7N & 7N & 否 & 是$^*$ & 1\\
+                         & 拉斯维加斯算法 & $7N^*$ & 7N & 是 & 是 & 1\\
+\hline
+\end{tabular}
+\end{center}
+\small{* 概率保证，需要使用均匀和独立的散列函数}
+
+
+\section{正则表达式} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
