@@ -918,11 +918,11 @@ A_N+B_1<A_N+B_2<A_N+B_3< &...& <A_N+B_N \nonumber
 \subsubsection{代码}
 \begin{Codex}[label=sequence.c]
 /* wikioi 1245 最小的N个和，http://www.wikioi.com/problem/1245/  */
-#include <stdio.h>
-#include <stdlib.h>  /* for malloc() */
-#include <string.h>  /* for memcpy() */
+#include <cstdio>
+#include <queue>
+#include <algorithm>
 
-#define MAXN 100000
+const int MAXN = 100000;
 
 int N;
 int a[MAXN], b[MAXN];
@@ -930,47 +930,42 @@ int a[MAXN], b[MAXN];
 typedef struct node_t {
     int sum;
     int b; /* sum=a[i]+b[b] */
+    bool operator>(const node_t &other) const {
+        return sum > other.sum;
+    }
 } node_t;
 
-typedef node_t heap_elem_t; // 元素的类型
-/* 等价于复制粘贴，这里为了节约篇幅，使用include，在OJ上提交时请用复制粘贴 */
-#include "heap.c"
 
 void k_merge() {
-    heap_t *h;
-    int i;
-    node_t tmp;
+    std::sort(a, a+N);
+    std::sort(b, b+N);
+    std::priority_queue<node_t, std::vector<node_t>,
+                                std::greater<node_t> > q;
 
-    qsort(a, N, sizeof(int), cmp_int);
-    qsort(b, N, sizeof(int), cmp_int);
-    h = heap_create(N, cmp_node);
-
-    for (i = 0; i < N; i++) {
+    for (int i = 0; i < N; i++) {
+        node_t tmp;
         tmp.sum = a[i]+b[0];
         tmp.b = 0;
-        heap_push(h, tmp);
+        q.push(tmp);
     }
 
-    for (i = 0; i < N; i++) {
-        tmp = heap_top(h); heap_pop(h);
+    for (int i = 0; i < N; i++) {
+        node_t tmp = q.top(); q.pop();
         printf("%d ", tmp.sum);
         tmp.sum = tmp.sum - b[tmp.b] + b[tmp.b + 1];
         tmp.b++;
-        heap_push(h, tmp);
+        q.push(tmp);
     }
 
-    heap_destroy(h);
     return;
 }
 
 int main() {
-    int i;
-
     scanf("%d", &N);
-    for (i = 0; i < N; i++) {
+    for (int i = 0; i < N; i++) {
         scanf("%d", &a[i]);
     }
-    for (i = 0; i < N; i++) {
+    for (int i = 0; i < N; i++) {
         scanf("%d", &b[i]);
     }
 
@@ -2184,11 +2179,6 @@ int main() {
 #include <string.h>
 #include <stdlib.h>
 
-#ifndef __cplusplus
-typedef char bool;
-#define false 0
-#define true 1
-#endif
 
 #define MAXN 10000   /** 输入的编码的最大个数. */
 #define CHAR_COUNT  10 /** 字符的种类，也即单个节点的子树的最大个数 */
@@ -2443,11 +2433,6 @@ Yellow Birch 3.4483
 #include <string.h>
 #include <stdlib.h>
 
-#ifndef __cplusplus
-typedef char bool;
-#define false 0
-#define true 1
-#endif
 
 #define MAXN 1000   /**  no more than 10,000 species，会MLE，因此减一个0 */
 #define CHAR_COUNT  128 /** ASCII 编码范围 */

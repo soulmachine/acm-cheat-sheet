@@ -43,9 +43,9 @@
 
 
 \subsubsection{代码模板}
-\begin{Codex}[label=bfs_template.c]
-#include <stdio.h>
-#include <string.h>
+\begin{Codex}[label=bfs_template.cpp]
+#include <cstdio>
+#include <cstring>
 
 /***** 输入数据，用全局变量存放 *****/
 ...
@@ -65,16 +65,8 @@ const int dx[4] = { -1, 0, 1, 0 }; // 行
 const int dy[4] = { 0, 1, 0, -1 }; // 列
 */
 
-#ifndef __cplusplus
-typedef char bool;
-#define false 0
-#define true 1
-#endif
-
-/**
- * @strut 状态
- */
-typedef struct state_t {
+/** 状态 */
+struct state_t {
     ... data1;  /** 状态的数据，可以有多个字段. */
     ... data2;  /** 状态的数据，可以有多个字段. */
     int action; /** 由父状态移动到本状态的动作，求动作序列时需要. */
@@ -83,11 +75,11 @@ typedef struct state_t {
                    状态的哈希值作为下标，而哈希值可以直接计算出） */
     int father; /** 父状态在path[]中的下标，求路径或动作序列时需要 */
     int count;  /** 所花费的步骤数（也即路径长度-1），求路径长度时需要 */
-} state_t;
+};
 
 /********** 如果题目要求输出路径或动作序列，则需要下面的变量和函数 ***********/
 
-#define STATE_MAX ...  /* 状态总数 */
+const int STATE_MAX ...  /* 状态总数 */
 /**
  * 记录动作序列，树的双亲表示法.
  * 如果不能预估状态个数的上限，则不能用数组，要用通用树
@@ -95,7 +87,22 @@ typedef struct state_t {
  * 其实一般用不了这么大的数组，广搜很很快就会结束
  */
 state_t path[STATE_MAX];
-int path_index = 0;  /** 每出现一个新状态，就增1，将状态存到该位置 */
+int path_index = 0;  /** 每出现一个新状态，就增1，将状态存到该位置，
+                         如果有完美哈希方案，则不需要该变量. */
+
+/**
+ * @brief 返回状态在path[]中的下标.
+ * 
+ * 起点状态没有父亲和动作为-1，因为它没有父状态，也就没有所谓的从父节点到它的动作。
+ * @param[in] s 状态
+ * @return 状态在path[]中的下标
+ */
+int state_index(const state& s) {
+    /* 如果有完美哈希方案 */
+    return state_hash(s);
+    /* 否则 */
+    return s.index;
+}
 
 /**
  * @brief 打印动作序列.
@@ -129,13 +136,8 @@ void print_path(const int end) {
 
 /********** 如果题目要求输出路径或动作序列，则需要上面的变量和函数 ***********/
 
-/** 计算状态的哈希值，如果存在完美哈希方案，则定义本函数，否则不需要.
- * 哈希值只依赖state_t的数据字段。
- */
-int state_hash(const state_t *s);
-
 /** 初始化查找表. */
-void history_init();
+void hashset_init();
 
 /**
  * @brief 状态判重.
@@ -143,14 +145,14 @@ void history_init();
  * @param[in] s 状态
  * @return 已经访问过，返回true，否则false
  */
-bool history_contains(const state_t *s);
+bool hashset_find(const state_t &s);
 
 /**
  * @brief 标记该状态已经被访问
  * @param[in] s 状态
  * @return 无
  */
-void history_insert(const state_t *s);
+void hashset_insert(const state_t &s);
 
 /**
  * @brief 扩展第一个状态.
@@ -158,7 +160,7 @@ void history_insert(const state_t *s);
  * @param[out] next 第一个状态
  * @return 如果还有下一个状态，返回true，否则返回false
  */
-void state_extend_init(const state_t *s);
+void state_extend_init(const state_t &s);
 
 /**
  * @brief 扩展下一个状态.
@@ -166,18 +168,14 @@ void state_extend_init(const state_t *s);
  * @param[out] next 下一个状态
  * @return 如果还有下一个状态，返回true，否则返回false
  */
-bool state_extend(const state_t *s, state_t *next);
+bool state_extend(const state_t &s, state_t &next);
 
 /**
  * @brief 判断状态是否为目标.
  * @param[in] s 状态
  * @return 如果已经达到目标状态，返回true，否则false
  */
-bool state_is_target(const state_t *s);
-
-typedef state_t queue_elem_t; // 元素的类型
-/* 等价于复制粘贴，这里为了节约篇幅，使用include，在OJ上提交时请用复制粘贴 */
-#include "queue.c"  /* 见“栈和队列->队列”这节，如果是C++，则使用std::queue */
+bool state_is_target(const state_t &s);
 
 /*
  * @brief 广搜
@@ -186,47 +184,44 @@ typedef state_t queue_elem_t; // 元素的类型
  * @param[in] y 入口的y坐标
  * @return 目标状态在path[]中的下标，如果不需要求路径，则声明为 void
  */
-int bfs(state_t *start) {
-    queue_t *q = queue_create(16);
-    history_init();
+int bfs(state_t &start) {
+    std::queue<state_t> q;
+    hashset_init();
 
-    start->action = -1;   /* 起点状态没有动作 */
-    start->index = path_index++;
-    start->father = -1;   /* 起点状态没有父状态 */
-    start->count = 0;
+    start.action = -1;   /* 起点状态没有动作 */
+    start.index = path_index++;
+    start.father = -1;   /* 起点状态没有父状态 */
+    start.count = 0;
 
-    path[state_hash(start) or start->index] = *start;
-    history_insert(start); // 千万别忘记了标记此处的访问记录
+    path[state_index(start)] = start;
+    hashset_insert(start); // 千万别忘记了标记此处的访问记录
     if (state_is_target(start)) /* 如果起点就是终点，返回 */
-        return state_hash(start) or start->index;
-    queue_push(q, *start);
+        return state_index(start);
+    q.push(start);
 
-    while (!queue_empty(q)) {
-        const state_t s = queue_front(q);
+    while (!q.empty()) {
+        const state_t s = q.front(); q.pop();
         state_t next;
-        queue_pop(q);
 
         state_extend_init(&s);
         while (state_extend(&s, &next)) {
             if (state_is_target(&next)) {
                 // printf("%d\n", next.count);
-                queue_destroy(q);
-                return next.index or state_hash(&next);
+                return state_index(next);
             }
-            queue_push(q, next);
-            history_insert(&next);
+            q.push(next);
+            hashset_insert(&next);
         }
     }
-    queue_destroy(q);
     return -1;
 }
 
 int main(void) {
     state_t start;
     int end; /* 目标状态在path[]中的下标 */
-    input(&start);
+    input(start);
 
-    end = bfs(&start);
+    end = bfs(start);
 
     print_action(end);
     printf("\n");
@@ -236,34 +231,43 @@ int main(void) {
 
 /************ functions implement ************/
 
+/** 哈希表取模的质数，也即哈希桶的个数，越大越好，不过一般小于 HASH_SET_CAPACITY. */
+#define PRIME ...  /* 99997 */
+
 /* 哈希表容量，要大于状态总数，若存在完美哈希方案，则等于状态总数 */
-#define HASH_CAPACITY ...
+#define HASH_CAPACITY STATE_MAX
 
 /** 哈希表，标记状态是否已访问过。
  * 如果存在完美哈希方案，则用数组作为哈希表，否则用std::unordered_set
  */
 ... visited
-// 例如 bool visited[HASH_MAX];
+// 例如 bool visited[HASH_CAPACITY];
+// 或者
+// int head[PRIME];
+// int next[HASH_CAPACITY];
 
-int state_hash(const state_t *s) {
+/** 计算状态的哈希值.
+ * 哈希值应该只依赖state_t的数据字段。
+ */
+int state_hash(const state_t &s) {
     ...
 }
 
-void history_init() {
+void hashset_init() {
     /* 如果是数组 */
     memset(visited, 0, sizeof(visited));
     /* 如果是 std::unordered_set */
     visited.clear();
 }
 
-bool history_contains(const state_t *s) {
+bool hashset_find(const state_t &s) {
     /* 如果是数组 */
     return visited[state_hash(s)] == true;
     /* 如果是 std::unordered_set */
     return visited.count(s) > 0;
 }
 
-void history_insert(const state_t *s) {
+void hashset_insert(const state_t &s) {
     /* 如果是数组 */
     visited[state_hash(s)] = true;
     /* 如果是 std::unordered_set */
@@ -281,12 +285,12 @@ int action_cur;
 /* 扩展点的位置，是 state_extend_init()和state_extend()的共享变量 */
 int extend_pos;
 
-void state_extend_init(const state_t *s) {
+void state_extend_init(const state_t &s) {
     action_cur = ACTION_BEGIN;
     extend_pos = // 根据 s 进行计算
 }
 
-bool state_extend(const state_t *s, state_t *next) {
+bool state_extend(const state_t &s, state_t &next) {
     // extract values from s
     value1 = ...
     value2 = ...
@@ -294,18 +298,18 @@ bool state_extend(const state_t *s, state_t *next) {
         // apply action_cur to values
         value1 = ...
         value2 = ...
-        next->count = s->count + 1;
+        next.count = s.count + 1;
         if (values are valid) {
             // assign new values to next's data fields
-            next->data1 = value1
-            next->data2 = value2
+            next.data1 = value1
+            next.data2 = value2
 
-            if (!history_contains(next)) { /* 判重 */
-                next->action = action_cur;
-                next->index = path_index++;
-                next->father = s->index or state_hash(s);
+            if (!hashset_find(next)) { /* 判重 */
+                next.action = action_cur;
+                next.index = path_index++;
+                next.father = state_index(s);
                 /* 记录路径 */
-                path[next->index or state_hash(next)] = *next;
+                path[state_index(next)] = next;
                 action_cur++;  /* return前别忘了增1 */
                 return true;
             }
@@ -318,10 +322,10 @@ bool state_extend(const state_t *s, state_t *next) {
 // 目标状态
 const state_t END = {..., 0};
 
-bool state_is_target(const state_t *s) {
+bool state_is_target(const state_t &s) {
     ...
-    /* 例如 return memcmp(s->data, END.data, xx * sizeof(yy) == 0; */
-    /* 例如 return s->data == END.data; */
+    /* 例如 return memcmp(s.data, END.data, xx * sizeof(yy) == 0; */
+    /* 例如 return s.data == END.data; */
 }
 \end{Codex}
 
@@ -371,10 +375,12 @@ bool state_is_target(const state_t *s) {
 
 \subsubsection{代码}
 \begin{Codex}[label=maze.c]
-#include <stdio.h>
-#include <string.h>
+/* POJ 3984 迷宫问题, http://poj.org/problem?id=3984 */
+#include <cstdio>
+#include <cstring>
+#include <queue>
 
-#define MAXN 5
+const int MAXN = 5;
 
 // 迷宫的行数，列数
 int m = MAXN, n = MAXN;
@@ -386,11 +392,6 @@ const char name[4] = { 'U', 'R', 'D', 'L' };
 const int dx[4] = { -1, 0, 1, 0 }; // 行
 const int dy[4] = { 0, 1, 0, -1 }; // 列
 
-#ifndef __cplusplus
-typedef char bool;
-#define false 0
-#define true 1
-#endif
 
 typedef struct state_t {
     int data;
@@ -398,9 +399,15 @@ typedef struct state_t {
     int father;
 } state_t;
 
-#define STATE_MAX MAXN*MAXN  /* 状态总数 */
+const int STATE_MAX = MAXN * MAXN;  /* 状态总数 */
 
 state_t path[STATE_MAX];
+
+int state_hash(const state_t &s);
+
+int state_index(const state_t &s) {
+    return state_hash(s);
+}
 
 void print_action(const int end) {
     if (path[end].father == -1) return;
@@ -418,89 +425,81 @@ void print_path(const int end) {
     printf("(%d, %d)\n", end / n, end % n);
 }
 
-int state_hash(const state_t *s);
+void hashset_init();
 
-void history_init();
+bool hashset_find(const state_t &s);
 
-bool history_contains(const state_t *s);
+void hashset_insert(const state_t &s);
 
-void history_insert(const state_t *s);
+void state_extend_init(const state_t &s);
 
-void state_extend_init(const state_t *s);
+bool state_extend(const state_t &s, state_t &next);
 
-bool state_extend(const state_t *s, state_t *next);
+bool state_is_target(const state_t &s);
 
-bool state_is_target(const state_t *s);
+int bfs(state_t &start) {
+    std::queue<state_t> q;
+    hashset_init();
 
-typedef state_t queue_elem_t; // 元素的类型
-/* 等价于复制粘贴，这里为了节约篇幅，使用include，在OJ上提交时请用复制粘贴 */
-#include "queue.c"  /* 见“栈和队列->队列”这节，如果是C++，则使用std::queue */
+    start.action = -1;
+    start.father = -1;
 
-int bfs(state_t *start) {
-    queue_t *q = queue_create(16);
-    history_init();
-
-    start->action = -1;
-    start->father = -1;
-
-    path[state_hash(start)] = *start;
-    history_insert(start);
+    path[state_index(start)] = start;
+    hashset_insert(start);
     if (state_is_target(start))
-        return state_hash(start);
-    queue_push(q, *start);
+        return state_index(start);
+    q.push(start);
 
-    while (!queue_empty(q)) {
-        const state_t s = queue_front(q);
-        queue_pop(q);
+    while (!q.empty()) {
+        const state_t s = q.front(); q.pop();
         state_t next;
-        state_extend_init(&s);
-        while (state_extend(&s, &next)) {
-            if (state_is_target(&next)) {
-                queue_destroy(q);
-                return state_hash(&next);
+
+        state_extend_init(s);
+        while (state_extend(s, next)) {
+            if (state_is_target(next)) {
+                return state_index(next);
             }
-            queue_push(q, next);
-            history_insert(&next);
+            q.push(next);
+            hashset_insert(next);
         }
     }
-    queue_destroy(q);
     return -1;
 }
 
 int main(void) {
-    int i, j;
     state_t start = {0, -1, -1}; /* 左上角为起点 */
     int end;
 
-    for (i = 0; i < m; i++) {
-        for (j = 0; j < n; j++) {
+    for (int i = 0; i < m; i++) {
+        for (int j = 0; j < n; j++) {
             scanf("%d", &map[i][j]);
         }
     }
 
-    end = bfs(&start);
+    end = bfs(start);
     print_path(end);
     return 0;
 }
 
 /********** functions implement **************/
-/* 哈希表容量，要大于状态总数，若存在完美哈希方案，则等于状态总数 */
-#define HASH_CAPACITY STATE_MAX
+/* 存在完美哈希方案 */
+
+const int HASH_CAPACITY = STATE_MAX;
 bool visited[HASH_CAPACITY];
 
-int state_hash(const state_t *s) {
-    return s->data;
+int state_hash(const state_t &s) {
+    return s.data;
 }
 
-void history_init() {
+void hashset_init() {
     memset(visited, 0, sizeof(visited));
 }
 
-bool history_contains(const state_t *s) {
+bool hashset_find(const state_t &s) {
     return visited[state_hash(s)] == true;
 }
 
-void history_insert(const state_t *s) {
+void hashset_insert(const state_t &s) {
     visited[state_hash(s)] = true;
 }
 
@@ -510,25 +509,25 @@ int action_cur;
 /** 扩展点，即当前位置 */
 int x, y;
 
-void state_extend_init(const state_t *s) {
+void state_extend_init(const state_t &s) {
     action_cur = ACTION_BEGIN;
-    x = s->data / n;
-    y = s->data % n;
+    x = s.data / n;
+    y = s.data % n;
 }
 
-bool state_extend(const state_t *s, state_t *next) {
+bool state_extend(const state_t &s, state_t &next) {
     while(action_cur < ACTION_END) {
         const int nx = x + dx[action_cur];
         const int ny = y + dy[action_cur];
 
         if (nx >= 0 && nx < m && ny >= 0 && ny < n && !map[nx][ny]) {
-            next->data = nx * n + ny;
+            next.data = nx * n + ny;
 
-            if (!history_contains(next)) { /* 判重 */
+            if (!hashset_find(next)) { /* 判重 */
                 /* 记录路径 */
-                next->action = action_cur;
-                next->father = state_hash(s);
-                path[state_hash(next)] = *next;
+                next.action = action_cur;
+                next.father = state_hash(s);
+                path[state_index(next)] = next;
 
                 action_cur++;  /* return前别忘了增1 */
                 return true;
@@ -540,8 +539,8 @@ bool state_extend(const state_t *s, state_t *next) {
 }
 
 const state_t END = {24, -1, -1};
-bool state_is_target(const state_t *s) {
-    return s->data == END.data;
+bool state_is_target(const state_t &s) {
+    return s.data == END.data;
 }
 \end{Codex}
 
@@ -628,11 +627,12 @@ ullddrurdllurdruldr
 
 \begin{Codex}[label=eight_digits_bfs.c]
 /* POJ 1077 Eight, http://poj.org/problem?id=1077 */
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
+#include <queue>
 
-#define DIGITS 9 // 棋盘中数字的个数，也是变进制数需要的位数
-#define     MATRIX_EDGE 3       // 棋盘边长
+const int DIGITS = 9; // 棋盘中数字的个数，也是变进制数需要的位数
+const int MATRIX_EDGE = 3;       // 棋盘边长
 
 /***** 一些常量 *****/
 const int SPACE_NUMBER = 0; // 空格对应着数字 0
@@ -640,12 +640,6 @@ const int SPACE_NUMBER = 0; // 空格对应着数字 0
 const int dx[] = {-1, 1, 0, 0};
 const int dy[] = {0, 0, -1, 1};
 const char name[] = { 'u', 'd', 'l', 'r' };
-
-#ifndef __cplusplus
-typedef char bool;
-#define false 0
-#define true 1
-#endif
 
 typedef char int8_t;
 
@@ -660,9 +654,15 @@ typedef struct state_t {
 } state_t;
 
 // 3x3的棋盘，状态最多有 9!种
-#define STATE_MAX 362880  /* 状态总数 */
+const int STATE_MAX = 362880;  /* 状态总数 */
 
 state_t path[STATE_MAX+1];
+
+int state_hash(const state_t &s);
+
+int state_index(const state_t &s) {
+    return state_hash(s);
+}
 
 /**
  * @brief 打印动作序列.
@@ -676,13 +676,11 @@ void print_action(const int end) {
     putchar(name[path[end].action]);
 }
 
-int state_hash(const state_t *s);
+void hashset_init();
 
-void history_init();
+bool hashset_find(const state_t *s);
 
-bool history_contains(const state_t *s);
-
-void history_insert(const state_t *s);
+void hashset_insert(const state_t *s);
 
 void state_extend_init(const state_t *s);
 
@@ -690,41 +688,35 @@ bool state_extend(const state_t *s, state_t *next);
 
 bool state_is_target(const state_t *s);
 
-typedef state_t queue_elem_t; // 元素的类型
-/* 等价于复制粘贴，这里为了节约篇幅，使用include，在OJ上提交时请用复制粘贴 */
-#include "queue.c"  /* 见“栈和队列->队列”这节，如果是C++，则使用std::queue */
 
 int bfs(state_t *start) {
-    queue_t *q = queue_create(16);
-    history_init();
+    std::queue<state_t> q;
+    hashset_init();
 
     start->action = -1;
     start->father = -1;
     start->count = 0;
 
-    path[state_hash(start)] = *start;
-    history_insert(start);
+    path[state_index(start)] = *start;
+    hashset_insert(start);
     if (state_is_target(start))
-        return state_hash(start);
-    queue_push(q, *start);
+        return state_index(start);
+    q.push(*start);
 
-    while (!queue_empty(q)) {
-        const state_t s = queue_front(q);
+    while (!q.empty()) {
+        const state_t s = q.front(); q.pop();
         state_t next;
-        queue_pop(q);
 
         state_extend_init(&s);
         while (state_extend(&s, &next)) {
             if (state_is_target(&next)) {
                 // printf("%d\n", next.count);
-                queue_destroy(q);
-                return state_hash(&next);
+                return state_index(&next);
             }
-            queue_push(q, next);
-            history_insert(&next);
+            q.push(next);
+            hashset_insert(&next);
         }
     }
-    queue_destroy(q);
     return -1;
 }
 
@@ -733,8 +725,8 @@ int bfs(state_t *start) {
  * @return 无
  */
 void input(state_t *start) {
-    int ch, i;
-    for (i = 0; i < DIGITS; ++i) {
+    int ch;
+    for (int i = 0; i < DIGITS; ++i) {
         do {
             ch = getchar();
         } while ((ch != EOF) && ((ch < '1') || (ch > '8')) && (ch != 'x'));
@@ -746,11 +738,11 @@ void input(state_t *start) {
 
 /** for wikioi 1225 */
 void input1(state_t *start) {
-    int i, n;
+    int n;
     scanf("%d", &n);
 
     /* 将整数转化为棋盘 */
-    for(i = DIGITS-1; i >= 0; i--) {
+    for(int i = DIGITS-1; i >= 0; i--) {
         start->data[i] = n % 10;
         n /= 10;
     }
@@ -778,30 +770,29 @@ int main(void) {
 // 9 位变进制数，每个位数的单位，0!~8!
 const int fac[] = {40320, 5040, 720, 120, 24, 6, 2, 1, 1};
 /* 哈希表容量，要大于状态总数，若存在完美哈希方案，则等于状态总数 */
-#define HASH_CAPACITY STATE_MAX
+const int HASH_CAPACITY = STATE_MAX;
 
 bool visited[HASH_CAPACITY];
 
 int state_hash(const state_t *s) {
-    int i, j;
     int key = 0;
-    for (i = 0; i < DIGITS; i++) {
+    for (int i = 0; i < DIGITS; i++) {
         int cnt = 0;  /* 逆序数 */
-        for (j = i + 1; j < DIGITS; j++) if (s->data[i] > s->data[j]) cnt++;
+        for (int j = i + 1; j < DIGITS; j++) if (s->data[i] > s->data[j]) cnt++;
         key += fac[i] * cnt;
     }
     return key;
 }
 
-void history_init() {
+void hashset_init() {
     memset(visited, 0, sizeof(visited));
 }
 
-bool history_contains(const state_t *s) {
+bool hashset_find(const state_t *s) {
     return visited[state_hash(s)] == true;
 }
 
-void history_insert(const state_t *s) {
+void hashset_insert(const state_t *s) {
     visited[state_hash(s)] = true;
 }
 
@@ -836,11 +827,11 @@ bool state_extend(const state_t *s, state_t *next) {
             next->data[newz] = SPACE_NUMBER;
             next->data[z] = s->data[newz];
             next->count = s->count + 1;
-            if (!history_contains(next)) { /* 判重 */
+            if (!hashset_find(next)) { /* 判重 */
                 next->action = action_cur;
                 next->father = state_hash(s);
                 /* 记录路径 */
-                path[state_hash(next)] = *next;
+                path[state_index(next)] = *next;
                 action_cur++; /* return前别忘了增1 */
                 return true;
             }
@@ -864,12 +855,13 @@ bool state_is_target(const state_t *s) {
 
 \begin{Codex}[label=eight_digits_bfs2.c]
 /* POJ 1077 Eight, http://poj.org/problem?id=1077 */
-#include <stdio.h>
-#include <string.h>
-#include <assert.h>
+#include <cstdio>
+#include <cstring>
+#include <queue>
+#include <algorithm>
 
-#define DIGITS 9 // 棋盘中数字的个数，也是变进制数需要的位数
-#define     MATRIX_EDGE 3       // 棋盘边长
+const int DIGITS = 9; // 棋盘中数字的个数，也是变进制数需要的位数
+const int MATRIX_EDGE = 3;       // 棋盘边长
 
 /***** 一些常量 *****/
 const int SPACE_NUMBER = 0; // 空格对应着数字 0
@@ -878,30 +870,26 @@ const int dx[] = {-1, 1, 0, 0};
 const int dy[] = {0, 0, -1, 1};
 const char name[] = { 'u', 'd', 'l', 'r' };
 
-#ifndef __cplusplus
-typedef char bool;
-#define false 0
-#define true 1
-#endif
+typedef signed char int8_t;
 
-typedef char int8_t;
-
-/**
- * @strut 状态
- */
-typedef struct state_t {
+/** 状态 */
+struct state_t {
     int8_t data[DIGITS];  /** 状态的数据. */
     int action; /* 由父状态移动到本状态的动作 */
     int index;  /** 本状态在path[]中的下标 */
     int father; /** 父状态在path[]中的下标 */
     int count;  /** 所花费的步骤数（也即路径长度-1） */
-} state_t;
+};
 
 // 3x3的棋盘，状态最多有 9!种
-#define STATE_MAX 362880  /* 状态总数 */
+const int STATE_MAX = 362880;  /* 状态总数 */
 
 state_t path[STATE_MAX+1];
 int path_index = 0;
+
+int state_index(const state_t &s) {
+    return s.index;
+}
 
 /**
  * @brief 打印动作序列.
@@ -915,54 +903,47 @@ void print_action(const int end) {
     putchar(name[path[end].action]);
 }
 
-void history_init();
+void hashset_init();
 
-bool history_contains(const state_t *s);
+bool hashset_find(const state_t &s);
 
-void history_insert(const state_t *s);
+void hashset_insert(const state_t &s);
 
-void state_extend_init(const state_t *s);
+void state_extend_init(const state_t &s);
 
-bool state_extend(const state_t *s, state_t *next);
+bool state_extend(const state_t &s, state_t &next);
 
-bool state_is_target(const state_t *s);
+bool state_is_target(const state_t &s);
 
-typedef state_t queue_elem_t; // 元素的类型
-/* 等价于复制粘贴，这里为了节约篇幅，使用include，在OJ上提交时请用复制粘贴 */
-#include "queue.c"  /* 见“栈和队列->队列”这节，如果是C++，则使用std::queue */
+int bfs(state_t &start) {
+    std::queue<state_t> q;
+    hashset_init();
 
-int bfs(state_t *start) {
-    queue_t *q = queue_create(16);
-    history_init();
+    start.action = -1;
+    start.index = path_index++;
+    start.father = -1;
+    start.count = 0;
 
-    start->action = -1;
-    start->index = path_index++;
-    start->father = -1;
-    start->count = 0;
-
-    path[start->index] = *start;
-    history_insert(start);
+    path[state_index(start)] = start;
+    hashset_insert(start);
     if (state_is_target(start))
-        return state_hash(start);
-    queue_push(q, *start);
+        return state_index(start);
+    q.push(start);
 
-    while (!queue_empty(q)) {
-        const state_t s = queue_front(q);
+    while (!q.empty()) {
+        const state_t s = q.front(); q.pop();
         state_t next;
-        queue_pop(q);
 
-        state_extend_init(&s);
-        while (state_extend(&s, &next)) {
-            if (state_is_target(&next)) {
+        state_extend_init(s);
+        while (state_extend(s, next)) {
+            if (state_is_target(next)) {
                 // printf("%d\n", next.count);
-                queue_destroy(q);
-                return next.index;
+                return state_index(next);
             }
-            queue_push(q, next);
-            history_insert(&next);
+            q.push(next);
+            hashset_insert(next);
         }
     }
-    queue_destroy(q);
     return -1;
 }
 
@@ -970,26 +951,26 @@ int bfs(state_t *start) {
  * @brief 输入.
  * @return 无
  */
-void input(state_t *start) {
-    int ch, i;
-    for (i = 0; i < DIGITS; ++i) {
+void input(state_t &start) {
+    int ch;
+    for (int i = 0; i < DIGITS; ++i) {
         do {
             ch = getchar();
         } while ((ch != EOF) && ((ch < '1') || (ch > '8')) && (ch != 'x'));
         if (ch == EOF) return;
-        if (ch == 'x') start->data[i] = 0; // x 映射成数字 0
-        else           start->data[i] = ch - '0';
+        if (ch == 'x') start.data[i] = 0; // x 映射成数字 0
+        else           start.data[i] = ch - '0';
     }
 }
 
 /** for wikioi 1225 */
-void input1(state_t *start) {
-    int i, n;
+void input1(state_t &start) {
+    int n;
     scanf("%d", &n);
 
     /* 将整数转化为棋盘 */
-    for(i = DIGITS-1; i >= 0; i--) {
-        start->data[i] = n % 10;
+    for(int i = DIGITS-1; i >= 0; i--) {
+        start.data[i] = n % 10;
         n /= 10;
     }
 }
@@ -997,9 +978,9 @@ void input1(state_t *start) {
 int main(void) {
     state_t start;
     int end;
-    input(&start);
+    input(start);
 
-    end = bfs(&start);
+    end = bfs(start);
 
     print_action(end);
     printf("\n");
@@ -1009,47 +990,49 @@ int main(void) {
 /********** functions implement **************/
 
 /********** 方案2 不知道完美哈希方案，自己实现哈希表 **************/
-#define HASH_CAPACITY  10000000  /* 哈希表容量，要大于状态总数 */
+/** 哈希表取模的质数，也即哈希桶的个数，越大越好，不过一般小于 HASH_SET_CAPACITY. */
+const int PRIME = 99997;
 
-int head[HASH_CAPACITY];
-int next[STATE_MAX];
+/* 哈希表容量，要大于状态总数 */
+const int HASH_SET_CAPACITY = STATE_MAX + 1;
 
-int state_hash(const state_t *s) {
-    int i;
+int head[PRIME];
+int next[HASH_SET_CAPACITY];
+
+/** 元素的哈希函数  */
+int state_hash(const state_t &s) {
     int ret = 0;
-    for(i = 0; i < DIGITS; i++) ret = ret * 10 + s->data[i];
-    return ret % HASH_CAPACITY;
+    for(int i = 0; i < DIGITS; i++) ret = ret * 10 + s.data[i];
+    return ret % PRIME;
 }
 
-void history_init() {
-    memset(head, 0, sizeof(head));
-    memset(next, 0, sizeof(next));
+void hashset_init() {
+    std::fill(head, head + PRIME, -1);
+    std::fill(next, next + PRIME, -1);
 }
 
-bool history_contains(const state_t *s) {
-    const int h = state_hash(s);
-    int u = head[h]; // 从表头开始查找单链表
-    while(u) {
+bool hashset_find(const state_t &s) {
+    // 从表头开始查找单链表
+    for (int i = head[state_hash(s)]; i != -1; i = next[i]) {
         // 找到了
-        if(memcmp(path[u].data, s->data,
-                DIGITS * sizeof(int8_t)) == 0) return true;
-        u = next[u]; // 顺着链表继续找
+        if(memcmp(path[i].data, s.data,
+                DIGITS * sizeof(int8_t)) == 0)
+            return true;
     }
     return false;
 }
 
-void history_insert(const state_t *s) {
+void hashset_insert(const state_t &s) {
     const int h = state_hash(s);
-    int u = head[h]; // 从表头开始查找单链表
-    while(u) {
-        // 找到了，插入失败
-        if(memcmp(path[u].data, path[s->index].data,
-                sizeof(DIGITS * sizeof(int8_t))) == 0) return;
-        u = next[u]; // 顺着链表继续找
+    // 从表头开始查找单链表
+    for (int i = head[h]; i != -1; i = next[i]) {
+        // 找到了
+        if (memcmp(path[i].data, s.data,
+                DIGITS * sizeof(int8_t)) == 0)
+            return;
     }
-    assert(head[h] >= 0);
-    next[s->index] = head[h];  /* 插入到首节点前面，头查法 */
-    head[h] = s->index;
+    next[s.index] = head[h]; /* 插入到首节点前面，头查法 */
+    head[h] = s.index;
     return;
 }
 
@@ -1060,16 +1043,16 @@ int action_cur;
 /* 扩展点，即0的位置 */
 int z;
 
-void state_extend_init(const state_t *s) {
+void state_extend_init(const state_t &s) {
     action_cur = ACTION_BEGIN;
     for (z = 0; z < DIGITS; z++) {
-        if (s->data[z] == SPACE_NUMBER) {
+        if (s.data[z] == SPACE_NUMBER) {
             break;  // 找 0 的位置
         }
     }
 }
 
-bool state_extend(const state_t *s, state_t *next) {
+bool state_extend(const state_t &s, state_t &next) {
     const int x = z / MATRIX_EDGE; // 行
     const int y = z % MATRIX_EDGE; // 列
 
@@ -1078,19 +1061,19 @@ bool state_extend(const state_t *s, state_t *next) {
         const int newy = y + dy[action_cur];
         const int newz = newx * MATRIX_EDGE + newy;
 
-        next->count = s->count + 1;
+        next.count = s.count + 1;
         if (newx >= 0 && newx < MATRIX_EDGE && newy >= 0 &&
                 newy < MATRIX_EDGE) { // 没有越界
-            *next = *s;
-            next->data[newz] = SPACE_NUMBER;
-            next->data[z] = s->data[newz];
+            next = s;
+            next.data[newz] = SPACE_NUMBER;
+            next.data[z] = s.data[newz];
 
-            if (!history_contains(next)) { /* 判重 */
-                next->action = action_cur;
-                next->index = path_index++;
-                next->father = s->index;
+            if (!hashset_find(next)) { /* 判重 */
+                next.action = action_cur;
+                next.index = path_index++;
+                next.father = s.index;
                 /* 记录路径 */
-                path[next->index] = *next;
+                path[state_index(next)] = next;
                 action_cur++; /* return前别忘了增1 */
                 return true;
             }
@@ -1105,8 +1088,8 @@ const state_t END = {{1, 2, 3, 4, 5, 6, 7, 8, 0}, -1, -1};
 // for wikioi 1225
 const state_t END1 = {{1, 2, 3, 8, 0, 4, 7, 6, 5}, -1, -1};
 
-bool state_is_target(const state_t *s) {
-    return memcmp(s->data, END.data, DIGITS * sizeof(int8_t)) == 0;
+bool state_is_target(const state_t &s) {
+    return memcmp(s.data, END.data, DIGITS * sizeof(int8_t)) == 0;
 }
 \end{Codex}
 
@@ -1148,16 +1131,16 @@ template<> struct hash<state_t> {
 
 std::unordered_set<state_t> visited;
 
-void history_init() {
+void hashset_init() {
     visited.clear();
 }
 
-bool history_contains(const state_t *s) {
-    return visited.count(*s) > 0;
+bool hashset_find(const state_t &s) {
+    return visited.count(s) > 0;
 }
 
-void history_insert(const state_t *s) {
-    visited.insert(*s);
+void hashset_insert(const state_t &s) {
+    visited.insert(s);
 }
 
 //...
@@ -1216,22 +1199,23 @@ WBWO
 
 可以用C++的\fn{std::map}来判重，
 \begin{Code}
-/* history[0]记录白子的历史，history[1]记录黑子的历史. */
-std::map<int, bool> history[2];
+/* visited[0]记录白子的历史， visited[1]记录黑子的历史. */
+std::map<int, bool> visited[2];
 \end{Code}
 
 也可以开一个大数组当做哈希表，
 \begin{Code}
 #define HASH_MOD 43036875 /* hash表大小 */
-/* history[0]记录白子的历史，history[1]记录黑子的历史. */
-bool history[2][HASH_MOD];
+/* visited[0]记录白子的历史， visited[1]记录黑子的历史. */
+bool visited[2][HASH_MOD];
 \end{Code}
 
 \subsubsection{代码}
-\begin{Codex}[label=four_adjacent.c]
+\begin{Codex}[label=four_adjacent.cpp]
 /** wikioi 1004 四子连棋  , http://www.wikioi.com/problem/1004 */
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
+#include <queue>
 
 #define LEN 4   /* 边长 */
 
@@ -1239,12 +1223,6 @@ bool history[2][HASH_MOD];
 const int dx[] = { 1, -1, 0, 0 };
 const int dy[] = { 0, 0, 1, -1 };
 
-
-#ifndef __cplusplus
-typedef char bool;
-#define false 0
-#define true 1
-#endif
 
 /**
  * @strut 状态
@@ -1256,88 +1234,65 @@ typedef struct state_t {
     int count;  /** 所花费的步骤数（也即路径长度-1），求路径长度时需要 */
 } state_t;
 
-/**
- * @brief 计算状态的哈希值。
- * 棋盘用二维矩阵存储，用0表示空格，1表示黑色，2表示白色，所以最后可以看成
- * 一个16位的三进制数。最大为
- * 2222
- * 2221
- * 1111
- * 1100
- * 值为 43036875。
- * @return 棋盘所表示的三进制数转化为十进制数
- */
-//TODO:共C16 7×C9 2个状态，用类似康托的方法储存
-int state_hash(const state_t *s);
+void hashset_init();
 
-void history_init();
+bool hashset_find(const state_t &s);
 
-bool history_contains(const state_t *s);
+void hashset_insert(const state_t &s);
 
-void history_insert(const state_t *s);
+void state_extend_init(const state_t &s);
 
-void state_extend_init(const state_t *s);
+bool state_extend(const state_t &s, state_t &next);
 
-bool state_extend(const state_t *s, state_t *next);
+bool state_is_target(const state_t &s);
 
-bool state_is_target(const state_t *s);
+void bfs(state_t &start) {
+    std::queue<state_t> q;
+    hashset_init();
 
-typedef state_t queue_elem_t; // 元素的类型
-/* 等价于复制粘贴，这里为了节约篇幅，使用include，在OJ上提交时请用复制粘贴 */
-#include "queue.c"  /* 见“栈和队列->队列”这节，如果是C++，则使用std::queue */
+    start.count = 0;
+    start.color = 1;
 
-void bfs(state_t *start) {
-    queue_t *q = queue_create(16);
-    history_init();
+    hashset_insert(start);
+    q.push(start);
 
-    start->count = 0;
-    start->color = 1;
+    start.color = 2;
 
-    history_insert(start);
-    queue_push(q, *start);
-
-    start->color = 2;
-
-    history_insert(start); // 千万别忘记了标记此处的访问记录
+    hashset_insert(start); // 千万别忘记了标记此处的访问记录
     if (state_is_target(start)) /* 如果起点就是终点，返回 */
         return;
-    queue_push(q, *start);
+    q.push(start);
 
-    while (!queue_empty(q)) {
-        const state_t s = queue_front(q);
+    while (!q.empty()) {
+        const state_t s = q.front(); q.pop();
         state_t next;
-        queue_pop(q);
 
-        state_extend_init(&s);
-        while (state_extend(&s, &next)) {
-            if (state_is_target(&next)) {
+        state_extend_init(s);
+        while (state_extend(s, next)) {
+            if (state_is_target(next)) {
                 printf("%d\n", next.count);
-                queue_destroy(q);
                 return;
             }
-            queue_push(q, next);
-            history_insert(&next);
+            q.push(next);
+            hashset_insert(next);
         }
     }
-    queue_destroy(q);
 }
 
 int main() {
-    int i, j;
     char s[LEN + 1];
     state_t start;
 
-    for (i = 0; i < LEN; i++) {
+    for (int i = 0; i < LEN; i++) {
         scanf("%s", s);
-        for (j = 0; j < LEN; j++) {
+        for (int j = 0; j < LEN; j++) {
             if (s[j] == 'B') start.board[i][j] = 1;
             else if (s[j] == 'W') start.board[i][j] = 2;
             else start.board[i][j] = 0;
         }
     }
 
-    bfs(&start);
-    queue_destroy(q);
+    bfs(start);
     return 0;
 }
 
@@ -1353,29 +1308,40 @@ bool visited[2][HASH_CAPACITY];
 
 #define RADIX 3 /* 三进制 */
 
-int state_hash(const state_t *s) {
-    int i, j;
+/**
+ * @brief 计算状态的哈希值。
+ * 棋盘用二维矩阵存储，用0表示空格，1表示黑色，2表示白色，所以最后可以看成
+ * 一个16位的三进制数。最大为
+ * 2222
+ * 2221
+ * 1111
+ * 1100
+ * 值为 43036875。
+ * @return 棋盘所表示的三进制数转化为十进制数
+ */
+//TODO:共C16 7×C9 2个状态，用类似康托的方法储存
+int state_hash(const state_t &s) {
     int ret = 0;
 
-    for (i = 0; i < LEN; i++) {
-        for (j = 0; j < LEN; j++) {
-            ret = ret * RADIX + s->board[i][j];
+    for (int i = 0; i < LEN; i++) {
+        for (int j = 0; j < LEN; j++) {
+            ret = ret * RADIX + s.board[i][j];
         }
     }
     return ret;
 }
 
-void history_init() {
-    memset(visited[0], 0, sizeof(sizeof(bool) * HASH_CAPACITY));
-    memset(visited[1], 0, sizeof(sizeof(bool) * HASH_CAPACITY));
+void hashset_init() {
+    std::fill(visited[0], visited[0] + HASH_CAPACITY, false);
+    std::fill(visited[1], visited[1] + HASH_CAPACITY, false);
 }
 
-bool history_contains(const state_t *s) {
-    return visited[s->color - 1][state_hash(s)] == true;
+bool hashset_find(const state_t &s) {
+    return visited[s.color - 1][state_hash(s)] == true;
 }
 
-void history_insert(const state_t *s) {
-    visited[s->color - 1][state_hash(s)] = true;
+void hashset_insert(const state_t &s) {
+    visited[s.color - 1][state_hash(s)] = true;
 }
 
 /* 扩展的时候，先定空格，再定方向 */
@@ -1394,17 +1360,16 @@ int space_cur;
 /* 两个空格的位置 */
 point_t extend_pos[2];
 
-void state_extend_init(const state_t *s) {
-    int i, j, k;
+void state_extend_init(const state_t &s) {
     action_cur[0] = ACTION_BEGIN;
     action_cur[1] = ACTION_BEGIN;
     space_cur = 0;
 
-    k = 0;
+    int k = 0;
     // 寻找两个空白的格子的位置
-    for (i = 0; i < LEN; i++) {
-        for (j = 0; j < LEN; j++) {
-            if (s->board[i][j] == 0) {
+    for (int i = 0; i < LEN; i++) {
+        for (int j = 0; j < LEN; j++) {
+            if (s.board[i][j] == 0) {
                 extend_pos[k].x = i;
                 extend_pos[k].y = j;
                 k++;
@@ -1413,30 +1378,28 @@ void state_extend_init(const state_t *s) {
     }
 }
 
-bool state_extend(const state_t *s, state_t *next) {
-    int i;
-
-    for (i = 0; i < 2; i++) { /* 先第一个空格，再第二个空格 */
+bool state_extend(const state_t &s, state_t &next) {
+    for (int i = 0; i < 2; i++) { /* 先第一个空格，再第二个空格 */
         while (action_cur[i] < ACTION_END) {
             const int x = extend_pos[i].x;
             const int y = extend_pos[i].y;
             int nextx = x + dx[action_cur[i]];
             int nexty = y + dy[action_cur[i]];
-            *next = *s;
-            next->count = s->count + 1;
-            next->color = 3 - s->color;
+            next = s;
+            next.count = s.count + 1;
+            next.color = 3 - s.color;
 
             if (nextx >= 0 && nextx < LEN && nexty >= 0 && nexty < LEN
                     /* 必须黑白交替走 */
-                    && next->color == s->board[nextx][nexty]) {
+                    && next.color == s.board[nextx][nexty]) {
                 /* swap */
                 {
-                    int temp = next->board[x][y];
-                    next->board[x][y] = next->board[nextx][nexty];
-                    next->board[nextx][nexty] = temp;
+                    int temp = next.board[x][y];
+                    next.board[x][y] = next.board[nextx][nexty];
+                    next.board[nextx][nexty] = temp;
                 }
 
-                if (!history_contains(next)) { /* 判重 */
+                if (!hashset_find(next)) { /* 判重 */
                     action_cur[i]++; /* return前别忘了增1 */
                     return true;
                 }
@@ -1447,28 +1410,27 @@ bool state_extend(const state_t *s, state_t *next) {
     return false;
 }
 
-bool state_is_target(const state_t *s) {
-    int i, j;
-    for (i = 0; i < LEN; i++) {  /* 逐行检查 */
+bool state_is_target(const state_t &s) {
+    for (int i = 0; i < LEN; i++) {  /* 逐行检查 */
         int flag = 1;  /* 某一行全是同一颜色 */
-        for (j = 1; j < LEN; j++)
-            if (s->board[i][j - 1] != s->board[i][j])
+        for (int j = 1; j < LEN; j++)
+            if (s.board[i][j - 1] != s.board[i][j])
                 flag = 0;
         if (flag)
             return 1;
     }
-    for (j = 0; j < LEN; j++) { //逐列检查
+    for (int j = 0; j < LEN; j++) { //逐列检查
         int flag = 1;  /* 某一行全是同一颜色 */
-        for (i = 1; i < LEN; i++)
-            if (s->board[i][j] != s->board[i - 1][j]) flag = 0;
+        for (int i = 1; i < LEN; i++)
+            if (s.board[i][j] != s.board[i - 1][j]) flag = 0;
         if (flag) return 1;
     }
     /* 斜线 */
-    if (s->board[0][0] == s->board[1][1] && s->board[1][1] == s->board[2][2]
-            && s->board[2][2] == s->board[3][3])
+    if (s.board[0][0] == s.board[1][1] && s.board[1][1] == s.board[2][2]
+            && s.board[2][2] == s.board[3][3])
         return 1;
-    if (s->board[0][3] == s->board[1][2] && s->board[1][2] == s->board[2][1]
-            && s->board[2][1] == s->board[3][0])
+    if (s.board[0][3] == s.board[1][2] && s.board[1][2] == s.board[2][1]
+            && s.board[2][1] == s.board[3][0])
         return 1;
     return 0;
 }
@@ -1522,8 +1484,10 @@ bool state_is_target(const state_t *s) {
 5.估价函数 h ，采用曼哈顿距离, 见代码 calcH 函数。曼哈顿距离的定义是，
  假设有两个点(x1,y1),(x2,y2)，则曼哈顿距离L1=|x1-x2| + |y1-y2|
  */
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
+#include <cmath>
+#include <queue>
 
 #define DIGITS 9 // 棋盘中数字的个数，也是变进制数需要的位数
 #define     MATRIX_EDGE 3       // 棋盘边长
@@ -1541,27 +1505,31 @@ const int GOAL = 123456780;
 // 每个数字在棋盘中的位置，例如0，在(2,2)=8这个位置上
 int GOAL_POS[DIGITS];
 
-#ifndef __cplusplus
-typedef char bool;
-#define false 0
-#define true 1
-#endif
 
-/**
- * @strut 状态
- */
-typedef struct state_t {
+/** 状态 */
+struct state_t {
     int board;  /** 状态的数据，即棋局. */
     int action; /* 由父状态移动到本状态的动作 */
     int father; /* 父状态在path[]中的下标，也即父状态的哈希值 */
     int count;  /** 所花费的步骤数（也即路径长度-1），作为g */
     int h; /** 距离目标状态的估算距离 */
-} state_t;
+
+    bool operator>(const state_t &other) const {
+        // priority_queue 默认是大根堆，反一下，就是小根堆了
+        return (count + h) > (other.count + other.h);
+    }
+};
 
 // 3x3的棋盘，状态最多有 9!种
 #define STATE_MAX 362880  /* 状态总数 */
 
 state_t path[STATE_MAX+1];
+
+int state_hash(const state_t &s);
+
+int state_index(const state_t &s) {
+    return state_hash(s);
+}
 
 /**
  * @brief 打印动作序列.
@@ -1575,45 +1543,33 @@ void print_action(const int end) {
     putchar(name[path[end].action]);
 }
 
-int state_hash(const state_t *s);
+void hashset_init();
 
-void history_init();
+bool hashset_find(const state_t &s);
 
-bool history_contains(const state_t *s);
+void hashset_insert(const state_t &s);
 
-void history_insert(const state_t *s);
+void state_extend_init(const state_t &s);
 
-void state_extend_init(const state_t *s);
+bool state_extend(const state_t &s, state_t &next);
 
-bool state_extend(const state_t *s, state_t *next);
-
-bool state_is_target(const state_t *s);
-
-typedef state_t heap_elem_t; // 元素的类型
-/** 状态的比较函数 */
-int cmp_state(const state_t *x, const state_t *y) {
-    return (x->count + x->h) - (y->count + y->h);
-}
-
-/* 等价于复制粘贴，这里为了节约篇幅，使用include，在OJ上提交时请用复制粘贴 */
-#include "heap.c"  /* 见“树->堆”这节 */
+bool state_is_target(const state_t &s);
 
 /**
  * 距离目标状态的估算距离h。
  * @param s 状态
  * @return h
  */
-static int state_get_h(const state_t *state) {
-    int i;
+static int state_get_h(const state_t &state) {
     int h = 0;
-    int s = state->board;
+    int s = state.board;
 
-    for (i = DIGITS - 1; i >= 0; --i) {
+    for (int i = DIGITS - 1; i >= 0; --i) {
         const int p = s % RADIX;
         s /= RADIX;
         /* 曼哈顿距离 */
-        h += abs(i / MATRIX_EDGE - GOAL_POS[p] / MATRIX_EDGE) +
-            abs(i % MATRIX_EDGE - GOAL_POS[p] % MATRIX_EDGE);
+        h += std::abs((float)(i / MATRIX_EDGE - GOAL_POS[p] / MATRIX_EDGE)) +
+                std::abs((float)(i % MATRIX_EDGE - GOAL_POS[p] % MATRIX_EDGE));
     }
     return h;
 }
@@ -1621,61 +1577,58 @@ static int state_get_h(const state_t *state) {
 /* 计算 GOAL_POS */
 static void calc_goal_pos() {
     int cur = GOAL;
-    int i;
-    for (i = DIGITS-1; i >= 0 ; i--) {
+    for (int i = DIGITS-1; i >= 0 ; i--) {
         int digit = cur % RADIX;
         GOAL_POS[digit] = i;
         cur /= RADIX;
     }
 }
 
-int bfs(state_t *start) {
-    heap_t *q = heap_create(16, cmp_state); /* 优先队列 */
+int bfs(state_t &start) {
+    std::priority_queue<state_t, std::vector<state_t>,
+                                 std::greater<state_t> > q;
     calc_goal_pos();
-    history_init();
+    hashset_init();
 
-    start->action = -1;
-    start->father = -1;
-    start->count = 0;
-    start->h = state_get_h(start);
+    start.action = -1;
+    start.father = -1;
+    start.count = 0;
+    start.h = state_get_h(start);
 
-    path[state_hash(start)] = *start;
-    history_insert(start);
+    path[state_index(start)] = start;
+    hashset_insert(start);
     if (state_is_target(start))
-        return state_hash(start);
-    heap_push(q, *start);
+        return state_index(start);
+    q.push(start);
 
-    while (!heap_empty(q)) {
-        const state_t s = heap_top(q);
+    while (!q.empty()) {
+        const state_t s = q.top(); q.pop();
+        //const state_t s = q.front(); q.pop();
         state_t next;
-        heap_pop(q);
 
-        state_extend_init(&s);
-        while (state_extend(&s, &next)) {
-            if (state_is_target(&next)) {
+        state_extend_init(s);
+        while (state_extend(s, next)) {
+            if (state_is_target(next)) {
                 // printf("%d\n", next.count);
-                heap_destroy(q);
-                return state_hash(&next);
+                return state_index(next);
             }
-            heap_push(q, next);
-            history_insert(&next);
+            q.push(next);
+            hashset_insert(next);
         }
     }
-    heap_destroy(q);
     return -1;
 }
 
 static void int_to_board(int n, int board[DIGITS]) {
-    int i;
-    for (i = DIGITS - 1; i >= 0; i--) {
+    for (int i = DIGITS - 1; i >= 0; i--) {
         board[i] = n % RADIX;
         n /= RADIX;
     }
 }
 
 static int board_to_int(const int board[DIGITS]) {
-    int i, s = 0;
-    for (i = 0; i < DIGITS; i++)
+    int s = 0;
+    for (int i = 0; i < DIGITS; i++)
         s = s * RADIX + board[i];
     return s;
 }
@@ -1684,10 +1637,10 @@ static int board_to_int(const int board[DIGITS]) {
  * @brief 输入.
  * @return 无
  */
-void input(state_t *start) {
-    int ch, i;
+void input(state_t &start) {
+    int ch;
     int board[DIGITS];
-    for (i = 0; i < DIGITS; ++i) {
+    for (int i = 0; i < DIGITS; ++i) {
         do {
             ch = getchar();
         } while ((ch != EOF) && ((ch < '1') || (ch > '8')) && (ch != 'x'));
@@ -1695,29 +1648,28 @@ void input(state_t *start) {
         if (ch == 'x') board[i] = 0; // x 映射成数字 0
         else           board[i] = ch - '0';
     }
-    start->board = board_to_int(board);
+    start.board = board_to_int(board);
 }
 
 /** for wikioi 1225 */
-void input1(state_t *start) {
-    scanf("%d", &start->board);
+void input1(state_t &start) {
+    scanf("%d", &start.board);
 }
 
 /**
  * 计算一个排列的逆序数，0 除外.
  */
 static int inversion_count(int permutation) {
-    int i, j;
     int d[DIGITS];
     int c = 0; // 逆序数
 
-    for(i = DIGITS - 1; i >=0; i--) {
+    for(int i = DIGITS - 1; i >=0; i--) {
         d[i] = permutation % RADIX;
         permutation /= RADIX;
     }
 
-    for (i = 1; i < DIGITS; i++)  if (d[i] != SPACE_NUMBER) {
-        for (j = 0; j < i; j++) {
+    for (int i = 1; i < DIGITS; i++)  if (d[i] != SPACE_NUMBER) {
+        for (int j = 0; j < i; j++) {
             if(d[j] != SPACE_NUMBER) {
                 if (d[j] > d[i]) {
                     c++;
@@ -1746,11 +1698,11 @@ static int solvable(const int s) {
 int main(void) {
     state_t start;
     int end; /* 目标状态在path[]中的下标 */
-    input(&start);
+    input(start);
 
     if (!solvable(start.board)) return 0;
 
-    end = bfs(&start);
+    end = bfs(start);
 
     print_action(end);
     printf("\n");
@@ -1776,16 +1728,15 @@ bool visited[HASH_CAPACITY];
  * @param[in] s 当前状态
  * @return 序数，作为hash值
  */
-int state_hash(const state_t *state) {
-    int i, j;
+int state_hash(const state_t &state) {
     int board[DIGITS];
     int key = 0;
 
-    int_to_board(state->board, board);
+    int_to_board(state.board, board);
 
-    for (i = 0; i < DIGITS; i++) {
+    for (int i = 0; i < DIGITS; i++) {
         int c = 0; // 逆序数
-        for (j = i + 1; j < DIGITS; j++) {
+        for (int j = i + 1; j < DIGITS; j++) {
             if(board[j] < board[i]) {
                 c++;
             }
@@ -1796,15 +1747,15 @@ int state_hash(const state_t *state) {
     return key;
 }
 
-void history_init() {
-    memset(visited, 0, sizeof(visited));
+void hashset_init() {
+    std::fill(visited, visited + HASH_CAPACITY, false);
 }
 
-bool history_contains(const state_t *s) {
+bool hashset_find(const state_t &s) {
     return visited[state_hash(s)] == true;
 }
 
-void history_insert(const state_t *s) {
+void hashset_insert(const state_t &s) {
     visited[state_hash(s)] = true;
 }
 
@@ -1816,10 +1767,10 @@ int action_cur;
 int z;
 int board[DIGITS];  /* 棋盘，暂存数据 */
 
-void state_extend_init(const state_t *s) {
+void state_extend_init(const state_t &s) {
     action_cur = ACTION_BEGIN;
 
-    int_to_board(s->board, board);
+    int_to_board(s.board, board);
     for (z = 0; z < DIGITS; z++) {
         if (board[z] == SPACE_NUMBER) {
             break;  // 找 0 的位置
@@ -1827,7 +1778,7 @@ void state_extend_init(const state_t *s) {
     }
 }
 
-bool state_extend(const state_t *s, state_t *next) {
+bool state_extend(const state_t &s, state_t &next) {
     const int x = z / MATRIX_EDGE; // 行
     const int y = z % MATRIX_EDGE; // 列
 
@@ -1840,18 +1791,18 @@ bool state_extend(const state_t *s, state_t *next) {
                 newy < MATRIX_EDGE) { // 没有越界
             board[z] = board[newz];
             board[newz] = SPACE_NUMBER;
-            *next = *s;
-            next->board = board_to_int(board);
+            next = s;
+            next.board = board_to_int(board);
             board[newz] = board[z]; /* 恢复s的棋盘 */
             board[z] = SPACE_NUMBER;
 
-            next->count = s->count + 1;
-            next->h = state_get_h(next);
-            if (!history_contains(next)) { /* 判重 */
-                next->action = action_cur;
-                next->father = state_hash(s);
+            next.count = s.count + 1;
+            next.h = state_get_h(next);
+            if (!hashset_find(next)) { /* 判重 */
+                next.action = action_cur;
+                next.father = state_index(s);
                 /* 记录路径 */
-                path[state_hash(next)] = *next;
+                path[state_index(next)] = next;
                 action_cur++; /* return前别忘了增1 */
                 return true;
             }
@@ -1866,7 +1817,7 @@ const state_t END = {123456780, -1, -1};
 // for wikioi 1225
 const state_t END1 = {123804765, -1, -1};
 
-bool state_is_target(const state_t *s) {
-    return s->board == END.board;
+bool state_is_target(const state_t &s) {
+    return s.board == END.board;
 }
 \end{Codex}

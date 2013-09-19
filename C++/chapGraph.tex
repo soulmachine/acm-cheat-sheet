@@ -401,10 +401,11 @@ lowcost & 0 & 0 & 0 & 0 & 0 & & & \\
 
 \subsubsection{代码}
 
-\begin{Codex}[label=mgraph_prim1.c]
-#include <stdio.h>
-#include <stdlib.h>  /* for malloc() */
-#include <limits.h>  /* for INT_MAX */
+\begin{Codex}[label=mgraph_prim1.cpp]
+#include <cstdio>
+#include <cstdlib>  /* for malloc() */
+#include <climits>  /* for INT_MAX */
+#include <algorithm>
 
 /** 顶点数的最大值*/
 #define MAX_VERTICES_NUM 100
@@ -438,10 +439,9 @@ typedef struct closedge_t {
  * @return 找到了则返回弧尾的下标，V-U为空集则返回-1，表示终止
  */
 static int min_element(const closedge_t closedge[], int n) {
-    int i;
     int min_value = GRAPH_INF;
     int min_loc = -1;
-    for (i = 0; i < n; i++)
+    for (int i = 0; i < n; i++)
         if (closedge[i].lowcost > -GRAPH_INF) {
             if (min_value > closedge[i].lowcost) {
                 min_value = closedge[i].lowcost;
@@ -458,20 +458,19 @@ static int min_element(const closedge_t closedge[], int n) {
  */
 graph_weight_t mgraph_prim(const mgraph_t *g) {
     graph_weight_t sum = 0; /* 权值之和 */
-    int i, j;
     int u = 0; /* 从0号顶点出发 */
     const int n = g->nv;
     /* closedge[n]，记录从顶点集U到V-U的边*/
     closedge_t* const closedge = (closedge_t*) malloc(n * sizeof(closedge_t));
 
     /* 辅助数组初始化*/
-    for (i = 0; i < n; i++) if (i != u) {
+    for (int i = 0; i < n; i++) if (i != u) {
         closedge[i].adjvex = u;
         closedge[i].lowcost = g->matrix[u][i];
     }
     closedge[u].lowcost = -GRAPH_INF; /* 初始, U={u} */
 
-    for (i = 0; i < n; i++) if (i != u) { /* 其余的n-1个顶点*/
+    for (int i = 0; i < n; i++) if (i != u) { /* 其余的n-1个顶点*/
         /* 求出TE的下一个顶点k */
         const int k = min_element(closedge, n);
         /* 输出此边 closedge[k].adjvex --> k */
@@ -481,7 +480,7 @@ graph_weight_t mgraph_prim(const mgraph_t *g) {
         // sum += closedge[k].lowcost;  // 等价
         closedge[k].lowcost = -GRAPH_INF;  /* 顶点k并入U，表示此边加入TE */
         /* 更新k的邻接点的值，不相邻为无穷大*/
-        for (j = 0; j < n; j++) {
+        for (int j = 0; j < n; j++) {
             const graph_weight_t w = g->matrix[k][j];
             if (w < closedge[j].lowcost) {
                 closedge[j].adjvex = k;
@@ -495,7 +494,7 @@ graph_weight_t mgraph_prim(const mgraph_t *g) {
 
 /** 读取输入，构建图. */
 void read_graph() {
-    int i, j, k, m, n;
+    int k, m, n;
 
     /* 读取节点和边的数目 */
     scanf("%d%d", &m, &n);
@@ -504,8 +503,8 @@ void read_graph() {
     g.ne = n;
 
     /* 初始化图，所有节点间距离为无穷大 */
-    for (i = 0; i < m; i++) {
-        for (j = 0; j < m; j++) {
+    for (int i = 0; i < m; i++) {
+        for (int j = 0; j < m; j++) {
             g.matrix[i][j] = GRAPH_INF;
         }
     }
@@ -516,8 +515,8 @@ void read_graph() {
         int w;
         scanf("%c %c %d", &chx, &chy, &w);
         getchar();
-        i = chx - 'A';
-        j = chy - 'A';
+        const int i = chx - 'A';
+        const int j = chy - 'A';
         g.matrix[i][j] = w;
         g.matrix[j][i] = w;
     }
@@ -565,27 +564,28 @@ Prim算法的另一种实现是使用小根堆，其流程是：小根堆中存�
 
 \subsubsection{代码}
 
-\begin{Codex}[label=mgraph_prim2.c]
-#include <stdio.h>
-#include <stdlib.h>  /* for malloc() */
-#include <limits.h>  /* for INT_MAX */
+\begin{Codex}[label=mgraph_prim2.cpp]
+#include <cstdio>
+#include <cstdlib>  /* for malloc() */
+#include <climits>  /* for INT_MAX */
+#include <queue>
 
 /** 顶点数的最大值*/
-#define MAX_VERTICES_NUM 100
+const int MAX_VERTICES_NUM = 100;
 /** 边的权值，对无权图，用0或1表示是否相邻；对有权图，则为权值. */
 typedef int graph_weight_t;
-#define GRAPH_INF INT_MAX
+const graph_weight_t GRAPH_INF = INT_MAX;
 
 /**
  *@struct
  *@brief 邻接矩阵.
  */
-typedef struct mgraph_t {
+struct mgraph_t {
     int nv; /* 顶点数*/
     int ne; /* 边数*/
     /* 邻接矩阵，存放边的信息，如权重等*/
     graph_weight_t matrix[MAX_VERTICES_NUM][MAX_VERTICES_NUM];
-} mgraph_t;
+};
 
 mgraph_t g;
 
@@ -593,20 +593,15 @@ mgraph_t g;
 /**
  * @struct 边
  */
-typedef struct edge_t{
+struct edge_t{
     int tail;  /** 弧尾, from */
     int head;  /** 弧头, to */
     graph_weight_t w;  /** 权值 */
-}edge_t;
 
-static int edge_cmp(const edge_t *e1, const edge_t *e2) {
-    return e1->w - e2->w;
-}
-
-typedef edge_t heap_elem_t; // 元素的类型
-
-/* 等价于复制粘贴，这里为了节约篇幅，使用include，在OJ上提交时请用复制粘贴 */
-#include "heap.c"  /* 见“树->堆”这节 */
+    bool operator>(const edge_t &other) const {
+        return w > other.w;
+    }
+};
 
 /**
   * @brief Prim算法，求图的最小生成树.
@@ -616,13 +611,13 @@ typedef edge_t heap_elem_t; // 元素的类型
 int mgraph_prim(const mgraph_t *g){
     graph_weight_t sum = 0; /* 权值之和 */
     int u = 0; /* 从0号顶点出发 */
-    int i, count = 1;
+    int count = 1;
     edge_t e;
-    heap_t *h = heap_create(g->ne, edge_cmp);
+    std::priority_queue<edge_t, std::vector<edge_t>, std::greater<edge_t> > q;
     const int n = g->nv;
     /* 判断顶点是否已经加入最小生成树*/
     int* U = (int *)malloc(n * sizeof(int));
-    for(i = 0; i < n; i++) U[i] = 0;
+    for(int i = 0; i < n; i++) U[i] = 0;
 
     /* 开始顶点加入U(所以count初始为1) */
     U[u] = 1;
@@ -633,11 +628,11 @@ int mgraph_prim(const mgraph_t *g){
             e.head = v;
             /* tail在树内，head不在树内*/
             e.w = g->matrix[u][v];
-            heap_push(h, e);
+            q.push(e);
         }
-        while(!heap_empty(h) && count < n) {
+        while(!q.empty() && count < n) {
             /* 从堆中退出最小权值边，存入ed */
-            e = heap_top(h); heap_pop(h);
+            e = q.top(); q.pop();
             if(!U[e.head]) {
                 /* 输出生成树TE的边，即此边加入TE */
                 printf("%c - %c: %d\n", 'A' + e.tail, 'A' + e.head,
@@ -653,7 +648,6 @@ int mgraph_prim(const mgraph_t *g){
     }
 
     free(U);
-    heap_destroy(h);
     return sum;
 }
 
@@ -680,37 +674,31 @@ int mgraph_prim(const mgraph_t *g){
 \subsubsection{代码}
 
 \begin{Codex}[label=kruskal.c]
-#include <stdio.h>
-#include <stdlib.h>  /* for malloc() */
-#include <limits.h>  /* for INT_MAX */
+#include <cstdio>
+#include <cstdlib>  /* for malloc() */
+#include <climits>  /* for INT_MAX */
+#include <queue>
 
 /* 等价于复制粘贴，这里为了节约篇幅，使用include，在OJ上提交时请用复制粘贴 */
 #include "ufs.c"  /* 见“树->并查集”这节 */
 
-#define MAX_VERTICES_NO 11 /* 顶点编号最大值 */
-#define MAX_EDGES 100  /* 最大边数 */
+const int MAX_VERTICES_NO = 11; /* 顶点编号最大值 */
+const int MAX_EDGES = 100;  /* 最大边数 */
 /** 边的权值，对无权图，用0或1表示是否相邻；对有权图，则为权值. */
 typedef int graph_weight_t;
 
-/**
- * @struct 无向图的边.
- */
-typedef struct edge_t{
+/** 无向图的边. */
+struct edge_t{
     int u;  /** 顶点编号 */
     int v;  /** 顶点编号 */
     graph_weight_t w;  /** 权值 */
-} edge_t;
+    bool operator>(const edge_t &other) const {
+        return w > other.w;
+    }
+};
 
 edge_t edges[MAX_EDGES];
 
-static int edge_cmp(const edge_t *e1, const edge_t *e2) {
-    return e1->w - e2->w;
-}
-
-typedef edge_t heap_elem_t; // 元素的类型
-
-/* 等价于复制粘贴，这里为了节约篇幅，使用include，在OJ上提交时请用复制粘贴 */
-#include "heap.c"  /* 见“树->堆”这节 */
 
 /*
   * @brief Kruskal算法，求图的最小生成树.
@@ -720,25 +708,23 @@ typedef edge_t heap_elem_t; // 元素的类型
   * @return MST的边的权值之和
   */
 graph_weight_t kruskal(const edge_t edges[], int n, int m) {
-    int i;
     graph_weight_t sum = 0;
-    heap_t *h = heap_create(n, edge_cmp);
+    std::priority_queue<edge_t, std::vector<edge_t>,
+                                std::greater<edge_t> > q;
     ufs_t *s = ufs_create(MAX_VERTICES_NO);  /* 并查集，0位置未用  */
     if (n < m - 1) return -1;
 
     /* 把所有边插入堆中*/
-    for (i = 0; i < n; i++) {
-        heap_push(h, edges[i]);
+    for (int i = 0; i < n; i++) {
+        q.push(edges[i]);
     }
 
-    for (i = 0; i < n; i++) {
+    for (int i = 0; i < n; i++) {
         /* 从堆中退出最小权值边 */
-        const edge_t e = heap_top(h);
-        int u, v;
-        heap_pop(h);
+        const edge_t e = q.top(); q.pop();
         /* 取两顶点所在集合的根*/
-        u = ufs_find(s, e.u);
-        v = ufs_find(s, e.v);
+        const int u = ufs_find(s, e.u);
+        const int v = ufs_find(s, e.v);
         if (u != v) { /* 不是同一集合，说明不连通*/
             ufs_union(s, u, v); /* 合并，连通成一个分量*/
             /* 输出生成树TE的边，即此边加入TE */
@@ -747,7 +733,6 @@ graph_weight_t kruskal(const edge_t edges[], int n, int m) {
         }
     }
 
-    heap_destroy(h);
     ufs_destroy(s);
     return sum;
 }
@@ -760,14 +745,13 @@ static int edge_cmp1(const void *e1, const void *e2) {
 
 /** Kruskal算法，快排+并查集. */
 graph_weight_t kruskal1(edge_t edges[], int n, int m) {
-    int i;
     graph_weight_t sum = 0;
     ufs_t *s = ufs_create(MAX_VERTICES_NO);  /* 并查集，0位置未用  */
     if (n < m - 1) return -1;
 
     qsort(edges, n, sizeof(edge_t), edge_cmp1);
 
-    for (i = 0; i < n; i++) {
+    for (int i = 0; i < n; i++) {
         /* 从堆中退出最小权值边，存入ed */
         const edge_t e = edges[i];
         /* 取两顶点所在集合的根*/
@@ -809,13 +793,13 @@ graph_weight_t kruskal1(edge_t edges[], int n, int m) {
 Total:39
 */
 int main() {
-    int i, m, n;
+    int m, n;
 
     /* 读取顶点数，边数目*/
     scanf("%d%d", &m, &n);
 
     /* 读取边信息 */
-    for (i = 0; i < n; i++) {
+    for (int i = 0; i < n; i++) {
         scanf("%d %d %d", &edges[i].u, &edges[i].v, &edges[i].w);
     }
 
@@ -1786,15 +1770,16 @@ int main() {
 \subsubsection{代码}
 
 \begin{Codex}[label=mgraph_topo_sort.c]
-#include <stdio.h>
-#include <stdlib.h>  /* for malloc() */
-#include <limits.h>  /* for INT_MAX */
+#include <cstdio>
+#include <cstdlib>  /* for malloc() */
+#include <climits>  /* for INT_MAX */
+#include <stack>
 
 /** 顶点数的最大值*/
-#define MAX_VERTICES_NUM 100
+const int MAX_VERTICES_NUM = 100;
 /** 边的权值，对无权图，用0或1表示是否相邻；对有权图，则为权值. */
 typedef int graph_weight_t;
-#define GRAPH_INF INT_MAX
+const graph_weight_t GRAPH_INF = INT_MAX;
 
 /**
  *@struct
@@ -1811,9 +1796,6 @@ mgraph_t g;
 /** 拓扑排序的结果. */
 int topological[MAX_VERTICES_NUM];
 
-/* 等价于复制粘贴，这里为了节约篇幅，使用include，在OJ上提交时请用复制粘贴 */
-#include "stack.c"  /* 见“栈和队列->栈”这节 */
-
 /*
   * @brief 拓扑排序.
   * @param[in] g 图对象的指针
@@ -1821,36 +1803,34 @@ int topological[MAX_VERTICES_NUM];
   * @return 无环返回 1，有环返回 0
   */
 int mgraph_topo_sort(const mgraph_t *g, int topological[]) {
-    int i, j, u;
-    int count = 0; /* 拓扑序列的元素个数*/
     const int n = g->nv;
     /* in_degree[i]是顶点i的入度 */
-    int *in_degree = (int*)malloc(n * sizeof(int));
-    stack_t *s = stack_create(n * sizeof(int));
+    int *in_degree = new int[n]();
+    std::stack<int> s;
 
-    memset(in_degree, 0, n * sizeof(int));
-    for (i = 0; i < n; i++) {
-        for (j = 0; j < n; j++) {
+    //memset(in_degree, 0, n * sizeof(int));
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
             if (g->matrix[i][j] < GRAPH_INF)
                 in_degree[j]++;
         }
     }
 
-    for(i = 0; i < n; i ++) {
+    for(int i = 0; i < n; i ++) {
         if(in_degree[i] == 0)
-            stack_push(s, i);
+            s.push(i);
     }
 
-    while(!stack_empty(s)) {
-        u = stack_top(s); stack_pop(s);
+    int count = 0; /* 拓扑序列的元素个数*/
+    while(!s.empty()) {
+        const int u = s.top(); s.pop();
         topological[count++] = u;
-        for (i = 0; i < n; i++) if (g->matrix[u][i] < GRAPH_INF) {
-            if(--in_degree[i] == 0) stack_push(s, i);
+        for (int i = 0; i < n; i++) if (g->matrix[u][i] < GRAPH_INF) {
+            if(--in_degree[i] == 0) s.push(i);
         }
     }
 
-    free(in_degree);
-    stack_destroy(s);
+    delete[] in_degree;
     if(count != n) { /* 有环*/
         return 0;
     } else { /* 无环*/
@@ -1860,27 +1840,26 @@ int mgraph_topo_sort(const mgraph_t *g, int topological[]) {
 
 /** 读取输入，构建图. */
 void read_graph() {
-    int i, j, k;
     char buf[10]; /* 和 gets()配合消除回车键 */
     /* 读取节点和边的数目 */
     scanf("%d %d", &g.nv, &g.ne);
     gets(buf); // 消耗回车键
 
     /* 初始化图，所有节点间距离为无穷大 */
-    for (i = 0; i < g.nv; i++) {
-        for (j = 0; j < g.nv; j++) {
+    for (int i = 0; i < g.nv; i++) {
+        for (int j = 0; j < g.nv; j++) {
             g.matrix[i][j] = GRAPH_INF;
         }
     }
 
     /* 读取边信息 */
-    for (k = 0; k < g.ne; k++) {
+    for (int k = 0; k < g.ne; k++) {
         char chx, chy;
         graph_weight_t w;
         scanf("%c %c %d", &chx, &chy, &w);
         gets(buf); // 消耗回车键
-        i = chx - 'A';
-        j = chy - 'A';
+        int i = chx - 'A';
+        int j = chy - 'A';
         g.matrix[i][j] = w;
     }
 }
@@ -1904,11 +1883,10 @@ E F 60
 B A E F C D
 */
 int main() {
-    int i;
     read_graph();
     /* 拓扑排序 */
     mgraph_topo_sort(&g, topological);
-    for (i = 0; i < g.nv; i++) {
+    for (int i = 0; i < g.nv; i++) {
         printf("%c ", 'A'+topological[i]);
     }
     return 0;
@@ -1978,9 +1956,11 @@ Inconsistency found after 6 relations.
 
 \subsubsection{代码}
 \begin{Codex}[label=poj_1094.c]
-#include <stdio.h>
-#include <stdlib.h>  /* for malloc() */
-#include <limits.h>  /* for INT_MAX */
+/* POJ 1094 Sorting It All Out, http://poj.org/problem?id=1094 */
+#include <cstdio>
+#include <cstdlib>  /* for malloc() */
+#include <climits>  /* for INT_MAX */
+#include <stack>
 
 /** 顶点数的最大值*/
 #define MAX_VERTICES_NUM 26
@@ -2003,9 +1983,6 @@ mgraph_t g;
 /** 拓扑排序的结果. */
 int topological[MAX_VERTICES_NUM];
 
-/* 等价于复制粘贴，这里为了节约篇幅，使用include，在OJ上提交时请用复制粘贴 */
-#include "stack.c"  /* 见“栈和队列->栈”这节 */
-
 /**
   * @brief 拓扑排序.
   * @param[in] g 图对象的指针
@@ -2013,47 +1990,44 @@ int topological[MAX_VERTICES_NUM];
   * @return 无环返回 1，有环返回 0
   */
 int mgraph_topological_sort(const mgraph_t *g, int topological[]) {
-    int i, j, u;
-    int count = 0; /* 拓扑序列的元素个数*/
     int insufficient = 0;  /* 条件不足 */
     const int n = g->nv;
     /* in_degree[i]是顶点i的入度 */
-    int *in_degree = (int*)malloc(n * sizeof(int));
-    stack_t *s = stack_create(n * sizeof(int));
+    int *in_degree = new int[n]();
+    std::stack<int> s;
 
-    memset(in_degree, 0, n * sizeof(int));
-    for (i = 0; i < n; i++) {
-        for (j = 0; j < n; j++) {
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
             if (g->matrix[i][j] < GRAPH_INF)
                 in_degree[j]++;
         }
     }
 
-    for(i = 0; i < n; i ++) {
+    for(int i = 0; i < n; i ++) {
         if(in_degree[i] == 0) {
-            stack_push(s, i);
+            s.push(i);
         }
     }
 
-    while(!stack_empty(s)) {
+    int count = 0; /* 拓扑序列的元素个数*/
+    while(!s.empty()) {
         // 栈内应该始终只有一个元素
-        if (stack_size(s) > 1) insufficient = 1;
+        if (s.size() > 1) insufficient = 1;
         // 删除顶点u
-        u = stack_top(s); stack_pop(s);
+        const int u = s.top(); s.pop();
         topological[count++] = u;
         --in_degree[u];  // 变成 -1，表示已经输出
         // 更新入度
-        for (i = 0; i < n; i++) if (g->matrix[u][i] < GRAPH_INF) {
+        for (int i = 0; i < n; i++) if (g->matrix[u][i] < GRAPH_INF) {
             --in_degree[i];
         }
         // 选择入度为0的顶点
-        for (i = 0; i < n; i++) if (g->matrix[u][i] < GRAPH_INF) {
-            if (in_degree[i] == 0) stack_push(s, i);
+        for (int i = 0; i < n; i++) if (g->matrix[u][i] < GRAPH_INF) {
+            if (in_degree[i] == 0) s.push(i);
         }
     }
 
-    free(in_degree);
-    stack_destroy(s);
+    delete[] in_degree;
     if(count < n) { /* 有环*/
         return 0;
     } else { /* 无环*/
@@ -2066,7 +2040,7 @@ int mgraph_topological_sort(const mgraph_t *g, int topological[]) {
 }
 
 int main() {
-    int i, j, k, m;  // m不一定是边的数目，因为输入边可能有重复
+    int m;  // m不一定是边的数目，因为输入边可能有重复
 
     /* 读取节点和边的数目 */
     while (scanf("%d %d", &(g.nv), &m)
@@ -2076,17 +2050,17 @@ int main() {
         int finished = 0;  // 排序完成，结束，发现有环，可以提前结束
 
         /* 初始化图，所有节点间距离为无穷大 */
-        for (i = 0; i < g.nv; i++) {
-            for (j = 0; j < g.nv; j++) {
+        for (int i = 0; i < g.nv; i++) {
+            for (int j = 0; j < g.nv; j++) {
                 g.matrix[i][j] = GRAPH_INF;
             }
         }
 
         /* 读取边信息 */
-        for (k = 0; k < m; k++) {
+        for (int k = 0; k < m; k++) {
             scanf("%s", s);
-            i = s[0] - 'A';
-            j = s[2] - 'A';
+            const int i = s[0] - 'A';
+            const int j = s[2] - 'A';
             g.matrix[i][j] = 1;
 
             if (finished) continue;    // 完成，则 continue，消耗输入
@@ -2100,7 +2074,7 @@ int main() {
             }
             if (ok == 1 && k) {
                 printf("Sorted sequence determined after %d relations: ", k+1);
-                for (i = 0; i < g.nv; i++) {
+                for (int i = 0; i < g.nv; i++) {
                     printf("%c", 'A' + topological[i]);
                 }
                 printf(".\n");
@@ -2186,15 +2160,17 @@ $v_6$ & 8 &                               & 8 &                             & $a
 \subsubsection{代码}
 
 \begin{Codex}[label=mgraph_critical_path.c]
-#include <stdio.h>
-#include <stdlib.h>  /* for malloc() */
-#include <limits.h>  /* for INT_MAX */
+#include <cstdio>
+#include <cstdlib>  /* for malloc() */
+#include <climits>  /* for INT_MAX */
+#include <stack>
+#include <algorithm>
 
 /** 顶点数的最大值*/
-#define MAX_VERTICES_NUM 100
+const int MAX_VERTICES_NUM = 100;
 /** 边的权值，对无权图，用0或1表示是否相邻；对有权图，则为权值. */
 typedef int graph_weight_t;
-#define GRAPH_INF INT_MAX
+const graph_weight_t GRAPH_INF = INT_MAX;
 
 /**
  *@struct
@@ -2213,9 +2189,6 @@ int topological[MAX_VERTICES_NUM];
 /** 关键路径，其余顶点为-1. */
 int path[MAX_VERTICES_NUM];
 
-/* 等价于复制粘贴，这里为了节约篇幅，使用include，在OJ上提交时请用复制粘贴 */
-#include "stack.c"  /* 见“栈和队列->栈”这节 */
-
 /*
   * @brief 按照拓扑排序的顺序，计算所有顶点的最早发生时间 ve.
   * @param[in] g 图对象的指针
@@ -2225,51 +2198,47 @@ int path[MAX_VERTICES_NUM];
   */
 static int mgraph_toposort_ve(const mgraph_t *g, int topological[],
         graph_weight_t ve[]) {
-    int i, j, u;
-    int count = 0; /* 拓扑序列的元素个数*/
     const int n = g->nv;
     /* in_degree[i]是顶点i的入度 */
-    int *in_degree = (int*)malloc(n * sizeof(int));
-    stack_t *s = stack_create(n * sizeof(int));
+    int *in_degree = new int[n]();
+    std::stack<int> s;
 
-    memset(in_degree, 0, n * sizeof(int));
-    for (i = 0; i < n; i++) {
-        for (j = 0; j < n; j++) {
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
             if (g->matrix[i][j] < GRAPH_INF)
                 in_degree[j]++;
         }
     }
 
-    for(i = 0; i < n; i ++) {
+    for(int i = 0; i < n; i ++) {
         if(in_degree[i] == 0) {
-            stack_push(s, i);
+            s.push(i);
         }
     }
+    std::fill(ve, ve + n, 0);
 
-    memset(ve, 0, n * sizeof(graph_weight_t));
-
-    while(!stack_empty(s)) {
+    int count = 0; /* 拓扑序列的元素个数*/
+    while(!s.empty()) {
         // 删除顶点u
-        u = stack_top(s); stack_pop(s);
+        const int u = s.top(); s.pop();
         topological[count++] = u;
         --in_degree[u];  // 变成 -1，表示已经输出
         // 更新入度
-        for (i = 0; i < n; i++) if (g->matrix[u][i] < GRAPH_INF) {
+        for (int i = 0; i < n; i++) if (g->matrix[u][i] < GRAPH_INF) {
             --in_degree[i];
         }
         // 更新邻接点的 ve
-        for (i = 0; i < n; i++) if (g->matrix[u][i] < GRAPH_INF) {
+        for (int i = 0; i < n; i++) if (g->matrix[u][i] < GRAPH_INF) {
             if (ve[i] < ve[u] + g->matrix[u][i])
                 ve[i] = ve[u] + g->matrix[u][i];
         }
         // 选择入度为0的顶点
-        for (i = 0; i < n; i++) if (g->matrix[u][i] < GRAPH_INF) {
-            if (in_degree[i] == 0) stack_push(s, i);
+        for (int i = 0; i < n; i++) if (g->matrix[u][i] < GRAPH_INF) {
+            if (in_degree[i] == 0) s.push(i);
         }
     }
 
-    free(in_degree);
-    stack_destroy(s);
+    delete[] in_degree;
     if(count < n) { /* 有环*/
         return 0;
     } else { /* 无环*/
@@ -2285,7 +2254,6 @@ static int mgraph_toposort_ve(const mgraph_t *g, int topological[],
   * @return 无环返回关键路径的顶点个数，有环返回 0
   */
 int mgraph_critical_path(const mgraph_t *g, int path[MAX_VERTICES_NUM]) {
-    int i, j;
     int count = 0;    // 关键路径的顶点个数
     graph_weight_t *ve = (graph_weight_t*) malloc(
             g->nv * sizeof(graph_weight_t));
@@ -2294,24 +2262,24 @@ int mgraph_critical_path(const mgraph_t *g, int path[MAX_VERTICES_NUM]) {
 
     if (!mgraph_toposort_ve(g, topological, ve)) return 0;  // 有环
 
-    for (i = 0; i < MAX_VERTICES_NUM; i++) path[i] = -1;
+    for (int i = 0; i < MAX_VERTICES_NUM; i++) path[i] = -1;
     // 初始化 vl 为最大
-    for (i = 0; i < g->nv; i++) vl[i] = ve[g->nv-1];
+    for (int i = 0; i < g->nv; i++) vl[i] = ve[g->nv-1];
 
     // 逆序计算vl
-    for (i = g->nv-1; i >=0; i--) {
-        int k = topological[i];
-        for (j = 0; j < g->nv; j++) {
+    for (int i = g->nv-1; i >=0; i--) {
+        const int k = topological[i];
+        for (int j = 0; j < g->nv; j++) {
             if (g->matrix[j][k] < GRAPH_INF) {
                 if (vl[j] > vl[k] - g->matrix[j][k])
                     vl[j] = vl[k] - g->matrix[j][k];
             }
         }
     }
-    for (i = 0; i < g->nv; i++) {
-        for (j = 0; j < g->nv; j++) {
-            int e = ve[i];
-            int l = vl[j] - g->matrix[i][j];
+    for (int i = 0; i < g->nv; i++) {
+        for (int j = 0; j < g->nv; j++) {
+            const int e = ve[i];
+            const int l = vl[j] - g->matrix[i][j];
             if (e == l) {
                 if (i == 0) {
                     path[count++] = i;
@@ -2330,27 +2298,25 @@ int mgraph_critical_path(const mgraph_t *g, int path[MAX_VERTICES_NUM]) {
 
 /** 读取输入，构建图. */
 void read_graph() {
-    int i, j, k;
-
     /* 读取节点和边的数目 */
     scanf("%d%d", &g.nv, &g.ne);
 
     /* 初始化图，所有节点间距离为无穷大 */
-    for (i = 0; i < g.nv; i++) {
-        for (j = 0; j < g.nv; j++) {
+    for (int i = 0; i < g.nv; i++) {
+        for (int j = 0; j < g.nv; j++) {
             g.matrix[i][j] = GRAPH_INF;
         }
     }
 
     /* 读取边信息 */
     getchar(); // 消耗回车键
-    for (k = 0; k < g.ne; k++) {
+    for (int k = 0; k < g.ne; k++) {
         char chx, chy;
         graph_weight_t w;
         scanf("%c %c %d", &chx, &chy, &w);
         getchar();
-        i = chx - 'A';
-        j = chy - 'A';
+        int i = chx - 'A';
+        int j = chy - 'A';
         g.matrix[i][j] = w;
     }
 }
@@ -2372,11 +2338,10 @@ D F 2
 
 */
 int main() {
-    int i, count;
     read_graph();
     /* 拓扑排序 */
-    count = mgraph_critical_path(&g, path);
-    for (i = 0; i < count; i++) {
+    const int count = mgraph_critical_path(&g, path);
+    for (int i = 0; i < count; i++) {
         printf("%c ", 'A' + path[i]);
     }
     return 0;
