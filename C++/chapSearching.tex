@@ -44,87 +44,79 @@ int binary_search(const elem_t a[], const int n, const elem_t x) {
 下面是拉链法的C语言实现。
 
 \subsubsection{代码}
-\begin{Codex}[label=hash_set.c]
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
+\begin{Codex}[label=hash_set.hpp]
+/** 元素的哈希函数  */
+template<typename elem_t>
+int elem_hash(const elem_t &e);
 
-#ifndef __cplusplus
-typedef char bool;
-#define false 0
-#define true 1
-#endif
+/** 元素的比较函数  */
+template<typename elem_t>
+bool operator==(const elem_t &e1, const elem_t &e2);
 
-/** 每个元素所带的数据 */
-typedef int hash_set_elem_t;
+/** 哈希集合, elem_t 是元素的数据类型. */
+template<typename elem_t>
+class hash_set {
+public:
+    hash_set(int prime, int capacity);
+    ~hash_set();
+    bool find(const elem_t &elem); /** 查找某个元素是否存在. */
+    bool insert(const elem_t &elem); /** 添加一个元素，如果已存在则添加失败. */
+private:
+    int prime; /** 哈希表取模的质数，也即哈希桶的个数，小于 capacity. */
+    int capacity; /** 哈希表容量，一定要大于元素最大个数  */
 
-/** 哈希表容量，一定要大于元素最大个数  */
-#define HASH_SET_CAPACITY  100001
-/** 哈希表取模的质数，也即哈希桶的个数，小于 HASH_SET_CAPACITY. */
-#define PRIME  99997
+    int *head/*[PRIME]*/; /** 首节点下标 */
 
-/** 哈希集合. */
-typedef struct hash_set_t {
-    int head[PRIME];  /** 首节点下标 */
-
-    struct {
-        hash_set_elem_t elem;
+    struct node_t {
+        elem_t elem;
         int next;
-    } node[HASH_SET_CAPACITY];  /** 静态链表 */
+        node_t():next(-1) {}
+    } *node/*[HASH_SET_CAPACITY]*/; /** 静态链表 */
 
     int size; /** 实际元素个数 */
+};
 
-    int (*hash)(const hash_set_elem_t *elem); /** 元素的哈希函数 */
-    bool (*cmp)(const hash_set_elem_t *elem1,
-            const hash_set_elem_t *elem2);  /** 元素的比较函数 */
-} hash_set_t;
-
-/** 创建一个哈希集合. */
-hash_set_t* hash_set_create(int (*hash)(const hash_set_elem_t *elem),
-        bool (*cmp)(const hash_set_elem_t *elem1,
-                const hash_set_elem_t *elem2)) {
-    hash_set_t *result = (hash_set_t*)malloc(sizeof(hash_set_t));
-    memset(result->head, -1, sizeof(result->head));
-    memset(result->node, -1, sizeof(result->node));
-    result->size = 0;
-    result->hash = hash;
-    result->cmp = cmp;
-    return result;
+template<typename elem_t>
+hash_set<elem_t>::hash_set(int prime, int capacity) {
+    this->prime = prime;
+    this->capacity = capacity;
+    head = new int[prime];
+    node = new node_t[capacity];
+    std::fill(head, head + prime, -1);
+    std::fill(node, node + capacity, node_t());
+    size = 0;
 }
 
-/** 销毁哈希集合. */
-void hash_set_destroy(hash_set_t *set) {
-    free(set);
-    set = NULL;
+template<typename elem_t>
+hash_set<elem_t>::~hash_set() {
+    this->prime = 0;
+    this->capacity = 0;
+    delete[] head;
+    delete[] node;
+    head = NULL;
+    node = NULL;
+    size = 0;
 }
 
-/** 查找某个元素是否存在. */
-bool hash_set_find(const hash_set_t *set, const hash_set_elem_t *elem) {
-    int i;
-    int hash = set->hash(elem);
+template<typename elem_t>
+bool hash_set<elem_t>::find(const elem_t &elem) {
+    for (int i = head[elem_hash(elem)]; i != -1; i = node[i].next)
+        if (elem == node[i].elem) return true;
 
-    for (i = set->head[hash]; i != -1; i = set->node[i].next) {
-        if (set->cmp(elem, &(set->node[i].elem))) {
-            return true;
-        }
-    }
     return false;
 }
 
-/** 添加一个元素，如果已存在则添加失败. */
-bool hash_set_add(hash_set_t *set, const hash_set_elem_t *elem) {
-    int i;
-    int hash = set->hash(elem);
+template<typename elem_t>
+bool hash_set<elem_t>::insert(const elem_t &elem) {
+    const int hash_code = elem_hash(elem);
 
-    for (i = set->head[hash]; i != -1; i = set->node[i].next) {
-        if (set->cmp(elem, &(set->node[i].elem))) {
-            return false; /* 已经存在 */
-        }
-    }
+    for (int i = head[hash_code]; i != -1; i = node[i].next)
+        if (elem == node[i].elem) return false; // 已经存在
+
     /* 不存在，则插入在首节点之前 */
-    set->node[set->size].next = set->head[hash];
-    set->node[set->size].elem = *elem;
-    set->head[hash] = set->size++;
+    node[size].next = head[hash_code];
+    node[size].elem = elem;
+    head[hash_code] = size++;
     return true;
 }
 \end{Codex}
@@ -209,42 +201,26 @@ int main() {
 
 自己实现哈希表。
 
-\begin{Codex}[label=babelfish.c]
+\begin{Codex}[label=babelfish.cpp]
 /* POJ 2503 Babelfish , http://poj.org/problem?id=2503 */
+#include <cstring>
+
 /** 单词最大长度. */
 #define MAX_WORD_LEN   11
 
-/** 每个元素所带的数据 */
-typedef struct hash_set_elem_t {
+/** 词典中的一对. */
+struct dict_pair_t {
     char english[MAX_WORD_LEN];
     char foreign[MAX_WORD_LEN];
-} hash_set_elem_t;
+};
 
 /** 哈希表容量，一定要大于元素最大个数  */
 #define HASH_SET_CAPACITY  100001
 /** 哈希表取模的质数，也即哈希桶的个数，小于 HASH_SET_CAPACITY. */
 #define PRIME  99997
 
-/* 等价于复制粘贴，这里为了节约篇幅，使用include，在OJ上提交时请用复制粘贴 */
-#include "hash_set.c"  /* 见“查找->哈希表”这节 */
-
-/* 与hash_set_find() 略有不同，用类似于HashMap的方式 */
-bool hash_set_get(const hash_set_t *set, hash_set_elem_t *elem) {
-    int i;
-    int hash = set->hash(elem);
-
-    for (i = set->head[hash]; i != -1; i = set->node[i].next) {
-        if (set->cmp(elem, &(set->node[i].elem))) {
-            // 返回对应 english, foreigh 作为key, english作为value
-            strncpy(elem->english, set->node[i].elem.english, MAX_WORD_LEN-1);
-            return true;
-        }
-    }
-    return false;
-}
-
-int elem_hash(const hash_set_elem_t *elem) {
-    const char *str = elem->foreign;
+int elem_hash(const dict_pair_t &e) {
+    const char *str = e.foreign;
     unsigned int r = 0;
     int len = strlen(str);
     int i;
@@ -255,24 +231,40 @@ int elem_hash(const hash_set_elem_t *elem) {
     return r % PRIME;
 }
 
-bool elem_cmp(const hash_set_elem_t *elem1, const hash_set_elem_t *elem2) {
-    return strcmp(elem1->foreign, elem2->foreign) == 0;
+bool operator==(const dict_pair_t &e1, const dict_pair_t &e2) {
+    return strcmp(e1.foreign, e2.foreign) == 0;
 }
+
+/* 等价于复制粘贴，这里为了节约篇幅，使用include，在OJ上提交时请用复制粘贴 */
+#include "hash_set.hpp"  /* 见“查找->哈希表”这节 */
+
+/* 跟find()略有不同，专为为本题定制 */
+template<typename elem_t>
+bool hash_set<elem_t>::get(elem_t &e) {
+    for (int i = head[elem_hash(e)]; i != -1; i = node[i].next)
+        if (e == node[i].elem) {
+            // 多了一行代码，获取对应的 english
+            strncpy(e.english, node[i].elem.english, MAX_WORD_LEN-1);
+            return true;
+        }
+
+    return false;
+}
+
 
 int main() {
     char line[MAX_WORD_LEN * 2];
-    hash_set_t *set = hash_set_create(elem_hash, elem_cmp);
-    hash_set_elem_t e;
+    hash_set<dict_pair_t> set(PRIME, HASH_SET_CAPACITY);
+    dict_pair_t e;
 
     while (gets(line) && line[0] != 0) {
         sscanf(line, "%s %s", e.english, e.foreign);
-        hash_set_add(set, &e);
+        set.insert(e);
     }
     while (gets(e.foreign)) {
-        if (hash_set_get(set, &e)) printf("%s\n", e.english);
+        if (set.get(e)) printf("%s\n", e.english);
         else printf("eh\n");
     }
-    hash_set_destroy(set);
     return 0;
 }
 \end{Codex}
