@@ -95,7 +95,22 @@ typedef struct state_t {
  * 其实一般用不了这么大的数组，广搜很很快就会结束
  */
 state_t path[STATE_MAX];
-int path_index = 0;  /** 每出现一个新状态，就增1，将状态存到该位置 */
+int path_index = 0;  /** 每出现一个新状态，就增1，将状态存到该位置，
+                         如果有完美哈希方案，则不需要该变量. */
+
+/**
+ * @brief 返回状态在path[]中的下标.
+ * 
+ * 起点状态没有父亲和动作为-1，因为它没有父状态，也就没有所谓的从父节点到它的动作。
+ * @param[in] s 状态
+ * @return 状态在path[]中的下标
+ */
+int state_index(const state *s) {
+    /* 如果有完美哈希方案 */
+    return state_hash(s);
+    /* 否则 */
+    return s->index;
+}
 
 /**
  * @brief 打印动作序列.
@@ -129,13 +144,8 @@ void print_path(const int end) {
 
 /********** 如果题目要求输出路径或动作序列，则需要上面的变量和函数 ***********/
 
-/** 计算状态的哈希值，如果存在完美哈希方案，则定义本函数，否则不需要.
- * 哈希值只依赖state_t的数据字段。
- */
-int state_hash(const state_t *s);
-
 /** 初始化查找表. */
-void history_init();
+void hashset_init();
 
 /**
  * @brief 状态判重.
@@ -143,14 +153,14 @@ void history_init();
  * @param[in] s 状态
  * @return 已经访问过，返回true，否则false
  */
-bool history_contains(const state_t *s);
+bool hashset_find(const state_t *s);
 
 /**
  * @brief 标记该状态已经被访问
  * @param[in] s 状态
  * @return 无
  */
-void history_insert(const state_t *s);
+void hashset_insert(const state_t *s);
 
 /**
  * @brief 扩展第一个状态.
@@ -188,17 +198,17 @@ typedef state_t queue_elem_t; // 元素的类型
  */
 int bfs(state_t *start) {
     queue_t *q = queue_create(16);
-    history_init();
+    hashset_init();
 
     start->action = -1;   /* 起点状态没有动作 */
     start->index = path_index++;
     start->father = -1;   /* 起点状态没有父状态 */
     start->count = 0;
 
-    path[state_hash(start) or start->index] = *start;
-    history_insert(start); // 千万别忘记了标记此处的访问记录
+    path[state_index(start)] = *start;
+    hashset_insert(start); // 千万别忘记了标记此处的访问记录
     if (state_is_target(start)) /* 如果起点就是终点，返回 */
-        return state_hash(start) or start->index;
+        return state_index(start);
     queue_push(q, *start);
 
     while (!queue_empty(q)) {
@@ -211,10 +221,10 @@ int bfs(state_t *start) {
             if (state_is_target(&next)) {
                 // printf("%d\n", next.count);
                 queue_destroy(q);
-                return next.index or state_hash(&next);
+                return state_index(&next);
             }
             queue_push(q, next);
-            history_insert(&next);
+            hashset_insert(&next);
         }
     }
     queue_destroy(q);
@@ -245,25 +255,28 @@ int main(void) {
 ... visited
 // 例如 bool visited[HASH_MAX];
 
-int state_hash(const state_t *s) {
+/** 计算状态的哈希值.
+ * 哈希值应该只依赖state_t的数据字段。
+ */
+int state_hash(const state_t &s) {
     ...
 }
 
-void history_init() {
+void hashset_init() {
     /* 如果是数组 */
     memset(visited, 0, sizeof(visited));
     /* 如果是 std::unordered_set */
     visited.clear();
 }
 
-bool history_contains(const state_t *s) {
+bool hashset_find(const state_t *s) {
     /* 如果是数组 */
     return visited[state_hash(s)] == true;
     /* 如果是 std::unordered_set */
     return visited.count(s) > 0;
 }
 
-void history_insert(const state_t *s) {
+void hashset_insert(const state_t *s) {
     /* 如果是数组 */
     visited[state_hash(s)] = true;
     /* 如果是 std::unordered_set */
@@ -300,12 +313,12 @@ bool state_extend(const state_t *s, state_t *next) {
             next->data1 = value1
             next->data2 = value2
 
-            if (!history_contains(next)) { /* 判重 */
+            if (!hashset_find(next)) { /* 判重 */
                 next->action = action_cur;
                 next->index = path_index++;
-                next->father = s->index or state_hash(s);
+                next->father = state_index(s);
                 /* 记录路径 */
-                path[next->index or state_hash(next)] = *next;
+                path[state_index(next)] = *next;
                 action_cur++;  /* return前别忘了增1 */
                 return true;
             }
@@ -402,6 +415,12 @@ typedef struct state_t {
 
 state_t path[STATE_MAX];
 
+int state_hash(const state_t *s);
+
+int state_index(const state *s) {
+    return state_hash(s);
+}
+
 void print_action(const int end) {
     if (path[end].father == -1) return;
 
@@ -418,13 +437,11 @@ void print_path(const int end) {
     printf("(%d, %d)\n", end / n, end % n);
 }
 
-int state_hash(const state_t *s);
+void hashset_init();
 
-void history_init();
+bool hashset_find(const state_t *s);
 
-bool history_contains(const state_t *s);
-
-void history_insert(const state_t *s);
+void hashset_insert(const state_t *s);
 
 void state_extend_init(const state_t *s);
 
@@ -438,15 +455,15 @@ typedef state_t queue_elem_t; // 元素的类型
 
 int bfs(state_t *start) {
     queue_t *q = queue_create(16);
-    history_init();
+    hashset_init();
 
     start->action = -1;
     start->father = -1;
 
-    path[state_hash(start)] = *start;
-    history_insert(start);
+    path[state_index(start)] = *start;
+    hashset_insert(start);
     if (state_is_target(start))
-        return state_hash(start);
+        return state_index(start);
     queue_push(q, *start);
 
     while (!queue_empty(q)) {
@@ -457,10 +474,10 @@ int bfs(state_t *start) {
         while (state_extend(&s, &next)) {
             if (state_is_target(&next)) {
                 queue_destroy(q);
-                return state_hash(&next);
+                return state_index(&next);
             }
             queue_push(q, next);
-            history_insert(&next);
+            hashset_insert(&next);
         }
     }
     queue_destroy(q);
@@ -492,15 +509,15 @@ int state_hash(const state_t *s) {
     return s->data;
 }
 
-void history_init() {
+void hashset_init() {
     memset(visited, 0, sizeof(visited));
 }
 
-bool history_contains(const state_t *s) {
+bool hashset_find(const state_t *s) {
     return visited[state_hash(s)] == true;
 }
 
-void history_insert(const state_t *s) {
+void hashset_insert(const state_t *s) {
     visited[state_hash(s)] = true;
 }
 
@@ -524,11 +541,11 @@ bool state_extend(const state_t *s, state_t *next) {
         if (nx >= 0 && nx < m && ny >= 0 && ny < n && !map[nx][ny]) {
             next->data = nx * n + ny;
 
-            if (!history_contains(next)) { /* 判重 */
+            if (!hashset_find(next)) { /* 判重 */
                 /* 记录路径 */
                 next->action = action_cur;
-                next->father = state_hash(s);
-                path[state_hash(next)] = *next;
+                next->father = state_index(s);
+                path[state_index(next)] = *next;
 
                 action_cur++;  /* return前别忘了增1 */
                 return true;
@@ -664,6 +681,12 @@ typedef struct state_t {
 
 state_t path[STATE_MAX+1];
 
+int state_hash(const state_t *s);
+
+int state_index(const state *s) {
+    return state_hash(s);
+}
+
 /**
  * @brief 打印动作序列.
  * @param[in] end 终点状态的哈希值
@@ -678,11 +701,11 @@ void print_action(const int end) {
 
 int state_hash(const state_t *s);
 
-void history_init();
+void hashset_init();
 
-bool history_contains(const state_t *s);
+bool hashset_find(const state_t *s);
 
-void history_insert(const state_t *s);
+void hashset_insert(const state_t *s);
 
 void state_extend_init(const state_t *s);
 
@@ -696,16 +719,16 @@ typedef state_t queue_elem_t; // 元素的类型
 
 int bfs(state_t *start) {
     queue_t *q = queue_create(16);
-    history_init();
+    hashset_init();
 
     start->action = -1;
     start->father = -1;
     start->count = 0;
 
-    path[state_hash(start)] = *start;
-    history_insert(start);
+    path[state_index(start)] = *start;
+    hashset_insert(start);
     if (state_is_target(start))
-        return state_hash(start);
+        return state_index(start);
     queue_push(q, *start);
 
     while (!queue_empty(q)) {
@@ -718,10 +741,10 @@ int bfs(state_t *start) {
             if (state_is_target(&next)) {
                 // printf("%d\n", next.count);
                 queue_destroy(q);
-                return state_hash(&next);
+                return state_index(&next);
             }
             queue_push(q, next);
-            history_insert(&next);
+            hashset_insert(&next);
         }
     }
     queue_destroy(q);
@@ -793,15 +816,15 @@ int state_hash(const state_t *s) {
     return key;
 }
 
-void history_init() {
+void hashset_init() {
     memset(visited, 0, sizeof(visited));
 }
 
-bool history_contains(const state_t *s) {
+bool hashset_find(const state_t *s) {
     return visited[state_hash(s)] == true;
 }
 
-void history_insert(const state_t *s) {
+void hashset_insert(const state_t *s) {
     visited[state_hash(s)] = true;
 }
 
@@ -836,11 +859,11 @@ bool state_extend(const state_t *s, state_t *next) {
             next->data[newz] = SPACE_NUMBER;
             next->data[z] = s->data[newz];
             next->count = s->count + 1;
-            if (!history_contains(next)) { /* 判重 */
+            if (!hashset_find(next)) { /* 判重 */
                 next->action = action_cur;
-                next->father = state_hash(s);
+                next->father = state_index(s);
                 /* 记录路径 */
-                path[state_hash(next)] = *next;
+                path[state_index(next)] = *next;
                 action_cur++; /* return前别忘了增1 */
                 return true;
             }
@@ -903,6 +926,10 @@ typedef struct state_t {
 state_t path[STATE_MAX+1];
 int path_index = 0;
 
+int state_index(const state_t *s) {
+    return s->index;
+}
+
 /**
  * @brief 打印动作序列.
  * @param[in] end 终点状态的哈希值
@@ -915,11 +942,11 @@ void print_action(const int end) {
     putchar(name[path[end].action]);
 }
 
-void history_init();
+void hashset_init();
 
-bool history_contains(const state_t *s);
+bool hashset_find(const state_t *s);
 
-void history_insert(const state_t *s);
+void hashset_insert(const state_t *s);
 
 void state_extend_init(const state_t *s);
 
@@ -933,17 +960,17 @@ typedef state_t queue_elem_t; // 元素的类型
 
 int bfs(state_t *start) {
     queue_t *q = queue_create(16);
-    history_init();
+    hashset_init();
 
     start->action = -1;
     start->index = path_index++;
     start->father = -1;
     start->count = 0;
 
-    path[start->index] = *start;
-    history_insert(start);
+    path[state_index(start)] = *start;
+    hashset_insert(start);
     if (state_is_target(start))
-        return state_hash(start);
+        return state_index(start);
     queue_push(q, *start);
 
     while (!queue_empty(q)) {
@@ -956,10 +983,10 @@ int bfs(state_t *start) {
             if (state_is_target(&next)) {
                 // printf("%d\n", next.count);
                 queue_destroy(q);
-                return next.index;
+                return state_index(next);
             }
             queue_push(q, next);
-            history_insert(&next);
+            hashset_insert(&next);
         }
     }
     queue_destroy(q);
@@ -1021,12 +1048,12 @@ int state_hash(const state_t *s) {
     return ret % HASH_CAPACITY;
 }
 
-void history_init() {
+void hashset_init() {
     memset(head, 0, sizeof(head));
     memset(next, 0, sizeof(next));
 }
 
-bool history_contains(const state_t *s) {
+bool hashset_find(const state_t *s) {
     const int h = state_hash(s);
     int u = head[h]; // 从表头开始查找单链表
     while(u) {
@@ -1038,7 +1065,7 @@ bool history_contains(const state_t *s) {
     return false;
 }
 
-void history_insert(const state_t *s) {
+void hashset_insert(const state_t *s) {
     const int h = state_hash(s);
     int u = head[h]; // 从表头开始查找单链表
     while(u) {
@@ -1085,12 +1112,12 @@ bool state_extend(const state_t *s, state_t *next) {
             next->data[newz] = SPACE_NUMBER;
             next->data[z] = s->data[newz];
 
-            if (!history_contains(next)) { /* 判重 */
+            if (!hashset_find(next)) { /* 判重 */
                 next->action = action_cur;
                 next->index = path_index++;
-                next->father = s->index;
+                next->father = state_index(s);
                 /* 记录路径 */
-                path[next->index] = *next;
+                path[state_index(next)] = *next;
                 action_cur++; /* return前别忘了增1 */
                 return true;
             }
@@ -1148,15 +1175,15 @@ template<> struct hash<state_t> {
 
 std::unordered_set<state_t> visited;
 
-void history_init() {
+void hashset_init() {
     visited.clear();
 }
 
-bool history_contains(const state_t *s) {
+bool hashset_find(const state_t *s) {
     return visited.count(*s) > 0;
 }
 
-void history_insert(const state_t *s) {
+void hashset_insert(const state_t *s) {
     visited.insert(*s);
 }
 
@@ -1216,15 +1243,15 @@ WBWO
 
 可以用C++的\fn{std::map}来判重，
 \begin{Code}
-/* history[0]记录白子的历史，history[1]记录黑子的历史. */
-std::map<int, bool> history[2];
+/* visited[0]记录白子的历史， visited[1]记录黑子的历史. */
+std::map<int, bool> visited[2];
 \end{Code}
 
 也可以开一个大数组当做哈希表，
 \begin{Code}
 #define HASH_MOD 43036875 /* hash表大小 */
-/* history[0]记录白子的历史，history[1]记录黑子的历史. */
-bool history[2][HASH_MOD];
+/* visited[0]记录白子的历史， visited[1]记录黑子的历史. */
+bool visited[2][HASH_MOD];
 \end{Code}
 
 \subsubsection{代码}
@@ -1270,11 +1297,11 @@ typedef struct state_t {
 //TODO:共C16 7×C9 2个状态，用类似康托的方法储存
 int state_hash(const state_t *s);
 
-void history_init();
+void hashset_init();
 
-bool history_contains(const state_t *s);
+bool hashset_find(const state_t *s);
 
-void history_insert(const state_t *s);
+void hashset_insert(const state_t *s);
 
 void state_extend_init(const state_t *s);
 
@@ -1288,17 +1315,17 @@ typedef state_t queue_elem_t; // 元素的类型
 
 void bfs(state_t *start) {
     queue_t *q = queue_create(16);
-    history_init();
+    hashset_init();
 
     start->count = 0;
     start->color = 1;
 
-    history_insert(start);
+    hashset_insert(start);
     queue_push(q, *start);
 
     start->color = 2;
 
-    history_insert(start); // 千万别忘记了标记此处的访问记录
+    hashset_insert(start); // 千万别忘记了标记此处的访问记录
     if (state_is_target(start)) /* 如果起点就是终点，返回 */
         return;
     queue_push(q, *start);
@@ -1316,7 +1343,7 @@ void bfs(state_t *start) {
                 return;
             }
             queue_push(q, next);
-            history_insert(&next);
+            hashset_insert(&next);
         }
     }
     queue_destroy(q);
@@ -1365,16 +1392,16 @@ int state_hash(const state_t *s) {
     return ret;
 }
 
-void history_init() {
+void hashset_init() {
     memset(visited[0], 0, sizeof(sizeof(bool) * HASH_CAPACITY));
     memset(visited[1], 0, sizeof(sizeof(bool) * HASH_CAPACITY));
 }
 
-bool history_contains(const state_t *s) {
+bool hashset_find(const state_t *s) {
     return visited[s->color - 1][state_hash(s)] == true;
 }
 
-void history_insert(const state_t *s) {
+void hashset_insert(const state_t *s) {
     visited[s->color - 1][state_hash(s)] = true;
 }
 
@@ -1436,7 +1463,7 @@ bool state_extend(const state_t *s, state_t *next) {
                     next->board[nextx][nexty] = temp;
                 }
 
-                if (!history_contains(next)) { /* 判重 */
+                if (!hashset_find(next)) { /* 判重 */
                     action_cur[i]++; /* return前别忘了增1 */
                     return true;
                 }
@@ -1563,6 +1590,11 @@ typedef struct state_t {
 
 state_t path[STATE_MAX+1];
 
+int state_hash(const state_t *s);
+
+int state_index(const state_t *s) {
+    return state_hash(s);
+}
 /**
  * @brief 打印动作序列.
  * @param[in] end 终点状态的哈希值
@@ -1575,13 +1607,11 @@ void print_action(const int end) {
     putchar(name[path[end].action]);
 }
 
-int state_hash(const state_t *s);
+void hashset_init();
 
-void history_init();
+bool hashset_find(const state_t *s);
 
-bool history_contains(const state_t *s);
-
-void history_insert(const state_t *s);
+void hashset_insert(const state_t *s);
 
 void state_extend_init(const state_t *s);
 
@@ -1632,17 +1662,17 @@ static void calc_goal_pos() {
 int bfs(state_t *start) {
     heap_t *q = heap_create(16, cmp_state); /* 优先队列 */
     calc_goal_pos();
-    history_init();
+    hashset_init();
 
     start->action = -1;
     start->father = -1;
     start->count = 0;
     start->h = state_get_h(start);
 
-    path[state_hash(start)] = *start;
-    history_insert(start);
+    path[state_index(start)] = *start;
+    hashset_insert(start);
     if (state_is_target(start))
-        return state_hash(start);
+        return state_index(start);
     heap_push(q, *start);
 
     while (!heap_empty(q)) {
@@ -1655,10 +1685,10 @@ int bfs(state_t *start) {
             if (state_is_target(&next)) {
                 // printf("%d\n", next.count);
                 heap_destroy(q);
-                return state_hash(&next);
+                return state_index(&next);
             }
             heap_push(q, next);
-            history_insert(&next);
+            hashset_insert(&next);
         }
     }
     heap_destroy(q);
@@ -1796,15 +1826,15 @@ int state_hash(const state_t *state) {
     return key;
 }
 
-void history_init() {
+void hashset_init() {
     memset(visited, 0, sizeof(visited));
 }
 
-bool history_contains(const state_t *s) {
+bool hashset_find(const state_t *s) {
     return visited[state_hash(s)] == true;
 }
 
-void history_insert(const state_t *s) {
+void hashset_insert(const state_t *s) {
     visited[state_hash(s)] = true;
 }
 
@@ -1847,11 +1877,11 @@ bool state_extend(const state_t *s, state_t *next) {
 
             next->count = s->count + 1;
             next->h = state_get_h(next);
-            if (!history_contains(next)) { /* 判重 */
+            if (!hashset_find(next)) { /* 判重 */
                 next->action = action_cur;
-                next->father = state_hash(s);
+                next->father = state_index(s);
                 /* 记录路径 */
-                path[state_hash(next)] = *next;
+                path[state_index(next)] = *next;
                 action_cur++; /* return前别忘了增1 */
                 return true;
             }
