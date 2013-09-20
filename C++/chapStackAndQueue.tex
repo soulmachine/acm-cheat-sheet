@@ -38,8 +38,7 @@
  * @note 无
  * @remarks 无
  */
-void hanoi(int n, char x, char y, char z)
-{
+void hanoi(int n, char x, char y, char z) {
     if(n ==  1) {
         /* 移动操作move(x,n,z)可定义为（c是初始值为的全局
            变量，对搬动计数）：
@@ -61,7 +60,7 @@ void hanoi(int n, char x, char y, char z)
 \subsection{进制转换}
 \begin{Codex}[label=convert_base.cpp]
 #include <stack>
-#include <stdio.h>
+#include <cstdio>
 
  /**
   * @brief 进制转换，将一个10进制整数转化为 d进制，d<=16.
@@ -86,8 +85,8 @@ void convert_base(int n, const int d) {
     return;
 }
 
-#define MAX 64 // 栈的最大长度
-int stack[MAX];
+const int MAXN = 64; // 栈的最大长度
+int stack[MAXN];
 int top = -1;
 /**
  * @brief 进制转换，将一个10进制整数转化为 d进制，d<=16，更优化的版本.
@@ -122,12 +121,11 @@ void convert_base2(int n, const int d) {
  * @param[in] d d进制
  * @return 10进制整数
  */
-int restore(const char s[MAX], const int d) {
-    int i;
+int restore(const char s[MAXN], const int d) {
     int result = 0;
     int one;
 
-    for (i = 0; s[i] != '\0'; i++) {
+    for (int i = 0; s[i] != '\0'; i++) {
         if (s[i] >= '0' && s[i] <= '9') one = s[i] - '0';
         else if (s[i] >= 'A' && s[i] <= 'F') one = s[i] - 'A' + 10;
         else one = s[i] - 'a' + 10; /* (s[i] >= 'a' && s[i] <= 'f') */
@@ -156,18 +154,16 @@ int restore(const char s[MAX], const int d) {
  * @return 无
  */
 void yanghui_triangle(const int n) {
-    int i = 1;
     std::queue<int> q;
     /* 预先放入第一行的1 */
-    q.push(i);
+    q.push(1);
 
-    for(i = 0; i <= n; i++) {     /* 逐行处理*/
-        int j;
+    for(int i = 0; i <= n; i++) {     /* 逐行处理*/
         int s = 0;
         q.push(s);      /* 在各行间插入一个0*/
 
         /* 处理第i行的i+2个系数（包括一个0）*/
-        for(j = 0; j < i+2; j++) {
+        for(int j = 0; j < i+2; j++) {
             int t;
             int tmp;
             t = q.front();  /*读取一个系数，放入t*/
@@ -176,10 +172,10 @@ void yanghui_triangle(const int n) {
             q.push(tmp);
             s = t;            /* 打印一个系数，第i+2个是0*/
             if(j != i+1) {
-                printf("%d ",s);    
+                printf("%d ",s);
             }
         }
-        printf("\n"); 
+        printf("\n");
     }
 }
 \end{Codex}

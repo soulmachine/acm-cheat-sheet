@@ -197,8 +197,6 @@ void level_order(const binary_tree_node_t *root,
 \begin{Codex}[label=theaded_binary_tree.c]
 /** @file threaded_binary_tree.c
   * @brief 线索二叉树.
-  * @author soulmachine@gmail.com
-  * @date 2013-06-16
   */
 #include <stddef.h>    /* for NULL */
 #include <stdio.h>
@@ -384,11 +382,9 @@ C语言实现见第\S\ref{sec:morrisTraversalImpl}节。
 
 \subsection{C语言实现}
 \label{sec:morrisTraversalImpl}
-\begin{Codex}[label=morris_traversal.cpp]
+\begin{Codex}[label=morris_traversal.c]
 /** @file morris_traversal.c
  * @brief Morris遍历算法.
- * @author soulmachine@gmail.com
- * @date 2013-06-16
  */
 #include<stdio.h>
 #include<stdlib.h>
@@ -412,13 +408,13 @@ typedef struct bt_node_t {
  * @param[in] visit 访问函数
  * @return 无
  */
-void in_order_morris(bt_node_t *root, int(*visit)(elem_t*)) {
+void in_order_morris(bt_node_t *root, int(*visit)(bt_node_t*)) {
     bt_node_t *cur, *prev;
 
     cur = root;
     while (cur != NULL ) {
         if (cur->lchild == NULL ) {
-            visit(cur->data);
+            visit(cur);
             prev = cur;
             cur = cur->rchild;
         } else {
@@ -432,7 +428,7 @@ void in_order_morris(bt_node_t *root, int(*visit)(elem_t*)) {
                 prev = cur;
                 cur = cur->lchild;
             } else {    /* 已经线索化，则访问节点，并删除线索  */
-                visit(cur->data);
+                visit(cur);
                 node->rchild = NULL;
                 prev = cur;
                 cur = cur->rchild;
@@ -447,13 +443,13 @@ void in_order_morris(bt_node_t *root, int(*visit)(elem_t*)) {
  * @param[in] visit 访问函数
  * @return 无
  */
-void pre_order_morris(bt_node_t *root, int (*visit)(elem_t*)) {
+void pre_order_morris(bt_node_t *root, int (*visit)(bt_node_t*)) {
     bt_node_t *cur, *prev;
 
     cur = root;
     while (cur != NULL ) {
         if (cur->lchild == NULL ) {
-            visit(cur->data);
+            visit(cur);
             prev = cur;
             cur = cur->rchild;
         } else {
@@ -463,7 +459,7 @@ void pre_order_morris(bt_node_t *root, int (*visit)(elem_t*)) {
                 node = node->rchild;
 
             if (node->rchild == NULL ) { /* 还没线索化，则建立线索 */
-                visit(cur->data); /* 仅这一行与中序不同 */
+                visit(cur); /* 仅这一行与中序不同 */
                 node->rchild = cur;
                 prev = cur;
                 cur = cur->lchild;
@@ -478,14 +474,15 @@ void pre_order_morris(bt_node_t *root, int (*visit)(elem_t*)) {
 
 
 static void reverse(bt_node_t *from, bt_node_t *to);
-static void visit_reverse(bt_node_t* from, bt_node_t *to, int (*visit)(elem_t*));
+static void visit_reverse(bt_node_t* from, bt_node_t *to,
+        int (*visit)(bt_node_t*));
 /**
  * @brief 后序遍历，Morris算法.
  * @param[in] root 根节点
  * @param[in] visit 访问函数
  * @return 无
  */
-void post_order_morris(bt_node_t *root, int (*visit)(elem_t*)) {
+void post_order_morris(bt_node_t *root, int (*visit)(bt_node_t*)) {
     bt_node_t dump = { 0, NULL, NULL };
     dump.lchild = root;
     bt_node_t *cur = &dump, *prev = NULL;
@@ -535,12 +532,13 @@ static void reverse(bt_node_t *from, bt_node_t *to) {
  * @param[to] to to
  * @return 无
  */
-static void visit_reverse(bt_node_t* from, bt_node_t *to, int (*visit)(elem_t*)) {
+static void visit_reverse(bt_node_t* from, bt_node_t *to,
+        int (*visit)(bt_node_t*)) {
     reverse(from, to);
 
     bt_node_t *p = to;
     while (1) {
-        visit(p->data);
+        visit(p);
         if (p == from)
             break;
         p = p->rchild;
@@ -563,8 +561,8 @@ bt_node_t* new_node(int data) {
     return (node);
 }
 
-static int print(const elem_t *data) {
-    printf(" %d ", data);
+static int print(bt_node_t *node) {
+    printf(" %d ", node->data);
     return 0;
 }
 
