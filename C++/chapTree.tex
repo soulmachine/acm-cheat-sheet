@@ -19,7 +19,7 @@
 #include <queue>
 
 /** 结点的数据 */
-typedef int tree_node_value_t;
+typedef int tree_node_elem_t;
  /*
   *@struct
   *@brief 二叉树结点
@@ -27,7 +27,7 @@ typedef int tree_node_value_t;
 struct binary_tree_node_t {
     binary_tree_node_t *left;   /* 左孩子*/
     binary_tree_node_t *right;   /* 右孩子*/
-    tree_node_value_t value; /* 结点的数据*/
+    tree_node_elem_t elem; /* 结点的数据*/
 };
 
 /**
@@ -180,7 +180,7 @@ void level_order(const binary_tree_node_t *root,
 
 一棵n个结点的二叉树含有n+1个空指针。这是因为，假设叶子节点数为$n_0$，度为1的节点数为$n_1$，度为2的节点数为$n_2$，每个叶子节点有2个空指针，每个度为1的节点有1个空指针，则空指针的总数为$2n_0+n_1$，又有$n_0=n_2+1$（留给读者证明），因此空指针总数为$2n_0+n_1=n_0+n_2+1+n_1=n_0+n_1+n_2+1=n+1$。
 
-在二叉树线索化过程中，通常规定，若无左子树，令lchild指向前驱，若无右子树，令rchild指向后继。还需要增加两个标志域表示当前指针是不是线索，例如ltag=1，表示lchild指向的是前驱，ltag=0，表示lchild指向的是左孩子，rtag类似。
+在二叉树线索化过程中，通常规定，若无左子树，令left指向前驱，若无右子树，令rchild指向后继。还需要增加两个标志域表示当前指针是不是线索，例如ltag=1，表示left指向的是前驱，ltag=0，表示left指向的是左孩子，rtag类似。
 
 二叉树的线索化，实质上就是遍历一棵树，只是在遍历的过程中，检查当前节点的左右指针是否为空，若为空，将它们改为指向前驱或后继的线索。
 
@@ -211,9 +211,9 @@ typedef int elem_t;
 typedef struct tbt_node_t {
     int ltag; /** 1表示是线索，0表示是孩子 */
     int rtag; /** 1表示是线索，0表示是孩子 */
-    struct tbt_node_t *lchild; /** 左孩子*/
-    struct tbt_node_t *rchild; /** 右孩子*/
-    elem_t data; /** 结点所存放的数据*/
+    struct tbt_node_t *left; /** 左孩子*/
+    struct tbt_node_t *right; /** 右孩子*/
+    elem_t elem; /** 结点所存放的数据*/
 }tbt_node_t;
 
 /* 内部函数 */
@@ -233,7 +233,7 @@ void create_in_thread(tbt_node_t *root) {
         /* 中序遍历线索化二叉树*/
         in_thread(root, &pre);
         /* 处理中序最后一个结点*/
-        pre->rchild = NULL;
+        pre->right = NULL;
         pre->rtag = 1;
     }
 }
@@ -245,10 +245,10 @@ void create_in_thread(tbt_node_t *root) {
   * @param[in] visit 访问结点的数据的函数
   * @return 无
   */
-void in_order(tbt_node_t *root, int(*visit)(elem_t*)) {
+void in_order(tbt_node_t *root, int(*visit)(tbt_node_t*)) {
     tbt_node_t *p;
     for(p = first(root); p != NULL; p = next(p)) {
-        (void)visit(&(p->data));
+        visit(p);
     }
 }
 
@@ -261,19 +261,19 @@ void in_order(tbt_node_t *root, int(*visit)(elem_t*)) {
   */
 static void in_thread(tbt_node_t *p, tbt_node_t **pre) {
     if(p != NULL) {
-        in_thread(p->lchild, pre); /* 线索化左子树 */
-        if(p->lchild == NULL) {  /* 左子树为空，建立前驱 */
-            p->lchild = *pre;
+        in_thread(p->left, pre); /* 线索化左子树 */
+        if(p->left == NULL) {  /* 左子树为空，建立前驱 */
+            p->left = *pre;
             p->ltag = 1;
         }
         /* 建立前驱结点的后继线索 */
         if((*pre) != NULL &&
-            (*pre)->rchild == NULL) {
-            (*pre)->rchild = p;
+            (*pre)->right == NULL) {
+            (*pre)->right = p;
             (*pre)->rtag = 1;
         }
         *pre = p; /* 更新前驱 */
-        in_thread(p->rchild, pre); /* 线索化右子树 */
+        in_thread(p->right, pre); /* 线索化右子树 */
     }
 }
 
@@ -286,7 +286,7 @@ static tbt_node_t *first(tbt_node_t *p) {
     if(p == NULL)  return NULL;
 
     while(p->ltag == 0) {
-        p = p->lchild;  /* 最左下结点，不一定是叶结点*/
+        p = p->left;  /* 最左下结点，不一定是叶结点*/
     }
     return p;
 }
@@ -298,9 +298,9 @@ static tbt_node_t *first(tbt_node_t *p) {
   */
 static tbt_node_t *next(const tbt_node_t *p) {
     if(p->rtag == 0) {
-        return first(p->rchild);
+        return first(p->right);
     } else {
-        return p->rchild;
+        return p->right;
     }
 }
 \end{Codex}
@@ -397,9 +397,9 @@ typedef int elem_t;
  *@brief 二叉树结点.
  */
 typedef struct bt_node_t {
-    elem_t data; /* 节点的数据 */
-    struct bt_node_t *lchild; /* 左孩子 */
-    struct bt_node_t *rchild; /* 右孩子 */
+    elem_t elem; /* 节点的数据 */
+    struct bt_node_t *left; /* 左孩子 */
+    struct bt_node_t *right; /* 右孩子 */
 } bt_node_t;
 
 /**
@@ -413,25 +413,25 @@ void in_order_morris(bt_node_t *root, int(*visit)(bt_node_t*)) {
 
     cur = root;
     while (cur != NULL ) {
-        if (cur->lchild == NULL ) {
+        if (cur->left == NULL ) {
             visit(cur);
             prev = cur;
-            cur = cur->rchild;
+            cur = cur->right;
         } else {
             /* 查找前驱 */
-            bt_node_t *node = cur->lchild;
-            while (node->rchild != NULL && node->rchild != cur)
-                node = node->rchild;
+            bt_node_t *node = cur->left;
+            while (node->right != NULL && node->right != cur)
+                node = node->right;
 
-            if (node->rchild == NULL ) { /* 还没线索化，则建立线索 */
-                node->rchild = cur;
+            if (node->right == NULL ) { /* 还没线索化，则建立线索 */
+                node->right = cur;
                 prev = cur;
-                cur = cur->lchild;
+                cur = cur->left;
             } else {    /* 已经线索化，则访问节点，并删除线索  */
                 visit(cur);
-                node->rchild = NULL;
+                node->right = NULL;
                 prev = cur;
-                cur = cur->rchild;
+                cur = cur->right;
             }
         }
     }
@@ -448,25 +448,25 @@ void pre_order_morris(bt_node_t *root, int (*visit)(bt_node_t*)) {
 
     cur = root;
     while (cur != NULL ) {
-        if (cur->lchild == NULL ) {
+        if (cur->left == NULL ) {
             visit(cur);
             prev = cur;
-            cur = cur->rchild;
+            cur = cur->right;
         } else {
             /* 查找前驱 */
-            bt_node_t *node = cur->lchild;
-            while (node->rchild != NULL && node->rchild != cur)
-                node = node->rchild;
+            bt_node_t *node = cur->left;
+            while (node->right != NULL && node->right != cur)
+                node = node->right;
 
-            if (node->rchild == NULL ) { /* 还没线索化，则建立线索 */
+            if (node->right == NULL ) { /* 还没线索化，则建立线索 */
                 visit(cur); /* 仅这一行与中序不同 */
-                node->rchild = cur;
+                node->right = cur;
                 prev = cur;
-                cur = cur->lchild;
+                cur = cur->left;
             } else {    /* 已经线索化，则访问节点，并删除线索  */
-                node->rchild = NULL;
+                node->right = NULL;
                 prev = cur;
-                cur = cur->rchild;
+                cur = cur->right;
             }
         }
     }
@@ -484,26 +484,28 @@ static void visit_reverse(bt_node_t* from, bt_node_t *to,
  */
 void post_order_morris(bt_node_t *root, int (*visit)(bt_node_t*)) {
     bt_node_t dump = { 0, NULL, NULL };
-    dump.lchild = root;
-    bt_node_t *cur = &dump, *prev = NULL;
-    while (cur != NULL ) {
-        if (cur->lchild == NULL ) {
-            prev = cur;
-            cur = cur->rchild;
-        } else {
-            bt_node_t *node = cur->lchild;
-            while (node->rchild != NULL && node->rchild != cur)
-                node = node->rchild;
+    bt_node_t *cur, *prev = NULL;
 
-            if (node->rchild == NULL ) { /* 还没线索化，则建立线索 */
-                node->rchild = cur;
+    dump.left = root;
+    cur = &dump;
+    while (cur != NULL ) {
+        if (cur->left == NULL ) {
+            prev = cur;
+            cur = cur->right;
+        } else {
+            bt_node_t *node = cur->left;
+            while (node->right != NULL && node->right != cur)
+                node = node->right;
+
+            if (node->right == NULL ) { /* 还没线索化，则建立线索 */
+                node->right = cur;
                 prev = cur;
-                cur = cur->lchild;
+                cur = cur->left;
             } else { /* 已经线索化，则访问节点，并删除线索  */
-                visit_reverse(cur->lchild, prev, visit);  // call print
-                prev->rchild = NULL;
+                visit_reverse(cur->left, prev, visit);  // call print
+                prev->right = NULL;
                 prev = cur;
-                cur = cur->rchild;
+                cur = cur->right;
             }
         }
     }
@@ -516,11 +518,12 @@ void post_order_morris(bt_node_t *root, int (*visit)(bt_node_t*)) {
  * @return 无
  */
 static void reverse(bt_node_t *from, bt_node_t *to) {
+    bt_node_t *x = from, *y = from->right, *z;
     if (from == to) return;
-    bt_node_t *x = from, *y = from->rchild, *z;
+
     while (x != to) {
-        z = y->rchild;
-        y->rchild = x;
+        z = y->right;
+        y->right = x;
         x = y;
         y = z;
     }
@@ -534,14 +537,14 @@ static void reverse(bt_node_t *from, bt_node_t *to) {
  */
 static void visit_reverse(bt_node_t* from, bt_node_t *to,
         int (*visit)(bt_node_t*)) {
-    reverse(from, to);
-
     bt_node_t *p = to;
+    reverse(from, to);
+    
     while (1) {
         visit(p);
         if (p == from)
             break;
-        p = p->rchild;
+        p = p->right;
     }
 
     reverse(to, from);
@@ -549,20 +552,20 @@ static void visit_reverse(bt_node_t* from, bt_node_t *to,
 
 /*
  * @brief 分配一个新节点.
- * @param[in] data 新节点的数据
+ * @param[in] e 新节点的数据
  * @return 新节点
  */
-bt_node_t* new_node(int data) {
+bt_node_t* new_node(int e) {
     bt_node_t* node = (bt_node_t*) malloc(sizeof(bt_node_t));
-    node->data = data;
-    node->lchild = NULL;
-    node->rchild = NULL;
+    node->elem = e;
+    node->left = NULL;
+    node->right = NULL;
 
     return (node);
 }
 
 static int print(bt_node_t *node) {
-    printf(" %d ", node->data);
+    printf(" %d ", node->elem);
     return 0;
 }
 
@@ -576,16 +579,17 @@ int main() {
 4     5
      */
     bt_node_t *root = new_node(1);
-    root->lchild = new_node(2);
-    root->rchild = new_node(3);
-    root->lchild->lchild = new_node(4);
-    root->lchild->rchild = new_node(5);
+    root->left = new_node(2);
+    root->right = new_node(3);
+    root->left->left = new_node(4);
+    root->left->right = new_node(5);
 
     in_order_morris(root, print);
     printf("\n");
     pre_order_morris(root, print);
     printf("\n");
     post_order_morris(root, print);
+    printf("\n");
 
     return 0;
 }
@@ -608,8 +612,9 @@ int main() {
  * @return 无
  */
 void build_post(const char * pre, const char *in, const int n, char *post) {
-    if(n <= 0) return;
     int left_len = strchr(in, pre[0]) - in;
+    if(n <= 0) return;
+    
     build_post(pre + 1, in, left_len, post);
     build_post(pre + left_len + 1, in + left_len + 1,
             n - left_len - 1, post + left_len);
@@ -624,9 +629,11 @@ void build_post_test() {
     char pre[MAX] = {0};
     char in[MAX] = {0};
     char post[MAX] = {0};
-    scanf("%s%s", pre, in);
+    int n;
 
-    const int n = strlen(pre);
+    scanf("%s%s", pre, in);
+    n = strlen(pre);
+
     build_post(pre, in, n, post);
     printf("%s\n", post);
 }
@@ -639,9 +646,9 @@ typedef char elem_t;
  *@brief 二叉树结点.
  */
 typedef struct bt_node_t {
-    elem_t data; /* 节点的数据 */
-    struct bt_node_t *lchild; /* 左孩子 */
-    struct bt_node_t *rchild; /* 右孩子 */
+    elem_t elem; /* 节点的数据 */
+    struct bt_node_t *left; /* 左孩子 */
+    struct bt_node_t *right; /* 右孩子 */
 } bt_node_t;
 
 /**
@@ -654,38 +661,40 @@ typedef struct bt_node_t {
  * @return 无
  */
 void rebuild(const char *pre, const char *in, int n, bt_node_t **root) {
+    int left_len;
     // 检查终止条件
     if (n <= 0 || pre == NULL || in == NULL)
         return;
     //获得前序遍历的第一个结点
     *root = (bt_node_t*) malloc(sizeof(bt_node_t));
-    (*root)->data = *pre;
-    (*root)->lchild = NULL;
-    (*root)->rchild = NULL;
+    (*root)->elem = *pre;
+    (*root)->left = NULL;
+    (*root)->right = NULL;
 
-    int left_len = strchr(in, pre[0]) - in;
+    left_len = strchr(in, pre[0]) - in;
     //重建左子树
-    rebuild(pre + 1, in, left_len, &((*root)->lchild));
+    rebuild(pre + 1, in, left_len, &((*root)->left));
     //重建右子树
     rebuild(pre + left_len + 1, in + left_len + 1, n - left_len - 1,
-            &((*root)->rchild));
+            &((*root)->right));
 }
 
 void print_post_order(const bt_node_t *root) {
     if(root != NULL) {
-        print_post_order(root->lchild);
-        print_post_order(root->rchild);
-        printf("%c", root->data);
+        print_post_order(root->left);
+        print_post_order(root->right);
+        printf("%c", root->elem);
     }
 }
 
 void rebuild_test() {
     char pre[MAX] = { 0 };
     char in[MAX] = { 0 };
-    scanf("%s%s", pre, in);
-    const int n = strlen(pre);
-
+    int n;
     bt_node_t *root;
+    scanf("%s%s", pre, in);
+    n = strlen(pre);
+    
     rebuild(pre, in, n, &root);
     print_post_order(root);
 }

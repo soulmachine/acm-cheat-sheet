@@ -7,9 +7,11 @@
 \section{栈} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-\subsection{Hanoi塔问题}
+\subsection{汉诺塔问题}
 
-\textbf{n阶Hanoi塔问题} 假设有三个分别命名为X、Y和Z的塔座，在塔座X上插有n个
+
+\subsubsection{描述}
+\textbf{$n$阶汉诺塔问题(Hanoi Tower)} 假设有三个分别命名为X、Y和Z的塔座，在塔座X上插有$n$个
 直径大小各不相同、从小到大编号为1，2，...，n的圆盘，如图~\ref{fig:hanoiTower}所示。
 
 \begin{center}
@@ -24,9 +26,47 @@
 \item 圆盘可以插在X、Y和Z中的任一塔座上；
 \item 任何时刻都不能将一个较大的圆盘压在较小的圆盘之上。
 \myenddot
+ 
+给出一个数$n$，求出最少步数的移动序列。
 
-递归代码如下：
+
+\subsubsection{输入}
+一个整数 $n, n \leq 10$
+
+
+\subsubsection{输出}
+第一行一个整数$k$，表示最少的移动步数。
+
+接下来$k$行，每行一句话，N from X to Y，表示把N号盘从X柱移动到Y柱。X,Y 属于\fn{\{'A','B','C'\}}
+
+
+\subsubsection{样例输入}
+\begin{Code}
+3
+\end{Code}
+
+
+\subsubsection{样例输出}
+\begin{Code}
+7
+1 from A to C
+2 from A to B
+1 from C to B
+3 from A to C
+1 from B to A
+2 from B to C
+1 from A to C
+\end{Code}
+
+\subsubsection{分析}
+用递归。
+
+
+\subsubsection{代码}
+
 \begin{Codex}[label=hanoi.c]
+#include <stdio.h>
+
 /*
  * @brief 将塔座x上按直径有小到大且自上而下编号
  * 为1至n的n个圆盘按规则搬到塔座z上，y可用做辅助塔座.
@@ -35,27 +75,43 @@
  * @param[in] y 辅助塔座
  * @param[in] z 目标塔座
  * @return 无
- * @note 无
- * @remarks 无
  */
 void hanoi(int n, char x, char y, char z) {
     if(n ==  1) {
-        /* 移动操作move(x,n,z)可定义为（c是初始值为的全局
-           变量，对搬动计数）：
-           printf("%i. Move disk %i from %c to %c\n",
-                                        ++c, n, x, z);
-        */
-        move(1, x, z); /* 将编号为1的圆盘从x移动到z */
+        /* 将编号为n的圆盘从x移到z */
+        printf("%d from %c to %c\n", n, x, z);
         return;
     } else {
-        /* 将x上编号1至n-1的圆盘移到y，z作辅助塔*/
-        hanoi(n-1, x, z, y); 
-        move(n,x,z);  /* 将编号为n的圆盘从x移到z */
-        /* 将y上编号至n-1的圆盘移到z，x作辅助塔*/
-        hanoi(n-1, y, x, z); 
+        /* 将x上编号1至n-1的圆盘移到y，z作辅助塔 */
+        hanoi(n-1, x, z, y);
+        /* 将编号为n的圆盘从x移到z */
+        printf("%d from %c to %c\n", n, x, z);
+        /* 将y上编号1至n-1的圆盘移到z，x作辅助塔 */
+        hanoi(n-1, y, x, z);
     }
 }
+
+int main() {
+    int n;
+    scanf("%d", &n);
+    printf("%d\n", (1 << n) - 1); /* 总次数 */
+    hanoi(n, 'A', 'B', 'C');
+    return 0;
+}
 \end{Codex}
+
+
+\subsubsection{相关的题目}
+与本题相同的题目：
+\begindot
+\item wikioi 3145 汉诺塔游戏 , \myurl{http://www.wikioi.com/problem/3145/}
+\myenddot
+
+与本题相似的题目：
+\begindot
+\item  无
+\myenddot
+
 
 \subsection{进制转换}
 \begin{Codex}[label=convert_base.cpp]
