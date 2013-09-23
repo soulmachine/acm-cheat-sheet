@@ -425,7 +425,7 @@ void in_order_morris(bt_node_t *root, int(*visit)(bt_node_t*)) {
 
             if (node->right == NULL ) { /* 还没线索化，则建立线索 */
                 node->right = cur;
-                prev = cur;
+                /* prev = cur; 不能有这句，cur还没有被访问 */
                 cur = cur->left;
             } else {    /* 已经线索化，则访问节点，并删除线索  */
                 visit(cur);
@@ -450,7 +450,7 @@ void pre_order_morris(bt_node_t *root, int (*visit)(bt_node_t*)) {
     while (cur != NULL ) {
         if (cur->left == NULL ) {
             visit(cur);
-            prev = cur;
+            prev = cur; /* cur刚刚被访问过 */
             cur = cur->right;
         } else {
             /* 查找前驱 */
@@ -459,13 +459,13 @@ void pre_order_morris(bt_node_t *root, int (*visit)(bt_node_t*)) {
                 node = node->right;
 
             if (node->right == NULL ) { /* 还没线索化，则建立线索 */
-                visit(cur); /* 仅这一行与中序不同 */
+                visit(cur); /* 仅这一行的位置与中序不同 */
                 node->right = cur;
-                prev = cur;
+                prev = cur; /* cur刚刚被访问过 */
                 cur = cur->left;
-            } else {    /* 已经线索化，则访问节点，并删除线索  */
+            } else {    /* 已经线索化，则删除线索  */
                 node->right = NULL;
-                prev = cur;
+                /* prev = cur; 不能有这句，cur已经被访问 */
                 cur = cur->right;
             }
         }
@@ -490,7 +490,7 @@ void post_order_morris(bt_node_t *root, int (*visit)(bt_node_t*)) {
     cur = &dump;
     while (cur != NULL ) {
         if (cur->left == NULL ) {
-            prev = cur;
+            prev = cur; /* 必须要有 */
             cur = cur->right;
         } else {
             bt_node_t *node = cur->left;
@@ -499,12 +499,12 @@ void post_order_morris(bt_node_t *root, int (*visit)(bt_node_t*)) {
 
             if (node->right == NULL ) { /* 还没线索化，则建立线索 */
                 node->right = cur;
-                prev = cur;
+                prev = cur; /* 必须要有 */
                 cur = cur->left;
             } else { /* 已经线索化，则访问节点，并删除线索  */
                 visit_reverse(cur->left, prev, visit);  // call print
                 prev->right = NULL;
-                prev = cur;
+                prev = cur; /* 必须要有 */
                 cur = cur->right;
             }
         }
@@ -539,7 +539,7 @@ static void visit_reverse(bt_node_t* from, bt_node_t *to,
         int (*visit)(bt_node_t*)) {
     bt_node_t *p = to;
     reverse(from, to);
-    
+
     while (1) {
         visit(p);
         if (p == from)
