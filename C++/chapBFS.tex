@@ -7,328 +7,6 @@
 如何扩展状态？如何判重？尤其是判重，解决了这个问题，基本上整个问题就解决了。
 
 
-\section{算法框架} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\label{sec:bfs-template}
-
-
-\subsubsection{适用场景}
-注意，这里的总结是一种经验，一种概率，不是绝对的结论！
-
-\textbf{输入数据}：没什么特征，不像深搜，需要有“递归”的性质。如果是树或者图，概率更大。
-
-\textbf{状态转换图}：树或者图。
-
-\textbf{求解目标}：求最短。
-
-
-\subsubsection{思考的步骤}
-\begin{enumerate}
-\item 是求路径长度，还是路径本身（或动作序列）？
-    \begin{enumerate}
-    \item 如果是求路径长度，则状态里面要存路径长度
-    \item 如果是求路径本身或动作序列
-        \begin{enumerate}
-            \item 要用一棵树存储宽搜过程中的路径
-            \item 是否可以预估状态个数的上限？能够预估状态总数，则开一个大数组，用树的双亲表示法；如果不能预估状态总数，则要使用一棵通用的树（自己实现或用标准库）。这一步也是第4步的必要不充分条件。
-        \end{enumerate}
-    \end{enumerate}
-\item 如何表示状态？即一个状态需要存储哪些些必要的数据，才能够完整提供如何扩展到下一步状态的所有信息。一般记录当前位置或整体局面。
-\item 如何扩展状态？这一步跟第2步相关。状态里记录的数据不同，扩展方法就不同。对于固定不变的数据结构（一般题目直接给出，作为输入数据），如二叉树，图等，扩展方法很简单，直接往下一层走，对于隐式图，要先在第1步里想清楚状态所带的数据，想清楚了这点，那如何扩展就很简单了。
-\item 关于判重，状态是否存在完美哈希方案？即将状态一一映射到整数，互相之间不会冲突。
-    \begin{enumerate}
-    \item 如果不存在，则需要使用通用的哈希表（自己实现或用标准库，例如\fn{std::unordered_set}）来判重；自己实现哈希表的话，如果能够预估状态个数的上限，则可以开两个数组，head和next，表示哈希表，参考第 \S \ref{subsec:eightDigits}节方案2。
-    \item 如果存在，则可以开一个大布尔数组，作为哈希表来判重，且此时可以精确计算出状态总数，而不仅仅是预估上限。
-    \end{enumerate}
-\end{enumerate}
-
-
-\subsubsection{代码模板}
-\begin{Codex}[label=bfs_template.cpp]
-#include <cstdio>
-#include <cstring>
-
-/***** 输入数据，用全局变量存放 *****/
-...
-/*
-例如
-int m = MAXN, n = MAXN;  // 迷宫的行数，列数
-// 迷宫，0表示空地，1表示障碍物
-int map[MAXN][MAXN];  // 迷宫，0表示空地，1表示障碍物
- */
-
-/***** 一些常量 *****/
-...
-/* 例如
-// 四个方向
-const char name[4] = { 'U', 'R', 'D', 'L' };
-const int dx[4] = { -1, 0, 1, 0 }; // 行
-const int dy[4] = { 0, 1, 0, -1 }; // 列
-*/
-
-/** 状态 */
-struct state_t {
-    ... data1;  /** 状态的数据，可以有多个字段. */
-    ... data2;  /** 状态的数据，可以有多个字段. */
-    int action; /** 由父状态移动到本状态的动作，求动作序列时需要. */
-    int index;  /** 本状态在path[]中的下标，求路径和动作序列时需要。
-                    如果存在完美哈希，则不需要本字段（此时将
-                   状态的哈希值作为下标，而哈希值可以直接计算出） */
-    int father; /** 父状态在path[]中的下标，求路径或动作序列时需要 */
-    int count;  /** 所花费的步骤数（也即路径长度-1），求路径长度时需要 */
-};
-
-/********** 如果题目要求输出路径或动作序列，则需要下面的变量和函数 ***********/
-
-const int STATE_MAX ...  /* 状态总数 */
-/**
- * 记录动作序列，树的双亲表示法.
- * 如果不能预估状态个数的上限，则不能用数组，要用通用树
- * 一般此时会有完美哈希方案，开一个大数组存储每个状态的动作，下标就是状态的哈希值
- * 其实一般用不了这么大的数组，广搜很很快就会结束
- */
-state_t path[STATE_MAX];
-int path_index = 0;  /** 每出现一个新状态，就增1，将状态存到该位置，
-                         如果有完美哈希方案，则不需要该变量. */
-
-/**
- * @brief 返回状态在path[]中的下标.
- * 
- * 起点状态没有父亲和动作为-1，因为它没有父状态，也就没有所谓的从父节点到它的动作。
- * @param[in] s 状态
- * @return 状态在path[]中的下标
- */
-int state_index(const state& s) {
-    /* 如果有完美哈希方案 */
-    return state_hash(s);
-    /* 否则 */
-    return s.index;
-}
-
-/**
- * @brief 打印动作序列.
- * 如果有完美哈希方案，状态的哈希值就是下标。
- * 起点状态没有父亲和动作为-1，因为它没有父状态，也就没有所谓的从父节点到它的动作。
- * @param[in] end 终点状态的下标
- * @return 父状态
- */
-void print_action(const int end) {
-    if (path[end].father == -1) return;
-
-    print_action(path[end].father);
-    putchar(name[path[end].action]);
-}
-
-/**
- * @brief 打印坐标序列.
- * 如果有完美哈希方案，状态的哈希值就是下标。
- * 起点状态没有父亲和动作为-1，因为它没有父状态，也就没有所谓的从父节点到它的动作。
- * @param[in] end 终点状态的哈希值
- * @return 父状态
- */
-void print_path(const int end) {
-    if (path[end].father == -1) {
-        printf("(%d, %d)\n", end / n, end % n);
-        return;
-    }
-    print_path(path[end].father);
-    printf("(%d, %d)\n", end / n, end % n);
-}
-
-/********** 如果题目要求输出路径或动作序列，则需要上面的变量和函数 ***********/
-
-/** 初始化查找表. */
-void hashset_init();
-
-/**
- * @brief 状态判重.
- * 一般用哈希表(set::unordered_set)，如果存在完美哈希，则用数组
- * @param[in] s 状态
- * @return 已经访问过，返回true，否则false
- */
-bool hashset_find(const state_t &s);
-
-/**
- * @brief 标记该状态已经被访问
- * @param[in] s 状态
- * @return 无
- */
-void hashset_insert(const state_t &s);
-
-/**
- * @brief 扩展第一个状态.
- * @param[in] s 状态
- * @param[out] next 第一个状态
- * @return 如果还有下一个状态，返回true，否则返回false
- */
-void state_extend_init(const state_t &s);
-
-/**
- * @brief 扩展下一个状态.
- * @param[in] s 状态
- * @param[out] next 下一个状态
- * @return 如果还有下一个状态，返回true，否则返回false
- */
-bool state_extend(const state_t &s, state_t &next);
-
-/**
- * @brief 判断状态是否为目标.
- * @param[in] s 状态
- * @return 如果已经达到目标状态，返回true，否则false
- */
-bool state_is_target(const state_t &s);
-
-/*
- * @brief 广搜
- *
- * @param[in] x 入口的x坐标
- * @param[in] y 入口的y坐标
- * @return 目标状态在path[]中的下标，如果不需要求路径，则声明为 void
- */
-int bfs(state_t &start) {
-    std::queue<state_t> q;
-    hashset_init();
-
-    start.action = -1;   /* 起点状态没有动作 */
-    start.index = path_index++;
-    start.father = -1;   /* 起点状态没有父状态 */
-    start.count = 0;
-
-    path[state_index(start)] = start;
-    hashset_insert(start); // 千万别忘记了标记此处的访问记录
-    if (state_is_target(start)) /* 如果起点就是终点，返回 */
-        return state_index(start);
-    q.push(start);
-
-    while (!q.empty()) {
-        const state_t s = q.front(); q.pop();
-        state_t next;
-
-        state_extend_init(&s);
-        while (state_extend(&s, &next)) {
-            if (state_is_target(&next)) {
-                // printf("%d\n", next.count);
-                return state_index(next);
-            }
-            q.push(next);
-            hashset_insert(&next);
-        }
-    }
-    return -1;
-}
-
-int main(void) {
-    state_t start;
-    int end; /* 目标状态在path[]中的下标 */
-    input(start);
-
-    end = bfs(start);
-
-    print_action(end);
-    printf("\n");
-    print_path(end);
-    return 0;
-}
-
-/************ functions implement ************/
-
-/** 哈希表取模的质数，也即哈希桶的个数，越大越好，不过一般小于 HASH_SET_CAPACITY. */
-#define PRIME ...  /* 99997 */
-
-/* 哈希表容量，要大于状态总数，若存在完美哈希方案，则等于状态总数 */
-#define HASH_CAPACITY STATE_MAX
-
-/** 哈希表，标记状态是否已访问过。
- * 如果存在完美哈希方案，则用数组作为哈希表，否则用std::unordered_set
- */
-... visited
-// 例如 bool visited[HASH_CAPACITY];
-// 或者
-// int head[PRIME];
-// int next[HASH_CAPACITY];
-
-/** 计算状态的哈希值.
- * 哈希值应该只依赖state_t的数据字段。
- */
-int state_hash(const state_t &s) {
-    ...
-}
-
-void hashset_init() {
-    /* 如果是数组 */
-    memset(visited, 0, sizeof(visited));
-    /* 如果是 std::unordered_set */
-    visited.clear();
-}
-
-bool hashset_find(const state_t &s) {
-    /* 如果是数组 */
-    return visited[state_hash(s)] == true;
-    /* 如果是 std::unordered_set */
-    return visited.count(s) > 0;
-}
-
-void hashset_insert(const state_t &s) {
-    /* 如果是数组 */
-    visited[state_hash(s)] = true;
-    /* 如果是 std::unordered_set */
-    visited.insert(s);
-}
-
-/** 扩展节点时，记录当前到了什么哪一步.
- * 是state_extend_init()和state_extend()的共享变量
- */
-int action_cur;
-/* 动作的范围 */
-#define ACTION_BEGIN ...
-#define ACTION_END ...
-
-/* 扩展点的位置，是 state_extend_init()和state_extend()的共享变量 */
-int extend_pos;
-
-void state_extend_init(const state_t &s) {
-    action_cur = ACTION_BEGIN;
-    extend_pos = // 根据 s 进行计算
-}
-
-bool state_extend(const state_t &s, state_t &next) {
-    // extract values from s
-    value1 = ...
-    value2 = ...
-    while(action_cur < ACTION_END) {
-        // apply action_cur to values
-        value1 = ...
-        value2 = ...
-        next.count = s.count + 1;
-        if (values are valid) {
-            // assign new values to next's data fields
-            next.data1 = value1
-            next.data2 = value2
-
-            if (!hashset_find(next)) { /* 判重 */
-                next.action = action_cur;
-                next.index = path_index++;
-                next.father = state_index(s);
-                /* 记录路径 */
-                path[state_index(next)] = next;
-                action_cur++;  /* return前别忘了增1 */
-                return true;
-            }
-        }
-        action_cur++;
-    }
-    return false;
-}
-
-// 目标状态
-const state_t END = {..., 0};
-
-bool state_is_target(const state_t &s) {
-    ...
-    /* 例如 return memcmp(s.data, END.data, xx * sizeof(yy) == 0; */
-    /* 例如 return s.data == END.data; */
-}
-\end{Codex}
-
 \section{走迷宫} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsubsection{描述}
@@ -401,7 +79,7 @@ typedef struct state_t {
 
 const int STATE_MAX = MAXN * MAXN;  /* 状态总数 */
 
-state_t path[STATE_MAX];
+state_t nodes[STATE_MAX];
 
 int state_hash(const state_t &s);
 
@@ -410,18 +88,18 @@ int state_index(const state_t &s) {
 }
 
 void print_action(const int end) {
-    if (path[end].father == -1) return;
+    if (nodes[end].father == -1) return;
 
-    print_action(path[end].father);
-    putchar(name[path[end].action]);
+    print_action(nodes[end].father);
+    putchar(name[nodes[end].action]);
 }
 
 void print_path(const int end) {
-    if (path[end].father == -1) {
+    if (nodes[end].father == -1) {
         printf("(%d, %d)\n", end / n, end % n);
         return;
     }
-    print_path(path[end].father);
+    print_path(nodes[end].father);
     printf("(%d, %d)\n", end / n, end % n);
 }
 
@@ -444,7 +122,7 @@ int bfs(state_t &start) {
     start.action = -1;
     start.father = -1;
 
-    path[state_index(start)] = start;
+    nodes[state_index(start)] = start;
     hashset_insert(start);
     if (state_is_target(start))
         return state_index(start);
@@ -527,7 +205,7 @@ bool state_extend(const state_t &s, state_t &next) {
                 /* 记录路径 */
                 next.action = action_cur;
                 next.father = state_hash(s);
-                path[state_index(next)] = next;
+                nodes[state_index(next)] = next;
 
                 action_cur++;  /* return前别忘了增1 */
                 return true;
@@ -649,14 +327,14 @@ typedef char int8_t;
 typedef struct state_t {
     int8_t data[DIGITS];  /** 状态的数据. */
     int action; /* 由父状态移动到本状态的动作 */
-    int father; /* 父状态在path[]中的下标，也即父状态的哈希值 */
+    int father; /* 父状态在nodes[]中的下标，也即父状态的哈希值 */
     int count;  /** 所花费的步骤数（也即路径长度-1） */
 } state_t;
 
 // 3x3的棋盘，状态最多有 9!种
 const int STATE_MAX = 362880;  /* 状态总数 */
 
-state_t path[STATE_MAX+1];
+state_t nodes[STATE_MAX+1];
 
 int state_hash(const state_t &s);
 
@@ -670,10 +348,10 @@ int state_index(const state_t &s) {
  * @return 父状态
  */
 void print_action(const int end) {
-    if (path[end].father == -1) return;
+    if (nodes[end].father == -1) return;
 
-    print_action(path[end].father);
-    putchar(name[path[end].action]);
+    print_action(nodes[end].father);
+    putchar(name[nodes[end].action]);
 }
 
 void hashset_init();
@@ -697,7 +375,7 @@ int bfs(state_t *start) {
     start->father = -1;
     start->count = 0;
 
-    path[state_index(start)] = *start;
+    nodes[state_index(start)] = *start;
     hashset_insert(start);
     if (state_is_target(start))
         return state_index(start);
@@ -750,7 +428,7 @@ void input1(state_t *start) {
 
 int main(void) {
     state_t start;
-    int end; /* 目标状态在path[]中的下标 */
+    int end; /* 目标状态在nodes[]中的下标 */
     input(&start);
 
     end = bfs(&start);
@@ -831,7 +509,7 @@ bool state_extend(const state_t *s, state_t *next) {
                 next->action = action_cur;
                 next->father = state_hash(s);
                 /* 记录路径 */
-                path[state_index(next)] = *next;
+                nodes[state_index(next)] = *next;
                 action_cur++; /* return前别忘了增1 */
                 return true;
             }
@@ -876,15 +554,15 @@ typedef signed char int8_t;
 struct state_t {
     int8_t data[DIGITS];  /** 状态的数据. */
     int action; /* 由父状态移动到本状态的动作 */
-    int index;  /** 本状态在path[]中的下标 */
-    int father; /** 父状态在path[]中的下标 */
+    int index;  /** 本状态在nodes[]中的下标 */
+    int father; /** 父状态在nodes[]中的下标 */
     int count;  /** 所花费的步骤数（也即路径长度-1） */
 };
 
 // 3x3的棋盘，状态最多有 9!种
 const int STATE_MAX = 362880;  /* 状态总数 */
 
-state_t path[STATE_MAX+1];
+state_t nodes[STATE_MAX+1];
 int path_index = 0;
 
 int state_index(const state_t &s) {
@@ -897,10 +575,10 @@ int state_index(const state_t &s) {
  * @return 父状态
  */
 void print_action(const int end) {
-    if (path[end].father == -1) return;
+    if (nodes[end].father == -1) return;
 
-    print_action(path[end].father);
-    putchar(name[path[end].action]);
+    print_action(nodes[end].father);
+    putchar(name[nodes[end].action]);
 }
 
 void hashset_init();
@@ -924,7 +602,7 @@ int bfs(state_t &start) {
     start.father = -1;
     start.count = 0;
 
-    path[state_index(start)] = start;
+    nodes[state_index(start)] = start;
     hashset_insert(start);
     if (state_is_target(start))
         return state_index(start);
@@ -1015,7 +693,7 @@ bool hashset_find(const state_t &s) {
     // 从表头开始查找单链表
     for (int i = head[state_hash(s)]; i != -1; i = next[i]) {
         // 找到了
-        if(memcmp(path[i].data, s.data,
+        if(memcmp(nodes[i].data, s.data,
                 DIGITS * sizeof(int8_t)) == 0)
             return true;
     }
@@ -1027,7 +705,7 @@ void hashset_insert(const state_t &s) {
     // 从表头开始查找单链表
     for (int i = head[h]; i != -1; i = next[i]) {
         // 找到了
-        if (memcmp(path[i].data, s.data,
+        if (memcmp(nodes[i].data, s.data,
                 DIGITS * sizeof(int8_t)) == 0)
             return;
     }
@@ -1073,7 +751,7 @@ bool state_extend(const state_t &s, state_t &next) {
                 next.index = path_index++;
                 next.father = s.index;
                 /* 记录路径 */
-                path[state_index(next)] = next;
+                nodes[state_index(next)] = next;
                 action_cur++; /* return前别忘了增1 */
                 return true;
             }
@@ -1105,8 +783,8 @@ bool state_is_target(const state_t &s) {
 typedef struct state_t {
     int8_t data[DIGITS];  /** 状态的数据. */
     int action; /* 由父状态移动到本状态的动作 */
-    int index;  /** 本状态在path[]中的下标 */
-    int father; /** 父状态在path[]中的下标 */
+    int index;  /** 本状态在nodes[]中的下标 */
+    int father; /** 父状态在nodes[]中的下标 */
     int count;  /** 所花费的步骤数（也即路径长度-1） */
 
     bool operator==(const state_t& other) const {
@@ -1510,7 +1188,7 @@ int GOAL_POS[DIGITS];
 struct state_t {
     int board;  /** 状态的数据，即棋局. */
     int action; /* 由父状态移动到本状态的动作 */
-    int father; /* 父状态在path[]中的下标，也即父状态的哈希值 */
+    int father; /* 父状态在nodes[]中的下标，也即父状态的哈希值 */
     int count;  /** 所花费的步骤数（也即路径长度-1），作为g */
     int h; /** 距离目标状态的估算距离 */
 
@@ -1523,7 +1201,7 @@ struct state_t {
 // 3x3的棋盘，状态最多有 9!种
 #define STATE_MAX 362880  /* 状态总数 */
 
-state_t path[STATE_MAX+1];
+state_t nodes[STATE_MAX+1];
 
 int state_hash(const state_t &s);
 
@@ -1537,10 +1215,10 @@ int state_index(const state_t &s) {
  * @return 父状态
  */
 void print_action(const int end) {
-    if (path[end].father == -1) return;
+    if (nodes[end].father == -1) return;
 
-    print_action(path[end].father);
-    putchar(name[path[end].action]);
+    print_action(nodes[end].father);
+    putchar(name[nodes[end].action]);
 }
 
 void hashset_init();
@@ -1595,7 +1273,7 @@ int bfs(state_t &start) {
     start.count = 0;
     start.h = state_get_h(start);
 
-    path[state_index(start)] = start;
+    nodes[state_index(start)] = start;
     hashset_insert(start);
     if (state_is_target(start))
         return state_index(start);
@@ -1697,7 +1375,7 @@ static int solvable(const int s) {
 
 int main(void) {
     state_t start;
-    int end; /* 目标状态在path[]中的下标 */
+    int end; /* 目标状态在nodes[]中的下标 */
     input(start);
 
     if (!solvable(start.board)) return 0;
@@ -1802,7 +1480,7 @@ bool state_extend(const state_t &s, state_t &next) {
                 next.action = action_cur;
                 next.father = state_index(s);
                 /* 记录路径 */
-                path[state_index(next)] = next;
+                nodes[state_index(next)] = next;
                 action_cur++; /* return前别忘了增1 */
                 return true;
             }
@@ -1819,5 +1497,427 @@ const state_t END1 = {123804765, -1, -1};
 
 bool state_is_target(const state_t &s) {
     return s.board == END.board;
+}
+\end{Codex}
+
+
+\section{小结} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\label{sec:bfs-template}
+
+
+\subsection{适用场景}
+注意，这里的总结是一种经验，一种概率，不是绝对的结论！
+
+\textbf{输入数据}：没什么特征，不像深搜，需要有“递归”的性质。如果是树或者图，概率更大。
+
+\textbf{状态转换图}：树或者图。
+
+\textbf{求解目标}：求最短。
+
+
+\subsection{思考的步骤}
+\begin{enumerate}
+\item 是求路径长度，还是路径本身（或动作序列）？
+    \begin{enumerate}
+    \item 如果是求路径长度，则状态里面要存路径长度
+    \item 如果是求路径本身或动作序列
+        \begin{enumerate}
+            \item 要用一棵树存储宽搜过程中的路径
+            \item 是否可以预估状态个数的上限？能够预估状态总数，则开一个大数组，用树的双亲表示法；如果不能预估状态总数，则要使用一棵通用的树。这一步也是第4步的必要不充分条件。
+        \end{enumerate}
+    \end{enumerate}
+
+\item 如何表示状态？即一个状态需要存储哪些些必要的数据，才能够完整提供如何扩展到下一步状态的所有信息。一般记录当前位置或整体局面。
+
+\item 如何扩展状态？这一步跟第2步相关。状态里记录的数据不同，扩展方法就不同。对于固定不变的数据结构（一般题目直接给出，作为输入数据），如二叉树，图等，扩展方法很简单，直接往下一层走，对于隐式图，要先在第1步里想清楚状态所带的数据，想清楚了这点，那如何扩展就很简单了。
+
+\item 关于判重，状态是否存在完美哈希方案？即将状态一一映射到整数，互相之间不会冲突。
+    \begin{enumerate}
+    \item 如果不存在，则需要使用通用的哈希表（自己实现或用标准库，例如\fn{std::unordered_set}）来判重；自己实现哈希表的话，如果能够预估状态个数的上限，则可以开两个数组，head和next，表示哈希表，参考第 \S \ref{subsec:eightDigits}节方案2。
+    \item 如果存在，则可以开一个大布尔数组，作为哈希表来判重，且此时可以精确计算出状态总数，而不仅仅是预估上限。
+    \end{enumerate}
+
+\item 目标状态是否已知？如果题目已经给出了目标状态，可以带来很大便利，这时候可以从起始状态出发，正向广搜；也可以从目标状态出发，逆向广搜；也可以同时出发，双向广搜。
+\end{enumerate}
+
+
+\subsection{代码模板}
+广搜需要一个队列，用于一层一层扩展，一个hashset，用于判重，一棵树（只求长度时不需要），用于存储整棵树。
+
+对于队列，如果用纯C，需要造一个队列轮子；如果用C++，可以用\fn{queue}，也可以把\fn{vector}当做队列使用。当求长度时，有两种做法：
+\begin{enumerate}
+\item 只用一个队列，但在状态结构体\fn{state_t}里增加一个整数字段\fn{step}，表示走到当前状态用了多少步，当碰到目标状态，直接输出\fn{step}即可。这个方案，可以很方便的变成A*算法，把队列换成优先队列即可。
+\item 用两个队列，\fn{current, next}，分别表示当前层次和下一层，另设一个全局整数\fn{level}，表示层数（也即路径长度），当碰到目标状态，输出\fn{level}即可。这个方案，状态可以少一个字段，节省内存。
+\end{enumerate}
+
+对于hashset，如果有完美哈希方案，用布尔数组(\fn{bool visited[STATE_MAX]}或\fn{vector<bool> visited(STATE_MAX, false)})来表示；如果没有，可以用STL里的\fn{set}或\fn{unordered_set}。
+
+对于树，如果用STL，可以用\fn{unordered_map<state_t, state_t > father}表示一颗树，代码非常简洁。如果能够预估状态总数的上限（设为STATE_MAX），可以用数组(\fn{state_t nodes[STATE_MAX]})，即树的双亲表示法来表示树，效率更高，当然，需要写更多代码。
+
+
+C++风格的模板。
+\begin{Codex}[label=bfs_template1.cpp]
+/**
+ * @brief 反向生成路径.
+ * @param[in] father 树
+ * @param[in] target 目标节点
+ * @return 从起点到target的路径
+ */
+template<typename state_t>
+vector<state_t> gen_path(const unordered_map<state_t, state_t> &father,
+        const state_t &target) {
+    vector<state_t> path;
+    path.push_back(target);
+
+    state_t cur = target;
+    while (father.find(cur) != father.end()) {
+        cur = father.at(cur);
+        path.push_back(cur);
+    }
+    reverse(path.begin(), path.end());
+
+    return path;
+}
+
+/**
+ * @brief 广搜.
+ * @param[in] state_t 状态，如整数，字符串，一维数组等
+ * @param[in] start 起点
+ * @param[in] state_is_target 判断状态是否是目标的函数
+ * @param[in] state_extend 状态扩展函数
+ * @return 从起点到目标状态的一条最短路径
+ */
+template<typename state_t>
+vector<state_t> bfs(state_t &start, bool (*state_is_target)(const state_t&),
+        vector<state_t>(*state_extend)(const state_t&,
+                unordered_set<string> &visited)) {
+    queue<state_t> next, current; // 当前层，下一层
+    unordered_set<state_t> visited; // 判重
+    unordered_map<state_t, state_t> father;
+
+    int level = 0;  // 层次
+    bool found = false;
+    state_t target;
+
+    current.push(start);
+    while (!current.empty() && !found) {
+        ++level;
+        while (!current.empty() && !found) {
+            const state_t state = current.front();
+            current.pop();
+            vector<state_t> new_states = state_extend(state, visited);
+            for (auto iter = new_states.begin();
+                    iter != new_states.end() && ! found; ++iter) {
+                const state_t new_state(*iter);
+
+                if (state_is_target(new_state)) {
+                    found = true; //找到了
+                    target = new_state;
+                    father[new_state] = state;
+                    break;
+                }
+
+                next.push(new_state);
+                // visited.insert(new_state); 必须放到 state_extend()里
+                father[new_state] = state;
+            }
+        }
+        swap(next, current); //!!! 交换两个队列
+    }
+
+    if (found) {
+        return gen_path(father, target);
+        //return level + 1;
+    } else {
+        return vector<state_t>();
+        //return 0;
+    }
+}
+\end{Codex}
+
+C风格的模板。
+\begin{Codex}[label=bfs_template2.cpp]
+#include <cstdio>
+#include <cstring>
+
+/***** 输入数据，用全局变量存放 *****/
+...
+/*
+例如
+int m = MAXN, n = MAXN;  // 迷宫的行数，列数
+// 迷宫，0表示空地，1表示障碍物
+int map[MAXN][MAXN];  // 迷宫，0表示空地，1表示障碍物
+ */
+
+/***** 一些常量 *****/
+...
+/* 例如
+// 四个方向
+const char name[4] = { 'U', 'R', 'D', 'L' };
+const int dx[4] = { -1, 0, 1, 0 }; // 行
+const int dy[4] = { 0, 1, 0, -1 }; // 列
+*/
+
+/** 状态 */
+struct state_t {
+    ... data1;  /** 状态的数据，可以有多个字段. */
+    ... data2;  /** 状态的数据，可以有多个字段. */
+    int action; /** 由父状态移动到本状态的动作，求动作序列时需要. */
+    int index;  /** 本状态在nodes[]中的下标，求路径和动作序列时需要。
+                    如果存在完美哈希，则不需要本字段（此时将
+                   状态的哈希值作为下标，而哈希值可以直接计算出） */
+    int father; /** 父状态在nodes[]中的下标，求路径或动作序列时需要 */
+    int count;  /** 所花费的步骤数（也即路径长度-1），求路径长度时需要 */
+};
+
+/********** 如果题目要求输出路径或动作序列，则需要下面的变量和函数 ***********/
+
+const int STATE_MAX ...  /* 状态总数 */
+/**
+ * 记录动作序列，树的双亲表示法.
+ * 如果不能预估状态个数的上限，则不能用数组，要用通用树
+ * 一般此时会有完美哈希方案，开一个大数组存储每个状态的动作，下标就是状态的哈希值
+ * 其实一般用不了这么大的数组，广搜很很快就会结束
+ */
+state_t nodes[STATE_MAX];
+int path_index = 0;  /** 每出现一个新状态，就增1，将状态存到该位置，
+                         如果有完美哈希方案，则不需要该变量. */
+
+/**
+ * @brief 返回状态在nodes[]中的下标.
+ * 
+ * 起点状态没有父亲和动作为-1，因为它没有父状态，也就没有所谓的从父节点到它的动作。
+ * @param[in] s 状态
+ * @return 状态在nodes[]中的下标
+ */
+int state_index(const state& s) {
+    /* 如果有完美哈希方案 */
+    return state_hash(s);
+    /* 否则 */
+    return s.index;
+}
+
+/**
+ * @brief 打印动作序列.
+ * 如果有完美哈希方案，状态的哈希值就是下标。
+ * 起点状态没有父亲和动作为-1，因为它没有父状态，也就没有所谓的从父节点到它的动作。
+ * @param[in] end 终点状态的下标
+ * @return 父状态
+ */
+void print_action(const int end) {
+    if (nodes[end].father == -1) return;
+
+    print_action(nodes[end].father);
+    putchar(name[nodes[end].action]);
+}
+
+/**
+ * @brief 打印坐标序列.
+ * 如果有完美哈希方案，状态的哈希值就是下标。
+ * 起点状态没有父亲和动作为-1，因为它没有父状态，也就没有所谓的从父节点到它的动作。
+ * @param[in] end 终点状态的哈希值
+ * @return 父状态
+ */
+void print_path(const int end) {
+    if (nodes[end].father == -1) {
+        printf("(%d, %d)\n", end / n, end % n);
+        return;
+    }
+    print_path(nodes[end].father);
+    printf("(%d, %d)\n", end / n, end % n);
+}
+
+/********** 如果题目要求输出路径或动作序列，则需要上面的变量和函数 ***********/
+
+/** 初始化查找表. */
+void hashset_init();
+
+/**
+ * @brief 状态判重.
+ * 一般用哈希表(set::unordered_set)，如果存在完美哈希，则用数组
+ * @param[in] s 状态
+ * @return 已经访问过，返回true，否则false
+ */
+bool hashset_find(const state_t &s);
+
+/**
+ * @brief 标记该状态已经被访问
+ * @param[in] s 状态
+ * @return 无
+ */
+void hashset_insert(const state_t &s);
+
+/**
+ * @brief 扩展第一个状态.
+ * @param[in] s 状态
+ * @param[out] next 第一个状态
+ * @return 如果还有下一个状态，返回true，否则返回false
+ */
+void state_extend_init(const state_t &s);
+
+/**
+ * @brief 扩展下一个状态.
+ * @param[in] s 状态
+ * @param[out] next 下一个状态
+ * @return 如果还有下一个状态，返回true，否则返回false
+ */
+bool state_extend(const state_t &s, state_t &next);
+
+/**
+ * @brief 判断状态是否为目标.
+ * @param[in] s 状态
+ * @return 如果已经达到目标状态，返回true，否则false
+ */
+bool state_is_target(const state_t &s);
+
+/*
+ * @brief 广搜
+ *
+ * @param[in] x 入口的x坐标
+ * @param[in] y 入口的y坐标
+ * @return 目标状态在nodes[]中的下标，如果不需要求路径，则声明为 void
+ */
+int bfs(state_t &start) {
+    std::queue<state_t> q;
+    hashset_init();
+
+    start.action = -1;   /* 起点状态没有动作 */
+    start.index = path_index++;
+    start.father = -1;   /* 起点状态没有父状态 */
+    start.count = 0;
+
+    nodes[state_index(start)] = start;
+    hashset_insert(start); // 千万别忘记了标记此处的访问记录
+    if (state_is_target(start)) /* 如果起点就是终点，返回 */
+        return state_index(start);
+    q.push(start);
+
+    while (!q.empty()) {
+        const state_t s = q.front(); q.pop();
+        state_t next;
+
+        state_extend_init(&s);
+        while (state_extend(&s, &next)) {
+            if (state_is_target(&next)) {
+                // printf("%d\n", next.count);
+                return state_index(next);
+            }
+            q.push(next);
+            hashset_insert(&next);
+        }
+    }
+    return -1;
+}
+
+int main(void) {
+    state_t start;
+    int end; /* 目标状态在nodes[]中的下标 */
+    input(start);
+
+    end = bfs(start);
+
+    print_action(end);
+    printf("\n");
+    print_path(end);
+    return 0;
+}
+
+/************ functions implement ************/
+
+/** 哈希表取模的质数，也即哈希桶的个数，越大越好，不过一般小于 HASH_SET_CAPACITY. */
+#define PRIME ...  /* 99997 */
+
+/* 哈希表容量，要大于状态总数，若存在完美哈希方案，则等于状态总数 */
+#define HASH_CAPACITY STATE_MAX
+
+/** 哈希表，标记状态是否已访问过。
+ * 如果存在完美哈希方案，则用数组作为哈希表，否则用std::unordered_set
+ */
+... visited
+// 例如 bool visited[HASH_CAPACITY];
+// 或者
+// int head[PRIME];
+// int next[HASH_CAPACITY];
+
+/** 计算状态的哈希值.
+ * 哈希值应该只依赖state_t的数据字段。
+ */
+int state_hash(const state_t &s) {
+    ...
+}
+
+void hashset_init() {
+    /* 如果是数组 */
+    memset(visited, 0, sizeof(visited));
+    /* 如果是 std::unordered_set */
+    visited.clear();
+}
+
+bool hashset_find(const state_t &s) {
+    /* 如果是数组 */
+    return visited[state_hash(s)] == true;
+    /* 如果是 std::unordered_set */
+    return visited.count(s) > 0;
+}
+
+void hashset_insert(const state_t &s) {
+    /* 如果是数组 */
+    visited[state_hash(s)] = true;
+    /* 如果是 std::unordered_set */
+    visited.insert(s);
+}
+
+/** 扩展节点时，记录当前到了什么哪一步.
+ * 是state_extend_init()和state_extend()的共享变量
+ */
+int action_cur;
+/* 动作的范围 */
+#define ACTION_BEGIN ...
+#define ACTION_END ...
+
+/* 扩展点的位置，是 state_extend_init()和state_extend()的共享变量 */
+int extend_pos;
+
+void state_extend_init(const state_t &s) {
+    action_cur = ACTION_BEGIN;
+    extend_pos = // 根据 s 进行计算
+}
+
+bool state_extend(const state_t &s, state_t &next) {
+    // extract values from s
+    value1 = ...
+    value2 = ...
+    while(action_cur < ACTION_END) {
+        // apply action_cur to values
+        value1 = ...
+        value2 = ...
+        next.count = s.count + 1;
+        if (values are valid) {
+            // assign new values to next's data fields
+            next.data1 = value1
+            next.data2 = value2
+
+            if (!hashset_find(next)) { /* 判重 */
+                next.action = action_cur;
+                next.index = path_index++;
+                next.father = state_index(s);
+                /* 记录路径 */
+                nodes[state_index(next)] = next;
+                action_cur++;  /* return前别忘了增1 */
+                return true;
+            }
+        }
+        action_cur++;
+    }
+    return false;
+}
+
+// 目标状态
+const state_t END = {..., 0};
+
+bool state_is_target(const state_t &s) {
+    ...
+    /* 例如 return memcmp(s.data, END.data, xx * sizeof(yy) == 0; */
+    /* 例如 return s.data == END.data; */
 }
 \end{Codex}

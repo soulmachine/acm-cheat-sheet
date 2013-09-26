@@ -11,7 +11,10 @@ typedef int elem_t;
   * @param[in] a 存放数据元素的数组，已排好序
   * @param[in] n 数组的元素个数
   * @param[in] x 要查找的元素
-  * @return 查找成功则返回元素所在下标，否则返回-1
+  * @return 如果找到 x，则返回其下标。 如果找
+  * 不到 x 且 x 小于 array 中的一个或多个元素，则为一个负数，该负数是大
+  * 于 x 的第一个元素的索引的按位求补。 如果找不到 x 且 x 大于 array 中的
+  * 任何元素，则为一个负数，该负数是（最后一个元素的索引加 1）的按位求补。 
   */
 int binary_search(const elem_t a[], const int n, const elem_t x) {
     int left = 0, right = n -1, mid;
@@ -25,7 +28,7 @@ int binary_search(const elem_t a[], const int n, const elem_t x) {
             return mid;
         }
     }
-    return -1;
+    return -(left+1);
 }
 \end{Codex}
 
