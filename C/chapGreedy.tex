@@ -36,7 +36,7 @@ int main_entropy() {
     int     count[MAX_ASCII] = {0}; // count[i]记录ASCII码为i的字符的出现次数
     int     sum;
     // 小根堆，队列头为最小元素
-    std::priority_queue<int, std::vector<int>, std::greater<int> >    pq;
+    priority_queue<int, vector<int>, greater<int> >    pq;
 
     while (scanf("%s", s) > 0) {
         sum = 0; // 清零

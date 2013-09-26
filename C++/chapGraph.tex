@@ -613,7 +613,7 @@ int mgraph_prim(const mgraph_t *g){
     int u = 0; /* 从0号顶点出发 */
     int count = 1;
     edge_t e;
-    std::priority_queue<edge_t, std::vector<edge_t>, std::greater<edge_t> > q;
+    priority_queue<edge_t, vector<edge_t>, greater<edge_t> > q;
     const int n = g->nv;
     /* 判断顶点是否已经加入最小生成树*/
     int* U = (int *)malloc(n * sizeof(int));
@@ -709,8 +709,8 @@ edge_t edges[MAX_EDGES];
   */
 graph_weight_t kruskal(const edge_t edges[], int n, int m) {
     graph_weight_t sum = 0;
-    std::priority_queue<edge_t, std::vector<edge_t>,
-                                std::greater<edge_t> > q;
+    priority_queue<edge_t, vector<edge_t>,
+                                greater<edge_t> > q;
     ufs_t *s = ufs_create(MAX_VERTICES_NO);  /* 并查集，0位置未用  */
     if (n < m - 1) return -1;
 
@@ -1806,7 +1806,7 @@ int mgraph_topo_sort(const mgraph_t *g, int topological[]) {
     const int n = g->nv;
     /* in_degree[i]是顶点i的入度 */
     int *in_degree = new int[n]();
-    std::stack<int> s;
+    stack<int> s;
 
     //memset(in_degree, 0, n * sizeof(int));
     for (int i = 0; i < n; i++) {
@@ -1994,7 +1994,7 @@ int mgraph_topological_sort(const mgraph_t *g, int topological[]) {
     const int n = g->nv;
     /* in_degree[i]是顶点i的入度 */
     int *in_degree = new int[n]();
-    std::stack<int> s;
+    stack<int> s;
 
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < n; j++) {
@@ -2201,7 +2201,7 @@ static int mgraph_toposort_ve(const mgraph_t *g, int topological[],
     const int n = g->nv;
     /* in_degree[i]是顶点i的入度 */
     int *in_degree = new int[n]();
-    std::stack<int> s;
+    stack<int> s;
 
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < n; j++) {
@@ -2215,7 +2215,7 @@ static int mgraph_toposort_ve(const mgraph_t *g, int topological[],
             s.push(i);
         }
     }
-    std::fill(ve, ve + n, 0);
+    fill(ve, ve + n, 0);
 
     int count = 0; /* 拓扑序列的元素个数*/
     while(!s.empty()) {

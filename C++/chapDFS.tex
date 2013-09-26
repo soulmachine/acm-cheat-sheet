@@ -474,7 +474,7 @@ public:
 class Solution {
 public:
     vector<vector<int> > combinationSum(vector<int> &nums, int target) {
-        std::sort(nums.begin(), nums.end());
+        sort(nums.begin(), nums.end());
         vector<vector<int> > result; // 最终结果
         vector<int> intermediate; // 中间结果
         dfs(nums, target, 0, intermediate, result);
@@ -516,7 +516,7 @@ private:
 class Solution {
 public:
     vector<vector<int> > combinationSum2(vector<int> &nums, int target) {
-        std::sort(nums.begin(), nums.end()); // 跟第 50 行配合，
+        sort(nums.begin(), nums.end()); // 跟第 50 行配合，
                                              // 确保每个元素最多只用一次
         vector<vector<int> > result;
         vector<int> intermediate;
@@ -600,7 +600,7 @@ private:
     \item 缓存。如果子问题的解会被重复利用，可以考虑使用缓存。
         \begin{enumerate}
             \item 前提条件：子问题的解会被重复利用，即子问题之间的依赖关系是有向无环图(DAG)。如果依赖关系是树状的（例如树，单链表），没必要加缓存，因为子问题只会一层层往下，用一次就再也不会用到，加了缓存也没什么加速效果。
-            \item 具体实现：可以用数组或HashMap。维度简单的，用数组；维度复杂的，用HashMap，C++有\fn{std::map}，C++ 11以后有\fn{std::unordered_map}，比\fn{std::map}快。
+            \item 具体实现：可以用数组或HashMap。维度简单的，用数组；维度复杂的，用HashMap，C++有\fn{map}，C++ 11以后有\fn{unordered_map}，比\fn{map}快。
         \end{enumerate}
     
     \end{enumerate}

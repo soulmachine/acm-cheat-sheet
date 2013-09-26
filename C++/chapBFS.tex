@@ -116,7 +116,7 @@ bool state_extend(const state_t &s, state_t &next);
 bool state_is_target(const state_t &s);
 
 int bfs(state_t &start) {
-    std::queue<state_t> q;
+    queue<state_t> q;
     hashset_init();
 
     start.action = -1;
@@ -284,7 +284,7 @@ ullddrurdllurdruldr
 
 如何表示一个状态？一个3*3的棋盘，首先可以想到用一个数组\fn{int data[9]}来表示。把每个格子看做是整数的一位的话，可以用一个整数来表示，最大的棋盘87654321x，表示成整数就是876543210，没有超过32位整数的范围。
 
-如何判重？用哈希表，自己实现或者用STL。C++ STL 里有\fn{std::set}, C++ 11新加入了\fn{std::unordered_set}。建议先用STL写一个版本，确保主算法正确，然后把\fn{std::set}(或\fn{std::unordered_set})替换成自己写的哈希表。
+如何判重？用哈希表，自己实现或者用STL。C++ STL 里有\fn{set}, C++ 11新加入了\fn{unordered_set}。建议先用STL写一个版本，确保主算法正确，然后把\fn{set}(或\fn{unordered_set})替换成自己写的哈希表。
 
 由于本题的特殊性，存在一种完美哈希(perfect hashing)方案。即\textbf{康托展开}。棋盘本身是一个排列，将排列转化为序数，用序数作为hash值。例如，1,2,3 这三个数字的全排列，按字典序，依次为
 \begin{Code}
@@ -368,7 +368,7 @@ bool state_is_target(const state_t *s);
 
 
 int bfs(state_t *start) {
-    std::queue<state_t> q;
+    queue<state_t> q;
     hashset_init();
 
     start->action = -1;
@@ -594,7 +594,7 @@ bool state_extend(const state_t &s, state_t &next);
 bool state_is_target(const state_t &s);
 
 int bfs(state_t &start) {
-    std::queue<state_t> q;
+    queue<state_t> q;
     hashset_init();
 
     start.action = -1;
@@ -685,8 +685,8 @@ int state_hash(const state_t &s) {
 }
 
 void hashset_init() {
-    std::fill(head, head + PRIME, -1);
-    std::fill(next, next + PRIME, -1);
+    fill(head, head + PRIME, -1);
+    fill(next, next + PRIME, -1);
 }
 
 bool hashset_find(const state_t &s) {
@@ -807,7 +807,7 @@ template<> struct hash<state_t> {
 };
 }
 
-std::unordered_set<state_t> visited;
+unordered_set<state_t> visited;
 
 void hashset_init() {
     visited.clear();
@@ -875,10 +875,10 @@ WBWO
 如何判重？棋盘用二维矩阵存储，用0表示空格，1表示黑色，2表示白色，所以最后可以看成一个16位的三进制数。
 用这个数作为棋盘的编码，就可以用来判重了。注意，本题要黑白交替走，所以我们要区分状态是由白子还是黑子移动而导致的。
 
-可以用C++的\fn{std::map}来判重，
+可以用C++的\fn{map}来判重，
 \begin{Code}
 /* visited[0]记录白子的历史， visited[1]记录黑子的历史. */
-std::map<int, bool> visited[2];
+map<int, bool> visited[2];
 \end{Code}
 
 也可以开一个大数组当做哈希表，
@@ -925,7 +925,7 @@ bool state_extend(const state_t &s, state_t &next);
 bool state_is_target(const state_t &s);
 
 void bfs(state_t &start) {
-    std::queue<state_t> q;
+    queue<state_t> q;
     hashset_init();
 
     start.count = 0;
@@ -1010,8 +1010,8 @@ int state_hash(const state_t &s) {
 }
 
 void hashset_init() {
-    std::fill(visited[0], visited[0] + HASH_CAPACITY, false);
-    std::fill(visited[1], visited[1] + HASH_CAPACITY, false);
+    fill(visited[0], visited[0] + HASH_CAPACITY, false);
+    fill(visited[1], visited[1] + HASH_CAPACITY, false);
 }
 
 bool hashset_find(const state_t &s) {
@@ -1246,8 +1246,8 @@ static int state_get_h(const state_t &state) {
         const int p = s % RADIX;
         s /= RADIX;
         /* 曼哈顿距离 */
-        h += std::abs((float)(i / MATRIX_EDGE - GOAL_POS[p] / MATRIX_EDGE)) +
-                std::abs((float)(i % MATRIX_EDGE - GOAL_POS[p] % MATRIX_EDGE));
+        h += abs((float)(i / MATRIX_EDGE - GOAL_POS[p] / MATRIX_EDGE)) +
+                abs((float)(i % MATRIX_EDGE - GOAL_POS[p] % MATRIX_EDGE));
     }
     return h;
 }
@@ -1263,8 +1263,8 @@ static void calc_goal_pos() {
 }
 
 int bfs(state_t &start) {
-    std::priority_queue<state_t, std::vector<state_t>,
-                                 std::greater<state_t> > q;
+    priority_queue<state_t, vector<state_t>,
+                                 greater<state_t> > q;
     calc_goal_pos();
     hashset_init();
 
@@ -1426,7 +1426,7 @@ int state_hash(const state_t &state) {
 }
 
 void hashset_init() {
-    std::fill(visited, visited + HASH_CAPACITY, false);
+    fill(visited, visited + HASH_CAPACITY, false);
 }
 
 bool hashset_find(const state_t &s) {
@@ -1533,7 +1533,7 @@ bool state_is_target(const state_t &s) {
 
 \item 关于判重，状态是否存在完美哈希方案？即将状态一一映射到整数，互相之间不会冲突。
     \begin{enumerate}
-    \item 如果不存在，则需要使用通用的哈希表（自己实现或用标准库，例如\fn{std::unordered_set}）来判重；自己实现哈希表的话，如果能够预估状态个数的上限，则可以开两个数组，head和next，表示哈希表，参考第 \S \ref{subsec:eightDigits}节方案2。
+    \item 如果不存在，则需要使用通用的哈希表（自己实现或用标准库，例如\fn{unordered_set}）来判重；自己实现哈希表的话，如果能够预估状态个数的上限，则可以开两个数组，head和next，表示哈希表，参考第 \S \ref{subsec:eightDigits}节方案2。
     \item 如果存在，则可以开一个大布尔数组，作为哈希表来判重，且此时可以精确计算出状态总数，而不仅仅是预估上限。
     \end{enumerate}
 
@@ -1778,7 +1778,7 @@ bool state_is_target(const state_t &s);
  * @return 目标状态在nodes[]中的下标，如果不需要求路径，则声明为 void
  */
 int bfs(state_t &start) {
-    std::queue<state_t> q;
+    queue<state_t> q;
     hashset_init();
 
     start.action = -1;   /* 起点状态没有动作 */
@@ -1831,7 +1831,7 @@ int main(void) {
 #define HASH_CAPACITY STATE_MAX
 
 /** 哈希表，标记状态是否已访问过。
- * 如果存在完美哈希方案，则用数组作为哈希表，否则用std::unordered_set
+ * 如果存在完美哈希方案，则用数组作为哈希表，否则用unordered_set
  */
 ... visited
 // 例如 bool visited[HASH_CAPACITY];
@@ -1849,21 +1849,21 @@ int state_hash(const state_t &s) {
 void hashset_init() {
     /* 如果是数组 */
     memset(visited, 0, sizeof(visited));
-    /* 如果是 std::unordered_set */
+    /* 如果是 unordered_set */
     visited.clear();
 }
 
 bool hashset_find(const state_t &s) {
     /* 如果是数组 */
     return visited[state_hash(s)] == true;
-    /* 如果是 std::unordered_set */
+    /* 如果是 unordered_set */
     return visited.count(s) > 0;
 }
 
 void hashset_insert(const state_t &s) {
     /* 如果是数组 */
     visited[state_hash(s)] = true;
-    /* 如果是 std::unordered_set */
+    /* 如果是 unordered_set */
     visited.insert(s);
 }
 

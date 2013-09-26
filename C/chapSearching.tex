@@ -173,11 +173,11 @@ loops
 \subsubsection{分析}
 最简单的方法是，把输入的单词对，存放在一个数组，排好序，查找的时候每次进行二分查找。
 
-更快的方法是，用HashMap。C++有\fn{std::map}，C++ 11以后有\fn{std::unordered_map}，比\fn{std::map}快。也可以自己实现哈希表。
+更快的方法是，用HashMap。C++有\fn{map}，C++ 11以后有\fn{unordered_map}，比\fn{map}快。也可以自己实现哈希表。
 
 
 \subsubsection{代码}
-使用 \fn{std::map} 。
+使用 \fn{map} 。
 
 \begin{Codex}[label=babelfish_map.cpp]
 /* POJ 2503 Babelfish , http://poj.org/problem?id=2503 */

@@ -7,7 +7,7 @@
 \section{栈} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{栈的C语言实现}
-C++可以直接使用\fn{std::stack}。
+C++可以直接使用\fn{stack}。
 
 \begin{Codex}[label=stack.c]
 /**
@@ -226,7 +226,7 @@ int main() {
   * @return 无
   */
 void convert_base(int n, const int d) {
-    std::stack<int> s;
+    stack<int> s;
     int e;
 
     while(n != 0) {
@@ -297,7 +297,7 @@ int restore(const char s[MAX], const int d) {
 \section{队列} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{队列的C语言实现}
-C++可以直接使用\fn{std::queue}。
+C++可以直接使用\fn{queue}。
 
 \begin{Codex}[label=queue.c]
 /** @file queue.c
@@ -448,7 +448,7 @@ queue_elem_t queue_back(const queue_t *q) {
  */
 void yanghui_triangle(const int n) {
     int i = 1;
-    std::queue<int> q;
+    queue<int> q;
     /* 预先放入第一行的1 */
     q.push(i);
 

@@ -75,7 +75,7 @@ void post_order_r(const binary_tree_node_t *root,
 void pre_order(const binary_tree_node_t *root,
                int (*visit)(const binary_tree_node_t*)) {
     const binary_tree_node_t *p;
-    std::stack<const binary_tree_node_t *> s;
+    stack<const binary_tree_node_t *> s;
 
     p = root;
 
@@ -97,7 +97,7 @@ void pre_order(const binary_tree_node_t *root,
 void in_order(const binary_tree_node_t *root,
               int (*visit)(const binary_tree_node_t*)) {
     const binary_tree_node_t *p;
-    std::stack<const binary_tree_node_t *> s;
+    stack<const binary_tree_node_t *> s;
 
     p = root;
 
@@ -121,7 +121,7 @@ void post_order(const binary_tree_node_t *root,
                 int (*visit)(const binary_tree_node_t*)) {
     /* p，正在访问的结点，q，刚刚访问过的结点*/
     const binary_tree_node_t *p, *q;
-    std::stack<const binary_tree_node_t *> s;
+    stack<const binary_tree_node_t *> s;
 
     p = root;
 
@@ -157,7 +157,7 @@ void post_order(const binary_tree_node_t *root,
 void level_order(const binary_tree_node_t *root,
                 int (*visit)(const binary_tree_node_t*)) {
     const binary_tree_node_t *p;
-    std::queue<const binary_tree_node_t *> q;
+    queue<const binary_tree_node_t *> q;
 
     p = root;
 
@@ -710,7 +710,7 @@ int main() {
 \section{堆} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{原理和实现}
-C++可以直接使用\fn{std::priority_queue}。
+C++可以直接使用\fn{priority_queue}。
 
 \begin{Codex}[label=heap.c]
 /** @file heap.c

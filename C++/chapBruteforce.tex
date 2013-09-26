@@ -223,7 +223,7 @@ int main() {
 
 
 \subsection{下一个排列}
-还可以利用STL中的\fn{std::next_permutation()}，或者自己实现，见第 \S \ref{sec:nextpermutation}节的\fn{next_permutation()}。
+还可以利用STL中的\fn{next_permutation()}，或者自己实现，见第 \S \ref{sec:nextpermutation}节的\fn{next_permutation()}。
 
 \subsubsection{代码}
 
@@ -233,17 +233,17 @@ int main() {
 #include <algorithm>
 
 /**
- * @brief 输出字符集合的全排列，利用std::next_permutation
+ * @brief 输出字符集合的全排列，利用next_permutation
  * @param[in] S 字符集合
  * @param[in] n n
  * @return 无
  */
 void print_permutation(char S[], int n) {
-    std::sort(&S[0], &S[n]);
+    sort(&S[0], &S[n]);
     do {
         for(int i = 0; i < n; i++) printf("%c", S[i]);
         printf("\n");
-    }while(std::next_permutation(&S[0], &S[n]));
+    }while(next_permutation(&S[0], &S[n]));
     return;
 }
 
@@ -257,13 +257,13 @@ void print_permutation(char S[], int n) {
  * @return 无
  */
 void print_permutation1(char S[], int n) {
-    std::sort(&S[0], &S[n]);
+    sort(&S[0], &S[n]);
     int *N = (int*)malloc(n * sizeof(int));
     for (int i = 0; i < n; ++i) N[i]=S[i]-'A';
     do {
         for(int i = 0; i < n; i++) printf("%c", S[N[i]]);
         printf("\n");
-    }while(std::next_permutation(&N[0], &N[n]));
+    }while(next_permutation(&N[0], &N[n]));
     return;
 }
 
