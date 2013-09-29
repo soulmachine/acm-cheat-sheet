@@ -1,13 +1,41 @@
 \chapter{图}
-在ACM竞赛中，图一般使用邻接矩阵表示，代码框架如下；
+稠密图适合用邻接矩阵来表示。
+\begin{Codex}[label=am_graph.cpp]
+/** 顶点数最大值. */
+const size_t MAX_NV = 100;
 
-\begin{Codex}[label=graph.c]
-#define MAXN 100  // 顶点最大个数
+/** 边的权值类型，可以为int, float, double. */
+typedef int graph_weight_t;
+const graph_weight_t GRAPH_INF = INT_MAX;
 
-int n; // 顶点个数
-int G[MAXN][MAXN]; // 邻接矩阵
-int visited_edges[MAXN][MAXN]; // 边的访问历史记录
-int visited_vertices[MAXN]; // 顶点的访问历史记录
+/**
+ * @struct 图，用邻接矩阵(Adjacency Matrix).
+ */
+struct graph_t {
+    size_t nv; // 顶点数
+    size_t ne; // 边数
+    // 邻接矩阵，存放边的信息，如权重等
+    graph_weight_t matrix[MAX_NV][MAX_NV];
+};
+\end{Codex}
+
+稀疏图适合用邻接表来表示。
+\begin{Codex}[label=al_graph.cpp]
+/** 边的权值类型，可以为int, float, double. */
+typedef int graph_weight_t;
+
+/** 顶点的编号，可以为char, int, string等. */
+typedef char graph_vertex_id_t;
+
+/**
+ * @struct 图，用邻接表(Adjacency List).
+ */
+struct graph_t {
+    size_t nv; // 顶点数
+    size_t ne; // 边数
+    // 邻接表，存放边的信息，如权重等
+    map<graph_vertex_id_t, map<graph_vertex_id_t, graph_weight_t> > matrix;
+};
 \end{Codex}
 
 \section{深度优先搜索} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1075,178 +1103,137 @@ $S$ & $(v_0,v_2)$ & $(v_0,v_2,v_4)$ & $(v_0,v_2,v_3,v_4)$ & $(v_0,v_2,v_3,v_4,v_
 \end{tabular}
 \end{center}
 
-Dijkstra算法的C语言实现如下。
+Dijkstra算法的C++语言实现如下。
 
 \subsubsection{代码}
 
-\begin{Codex}[label=mgraph_dijkstra.c]
-#include <stdio.h>
-#include <stdlib.h>  /* for malloc() */
-#include <limits.h>  /* for INT_MAX */
+\begin{Codex}[label=al_graph_dijkstra.cpp]
+#include <iostream>
+#include <queue>
+#include <map>
+#include <utility>
+#include <climits>
 
-/** 顶点数的最大值*/
-#define MAX_VERTICES_NUM 100
-/** 边的权值，对无权图，用0或1表示是否相邻；对有权图，则为权值. */
+using namespace std;
+
+/** 边的权值类型，可以为int, float, double. */
 typedef int graph_weight_t;
-#define GRAPH_INF INT_MAX
+
+/** 顶点的编号，可以为char, int, string等. */
+typedef char graph_vertex_id_t;
 
 /**
- *@struct
- *@brief 邻接矩阵.
+ * @struct 图，用邻接表(Adjacency List).
  */
-typedef struct mgraph_t {
-    int nv; /* 顶点数*/
-    int ne; /* 边数*/
-    /* 邻接矩阵，存放边的信息，如权重等*/
-    graph_weight_t matrix[MAX_VERTICES_NUM][MAX_VERTICES_NUM];
-} mgraph_t;
-
-mgraph_t g;
-
-/** path[i]存放的是最短路径上指向vi的弧尾顶点 */
-int path[MAX_VERTICES_NUM];
-/** dist[i]存放的是v到vi的最短路径长度 */
-graph_weight_t dist[MAX_VERTICES_NUM];
+struct graph_t {
+    size_t nv; // 顶点数
+    size_t ne; // 边数
+    // 邻接表，存放边的信息，如权重等
+    map<graph_vertex_id_t, map<graph_vertex_id_t, graph_weight_t> > matrix;
+};
 
 
-/*
-  * @brief Dijkstra算法求单源最短路径.
-  * @param[in] g 图对象的指针
-  * @param[in] v 起点
-  * @param[out] dist dist[i]存放的是v到vi的最短路径长度
-  * @param[out] path path[i]存放的是最短路径上指向vi的弧尾顶点
-  * @return 无
-  */
-void mgraph_dijkstra(const mgraph_t *g, int v, graph_weight_t dist[], int path[]) {
-    int i, j;
-    const int n = g->nv;
-
-    /* 初始化S集合 */
-    int *S = (int*)calloc(n, sizeof(int));
-    S[v] = 1; /* 初始化，顶点u加入S */
-
-    /* 初始化dist和path */
-    for(i = 0; i < n; i++) if (i !=v) {
-        dist[i] = g->matrix[v][i];
-        if(dist[i] < GRAPH_INF) {
-            path[i] = v;
-        }  else {
-            path[i] = -1; /* 没有顶点指向i */
-        }
-    }
-    dist[v] = 0;
-    path[v] = -1;
-
-    for(i = 0; i < n; i++) if (i !=v) {
-        /* 选不在S中的最短路径顶点 u */
-        int u = -1;
-        graph_weight_t min = GRAPH_INF;
-        for(j = 0; j < n; j++) {
-            if(!S[j] && dist[j] < min) {
-                u = j;
-                min = dist[j];
-            }
-        }
-        if (u < 0) break; /* 结束 */
-        S[u] = 1;
-        for(j = 0; j < n; j++) {
-            const graph_weight_t w = g->matrix[u][j];
-            /* 顶点j未就加入S，且经过u到j可缩短路径*/
-            if(!S[j] && w < GRAPH_INF &&
-                dist[u] + w < dist[j]) {
-                dist[j] = dist[u] + w;
-                path[j] = u; /* 修改到j的最短路径*/
-            }
-        }
-    }
-    free(S);
-}
-
-/*
- * @brief 打印从起点到v的最短路径
- * @param[in] v 终点
- * @param[in] path Dijkstra计算好的path
+/**
+ * @brief Dijkstra算法求单源最短路径.
+ * @param[in] g 图
+ * @param[in] start 起点
+ * @param[out] dist dist[v]存放的是起点到v的最短路径长度
+ * @param[out] father father[v]存放的是最短路径上指向v的上一个顶点
  * @return 无
  */
-static void print_path_r(int v, const int path[]) {
-    if (path[v] == -1) {
-        printf("%c", 'A' + v);
+void dijkstra(const graph_t &g, graph_vertex_id_t start,
+        map<graph_vertex_id_t, graph_weight_t> &distance,
+        map<graph_vertex_id_t, graph_vertex_id_t> &father) {
+    /* 起点到顶点的最短距离. */
+    typedef pair<graph_weight_t, graph_vertex_id_t> to_dist_t;
+
+    // 小根堆
+    priority_queue<to_dist_t, vector<to_dist_t>, greater<to_dist_t> > q;
+    distance[start] = 0;  // 自己到自己，距离为0
+    q.push(to_dist_t(0, start));
+    while (!q.empty()) {
+        const to_dist_t u = q.top(); q.pop();
+        if (g.matrix.find(u.second) == g.matrix.end()) continue;
+
+        for (map<graph_vertex_id_t, graph_weight_t>::const_iterator iter =
+                g.matrix.at(u.second).begin();
+                iter != g.matrix.at(u.second).end(); ++iter) {
+            const graph_vertex_id_t v = iter->first;
+            const graph_weight_t w = iter->second;
+
+            if (!distance.count(v) || distance[u.second] + w < distance[v]) {
+                distance[v] = distance[u.second] + w;
+                father[v] = u.second;
+                q.push(to_dist_t(distance[v], v));
+            }
+        }
+    }
+    return;
+}
+
+/**
+ * @brief 打印从起点到终点的最短路径
+ * @param[in] father Dijkstra计算好的father数组
+ * @param[in] end 终点
+ * @return 无
+ */
+void print_path(const map<graph_vertex_id_t, graph_vertex_id_t> &father,
+        graph_vertex_id_t end) {
+    if (!father.count(end)) {
+        cout << end;
     } else {
-        print_path_r(path[v], path);
-        printf("->%c", 'A' + v);
+        print_path(father, father.at(end));
+        cout << "->" << end;
     }
 }
 
-/**
- * @brief 打印 u到其他所有点的最短路径
- * @param[in] path Dijkstra计算好的path
- * @param[in] n path的长度
- * @return 无
- */
-void print_path(const int path[], int n) {
-    int i;
-    for (i = 0; i < n; i++) if (path[i] != -1) {
-        print_path_r(i, path);
-        printf("\n");
-    }
-}
-
-/**
- * @brief 读取输入，构建图.
- */
-void read_graph() {
-    int i, j, k;
-
-    /* 读取节点和边的数目 */
-    scanf("%d%d", &g.nv, &g.ne);
-
-    /* 初始化图，所有节点间距离为无穷大 */
-    for (i = 0; i < g.nv; i++) {
-        for (j = 0; j < g.nv; j++) {
-            g.matrix[i][j] = GRAPH_INF;
-        }
-    }
-
-    /* 读取边信息 */
-    getchar(); // 消耗回车键
-    for (k = 0; k < g.ne; k++) {
-        char chx, chy;
-        graph_weight_t w;
-        scanf("%c %c %d", &chx, &chy, &w);
-        getchar();
-        i = chx - 'A';
-        j = chy - 'A';
-        g.matrix[i][j] = w;
+/** 读取输入，构建图. */
+void read_graph(graph_t &g) {
+    cin >> g.ne;
+    for (size_t i = 0; i < g.ne; ++i) {
+        graph_vertex_id_t from, to;
+        graph_weight_t weight;
+        cin >> from >> to >> weight;
+        g.matrix[from][to] = weight;
     }
 }
 
 /* test
 
 输入数据:
-
-6 8
+8
 A C 10
 A E 30
 A F 100
 B C 5
 C D 50
-D 5 10
+D F 10
 E D 20
 E F 60
 
 输出:
-
 A->C
 A->E->D
 A->E
-A->E->F
+A->E->D->F
 */
 int main() {
-    read_graph();
+    graph_t g;
+    map<graph_vertex_id_t, graph_weight_t> distance;
+    map<graph_vertex_id_t, graph_vertex_id_t> father;
 
-    /* 求 V0 到其他所有顶点的最短路径 */
-    mgraph_dijkstra(&g, 0, dist, path);
-    print_path(path, g.nv);
+    read_graph(g);
+
+    dijkstra(g, 'A', distance, father);
+
+    // 输出所有路径
+    for(map<graph_vertex_id_t, graph_vertex_id_t>::const_iterator iter =
+            father.begin(); iter != father.end();  ++iter) {
+        if (iter->first != 'A') {
+            print_path(father, iter->first);
+            cout << endl;
+        }
+    }
     return 0;
 }
 \end{Codex}
@@ -1516,51 +1503,43 @@ Dijkstra算法权值不能为负，Floyd权值可以为负，但环路之和不�
 
 \subsubsection{代码}
 \begin{Codex}[label=hdu_2544.c]
-/* HDU 2544 最短路, http://acm.hdu.edu.cn/showproblem.php?pid=2544 */
+// HDU 2544 最短路, http://acm.hdu.edu.cn/showproblem.php?pid=2544
+/** 边的权值类型，可以为int, float, double. */
+typedef int graph_weight_t;
+
+/** 顶点的编号，可以为char, int, string等. */
+typedef int graph_vertex_id_t;
 
 /* 等价于复制粘贴，这里为了节约篇幅，使用include，在OJ上提交时请用复制粘贴 */
-#include "mgraph_dijkstra.c"  /* 见“图->最短路径”这节 */
-
-// 1. 修改范围
-#define MAX_VERTICES_NUM 100
-// 2. 重写 read_graph()
-// 3. 重写 main()
+#include "al_graph_dijkstra.cpp"  /* 见“图->最短路径” 这节 */
 
 /** 读取输入，构建图. */
-void read_graph() {
-    int i, j, k;
+void read_graph(graph_t &g) {
     /* 读取节点和边的数目 */
-    scanf("%d%d", &g.nv, &g.ne);
-
-    /* 初始化图，所有节点间距离为无穷大 */
-    for (i = 0; i < g.nv; i++) {
-        for (j = 0; j < g.nv; j++) {
-            g.matrix[i][j] = GRAPH_INF;
-        }
+    cin >> g.nv >> g.ne;
+    for (size_t i = 0; i < g.ne; ++i) {
+        graph_vertex_id_t from, to;
+        graph_weight_t weight;
+        cin >> from >> to >> weight;
+        g.matrix[from][to] = weight;
+        g.matrix[to][from] = weight;  // 街道是双向的
     }
-
-    /* 读取边信息 */
-    for (k = 0; k < g.ne; k++) {
-        int x, y;
-        graph_weight_t w;
-        scanf("%d %d %d", &x, &y, &w);
-        i = x - 1;
-        j = y - 1;
-        g.matrix[i][j] = w;
-        g.matrix[j][i] = w;  // 注意，街道是双向的
-    }
-
 }
 
+
 int main() {
-    while (1) {
-        read_graph();
-        if (g.nv <= 0 || g.ne <= 0) break;
-        /* 求 商店（即路口1） 到其他所有顶点的最短路径 */
-        mgraph_dijkstra(&g, 0, dist, path);
-        /* 打印商店（即路口1）到赛场（即路口N）的最短路径长度 */
-        printf("%d\n", dist[g.nv - 1]);
+    while(true) {
+        graph_t g;
+        map<graph_vertex_id_t, graph_weight_t> distance;
+        map<graph_vertex_id_t, graph_vertex_id_t> father;
+
+        read_graph(g);
+        if (g.nv == 0 && g.ne == 0) break;
+
+        dijkstra(g, 1, distance, father);
+        cout << distance[g.nv] << endl;
     }
+
     return 0;
 }
 \end{Codex}
