@@ -86,100 +86,119 @@ void dfs(const int u,
 }
 \end{Codex}
 
-\subsection{黑白图像}
+
+\subsection{Satellite Photographs}
 
 \subsubsection{描述}
-输入一个n*n的黑白图像（1表示黑丝，0表示白色），任务是统计其中八连块的个数。
-如果两个黑格子有公共边或者公共定点，就说它们属于同一个八连块。如图~\ref{fig:blackwhiteImage}所示的
-黑白图像中有3个八连块。
+Farmer John purchased satellite photos of $W \times H$ pixels of his farm ($1 \leq W \leq 80, 1 \leq H \leq 1000$) and wishes to determine the largest 'contiguous' (connected) pasture. Pastures are contiguous when any pair of pixels in a pasture can be connected by traversing adjacent vertical or horizontal pixels that are part of the pasture. (It is easy to create pastures with very strange shapes, even circles that surround other circles.) 
 
-\begin{center}
-\includegraphics[width=90pt]{blackwhite-image.jpg}\\
-\figcaption{拥有3个八连块的黑白图}\label{fig:blackwhiteImage}
-\end{center}
+Each photo has been digitally enhanced to show pasture area as an asterisk ('*') and non-pasture area as a period ('.'). Here is a $10 \times 5$ sample satellite photo: 
+\begin{Code}
+..*.....** 
+.**..***** 
+.*...*.... 
+..****.*** 
+..****.*** 
+\end{Code}
+
+This photo shows three contiguous pastures of 4, 16, and 6 pixels. Help FJ find the largest contiguous pasture in each of his satellite photos.
+
+
+\subsubsection{输入}
+Line 1: Two space-separated integers: $W$ and $H$ 
+
+Lines 2..H+1: Each line contains $W$ "*" or "." characters representing one raster line of a satellite photograph.
+
+
+\subsubsection{输出}
+Line 1: The size of the largest contiguous field in the satellite photo.
+
+
+\subsubsection{样例输入}
+\begin{Code}
+10 5
+..*.....**
+.**..*****
+.*...*....
+..****.***
+..****.***
+\end{Code}
+
+
+\subsubsection{样例输出}
+\begin{Code}
+16
+\end{Code}
+
+
+\subsubsection{分析}
+这是一个平面的二维地图，把地图上的每个点当成隐式图上的一个顶点，每个顶点有上下左右四个邻接点。在这个隐式图上进行深搜。
+
 
 \subsubsection{代码}
-\begin{Codex}[label=blackwhite_image.c]
+\begin{Codex}[label=satellite_photographs.c]
+/* POJ 3051 Satellite Photographs, http://poj.org/problem?id=3051 */
 #include <stdio.h>
 #include <string.h>
 
-#define MAXN 16
+#define MAXH 1000
+#define MAXW 80
 
-int n;
-// 黑白图，1 表示黑色，0表示白色，加一圈0，用于判断出界
-int G[MAXN + 1][MAXN + 1];
-// 记录格子(x,y)是否已经被访问过
-int visitied[MAXN][MAXN];
+int H, W; /* H行W列 */
+char map[MAXH+2][MAXW+2];/* 上下左右加一圈'.'可以防止越界 */
 
-void dfs(const int x, const int y) {
-    // 曾经访问过这个格子，或者当前格子是白色
-    if(G[x][y] == 0 || visitied[x][y] == 1)  return;
-    
-    visitied[x][y] = 1; // 标记(x,y)已访问过
-    // 递归访问周围的8个格子
-    dfs(x - 1, y - 1); // 左上角
-    dfs(x - 1, y); // 正上方
-    dfs(x - 1, y + 1); // 右上角
-    dfs(x, y - 1); // 左边
-    dfs(x, y + 1); // 右边
-    dfs(x + 1, y - 1); // 左下角
-    dfs(x + 1, y); // 正下方
-    dfs(x + 1, y + 1); // 右下角
+int count;
+
+void dfs(int x, int y) {
+    /* 加了一圈'.'可以防止越界，因此不需要判断越界 */
+    if (map[x][y] == '.') return;
+
+    map[x][y] = '.';  /* 标记(x,y)已访问过，起到去重作用 */
+    count++;
+    dfs(x + 1, y);
+    dfs(x - 1, y);
+    dfs(x, y + 1);
+    dfs(x, y - 1);
 }
 
-/*
-Sample Input
-6
-100100
-001010
-000000
-110000
-111000
-010100
-Sample Output
-3
-*/
 int main() {
-    int i, j;
-    char s[MAXN]; // 矩阵的一行
-    int count = 0; // 八连块的个数
+    int i, j, max;
+    memset(map, '.', sizeof(map));
 
-    scanf("%d", &n);
-    memset(G, 0, sizeof(G));
-    memset(visitied, 0, sizeof(visitied));
-
-    for(i = 0; i < n; ++i) {
-        scanf("%s", s);
-        for(j = 0; j < n; ++j) {
-            G[i + 1][j + 1] = s[j] - '0'; // 把图像往中间挪一点，空出一圈白格子
-        }
+    scanf("%d%d", &W, &H); /* H是行数，W是列数 */
+    for(i = 1; i <= H; ++i) {
+        char line[MAXW+1];
+        scanf("%s", line);
+        strncpy(&map[i][1], line, W);
     }
 
-
-    for(i = 1; i <= n; ++i) {
-        for(j = 1; j <= n; ++j) {
-            if(visitied[i][j] == 0 && G[i][j] == 1) {
-                count++;
+    max = 0;
+    for (i = 1; i <= H; i++) {
+        for (j = 1; j <= W; j++) {
+            if (map[i][j] == '*') {
+                count = 0;
                 dfs(i, j);
             }
+            if (count > max) max = count;
         }
     }
-    printf("%d\n", count);
+    printf("%d\n", max);
     return 0;
 }
 \end{Codex}
 
+
 \subsubsection{相关的题目}
 与本题相同的题目：
 \begindot
-\item 《算法竞赛入门经典》\footnote{刘汝佳,算法竞赛入门经典，清华大学出版社，2009} 第107页6.4.1节
-\item  None
+\item POJ 3051 Satellite Photographs, \myurl{http://poj.org/problem?id=3051}
 \myenddot
 
 与本题相似的题目：
 \begindot
-\item  None
+\item POJ 3620 Avoid The Lakes, \myurl{http://poj.org/problem?id=3620} \\ 参考代码 \myurl{https://gist.github.com/soulmachine/6761537}
 \myenddot
+
 
 \subsection{欧拉回路}
 
