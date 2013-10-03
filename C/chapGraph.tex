@@ -1,36 +1,53 @@
 \chapter{图}
-在ACM竞赛中，图一般使用邻接矩阵表示，代码框架如下；
+稠密图适合用邻接矩阵来表示。
+\begin{Codex}[label=am_graph.c]
+/** 顶点数最大值. */
+#define MAX_NV  100
 
-\begin{Codex}[label=graph.c]
-#define MAXN 100  // 顶点最大个数
+/** 边的权值类型，可以为int, float, double. */
+typedef int graph_weight_t;
+#define GRAPH_INF  INT_MAX
 
-int n; // 顶点个数
-int G[MAXN][MAXN]; // 邻接矩阵
-int visited_edges[MAXN][MAXN]; // 边的访问历史记录
-int visited_vertices[MAXN]; // 顶点的访问历史记录
+/**
+ * @struct 图，用邻接矩阵(Adjacency Matrix).
+ */
+typedef struct graph_t {
+    int nv; /* 顶点数 */
+    int ne; /* 边数 */
+    /* 邻接矩阵，存放边的信息，如权重等 */
+    graph_weight_t matrix[MAX_NV][MAX_NV];
+} graph_t;
 \end{Codex}
 
-\section{深度优先搜索} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+稀疏图适合用邻接表来表示。
+
+
+\section{图的深搜} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 图的深度优先搜索的代码框架如下：
 
-\begin{Codex}[label=graph.c]
+\begin{Codex}[label=graph_dfs.c]
+#ifndef __cplusplus
+typedef char bool;
+#define false 0
+#define true 1
+#endif
+
 /**
  * @brief 图的深度优先搜索代码框架，搜索边.
+ * @param[in] g 图
  * @param[in] u 出发顶点
- * @param[in] n 顶点个数
- * @param[in] G 图的临街举着
  * @param[in] visited 边的访问历史记录
  * @return 无
  * @remark 在使用的时候，为了降低递归的内存占用量，可以把
- * n, G, visited 抽出来作为全局变量
+ * g, visited 抽出来作为全局变量
  */
-void dfs(const int u, 
-                const int n, const int G[][MAXN], int visited[][MAXN]) {
+void dfs(const graph_t *g, int u, bool visited[][MAX_NV]) {
     int v;
-    for(v = 0;  v < n; v++) if(G[u][v] && !visited[u][v]) {
-        visited[u][v] = visited[v][u] = 1; // 无向图用这句
-        // visited_edges[u][v] = 1; // 有向图用这句
-        dfs(v, n, G, visited);
+    for(v = 0;  v < g->nv; v++) if(g->matrix[u][v] && !visited[u][v]) {
+        visited[u][v] = visited[v][u] = true; // 无向图用这句
+        // visited_edges[u][v] = true; // 有向图用这句
+        dfs(g, v, visited);
         // 这里写逻辑代码
         // printf("%d %d\n", u, v);
     }
@@ -38,20 +55,18 @@ void dfs(const int u,
 
 /**
  * @brief 图的深度优先搜索代码框架，搜索顶点.
+ * @param[in] g 图
  * @param[in] u 出发顶点
- * @param[in] n 顶点个数
- * @param[in] G 图的临街举着
  * @param[in] visited 顶点的访问历史记录
  * @return 无
  * @remark 在使用的时候，为了降低递归的内存占用量，可以把
- * n, G, visited 抽出来作为全局变量
+ * g, visited 抽出来作为全局变量
  */
-void dfs(const int u, 
-                const int n, const int G[][MAXN], int visited[MAXN]) {  
+void dfs(const graph_t *g, int u, bool visited[MAX_NV]) {
     int v;
-    visited[u] = 1;
-    for(v = 0;  v < n; v++) if(G[u][v] && !visited[v]) {
-        dfs(v, n, G, visited);
+    visited[u] = true;
+    for(v = 0;  v < g->nv; v++) if(g->matrix[u][v] && !visited[v]) {
+        dfs(g, v, visited);
         // 这里写逻辑代码
         // printf("%d %d\n", u, v);
     }
@@ -172,32 +187,204 @@ int main() {
 \myenddot
 
 
-\subsection{欧拉回路}
+\subsection{John's trip}
+
+
+\subsubsection{Description}
+Little Johnny has got a new car. He decided to drive around the town to visit his friends. Johnny wanted to visit all his friends, but there was many of them. In each street he had one friend. He started thinking how to make his trip as short as possible. Very soon he realized that the best way to do it was to travel through each street of town only once. Naturally, he wanted to finish his trip at the same place he started, at his parents' house. 
+
+The streets in Johnny's town were named by integer numbers from 1 to $n, n < 1995$. The junctions were independently named by integer numbers from 1 to $m, m <= 44$. No junction connects more than 44 streets. All junctions in the town had different numbers. Each street was connecting exactly two junctions. No two streets in the town had the same number. He immediately started to plan his round trip. If there was more than one such round trip, he would have chosen the one which, when written down as a sequence of street numbers is lexicographically the smallest. But Johnny was not able to find even one such round trip. 
+
+Help Johnny and write a program which finds the desired shortest round trip. If the round trip does not exist the program should write a message. Assume that Johnny lives at the junction ending the street appears first in the input with smaller number. All streets in the town are two way. There exists a way from each street to another street in the town. The streets in the town are very narrow and there is no possibility to turn back the car once he is in the street 
+
+
+\subsubsection{Input}
+Input file consists of several blocks. Each block describes one town. Each line in the block contains three integers $x; y; z$, where $x > 0$ and $y > 0$ are the numbers of junctions which are connected by the street number $z$. The end of the block is marked by the line containing $x = y = 0$. At the end of the input file there is an empty block, $x = y = 0$.
+
+
+\subsubsection{Output}
+Output one line of each block contains the sequence of street numbers (single members of the sequence are separated by space) describing Johnny's round trip. If the round trip cannot be found the corresponding output block contains the message "Round trip does not exist."
+
+
+\subsubsection{Sample Input}
+\begin{Code}
+1 2 1
+2 3 2
+3 1 6
+1 2 5
+2 3 3
+3 1 4
+0 0
+1 2 1
+2 3 2
+1 3 3
+2 4 4
+0 0
+0 0
+\end{Code}
+
+\subsubsection{Sample Output}
+\begin{Code}
+1 2 3 5 4 6 
+Round trip does not exist.
+\end{Code}
+
+\subsubsection{分析}
+欧拉回路。
+
+如果能从图的某一顶点出发，每条边恰好经过一次，这样的路线称为\textbf{欧拉道路}(Eulerian Path)。
+如果还能够回到起点，这样的路线称为\textbf{欧拉回路}(Eulerian Circuit)。
+
+对于无向图G，当且仅当G是连通的，且最多有两个奇点，则存在欧拉道路。
+如果有两个奇点，则必须从其中一个奇点出发，到另一个奇点终止。
+
+如果没有奇点，则一定存在一条欧拉回路。
+
+对于有向图G，当且仅当G是连通的，且每个点的入度等于出度，则存在欧拉回路。
+
+如果有两个顶点的入度与出度不相等，且一个顶点的入度比出度小1，另一个顶点的入度比出度大1，此时，
+存在一条欧拉道路，以前一个顶点为起点，以后一个顶点为终点。
+
+
+\subsubsection{代码}
+\begin{Codex}[label=round_trip.c]
+/* POJ 1041 John's trip, http://poj.org/problem?id=1041 */
+#include <stdio.h>
+#include <string.h>
+
+#define max(a,b) ((a)>(b)?(a):(b))
+
+#ifndef __cplusplus
+typedef char bool;
+#define false 0
+#define true 1
+#endif
+
+#define MAX_NV 45
+#define MAX_NE 1996
+
+/**
+ * @struct 图，邻接矩阵的变种.
+ */
+typedef struct graph_t {
+    int nv; /* 顶点数 */
+    int ne; /* 边数 */
+    /* G[点][边] = 点，这样是为了能方便让边lexicographically输出 */
+    int matrix[MAX_NV][MAX_NE];
+} graph_t;
+
+graph_t G;
+
+bool visited[MAX_NE];  /* 边是否已访问 */
+int degree[MAX_NV];    /* 点的度 */
+
+int stack[MAX_NE], top;  /* 栈，用于输出 */
+
+void stack_print(const int stack[]) {
+    do {
+        printf("%d ", stack[top]);
+    } while (--top);
+}
+
+void euler(int u) {
+    int e;
+    for (e = 1; e <= G.ne; e++) {
+        if (!visited[e] && G.matrix[u][e]) { //若相邻边未访问过
+            visited[e] = true;
+            euler(G.matrix[u][e]);
+            stack[++top] = e;
+        }
+    }
+}
+
+int main() {
+    int i;
+    int x, y, z, start;
+    while (scanf("%d%d", &x, &y) && x && y) {
+        top = 0;
+        memset(visited, false, sizeof(visited));
+        memset(degree, 0, sizeof(degree));
+        memset(&G, 0, sizeof(G));
+
+        start = x < y ? x : y;
+        scanf("%d", &z);
+        G.ne = max(G.ne, z);
+        G.nv = max(G.nv, max(x, y));
+        G.matrix[x][z] = y;
+        G.matrix[y][z] = x;
+        ++degree[x];
+        ++degree[y];
+
+        while (scanf("%d%d", &x, &y) && x && y) {
+            scanf("%d", &z);
+            G.ne = max(G.ne, z);
+            G.nv = max(G.nv, max(x, y));
+            G.matrix[x][z] = y;
+            G.matrix[y][z] = x;
+            ++degree[x];
+            ++degree[y];
+        }
+
+        /* 欧拉回路形成的条件之一，判断结点的度是否为偶数 */
+        bool flag = true;
+        for (i = 1; i <= G.nv; i++) {
+            if (degree[i] & 1) {
+                flag = false;
+                break;
+            }
+        }
+
+        if (!flag) {
+            printf("Round trip does not exist.\n");
+        } else {
+            euler(start);
+            stack_print(stack);
+            printf("\n");
+        }
+    }
+    return 0;
+}
+\end{Codex}
+
+
+\subsubsection{相关的题目}
+与本题相同的题目：
+\begindot
+\item POJ 1041 John's trip, \myurl{http://poj.org/problem?id=1041}
+\myenddot
+
+与本题相似的题目：
+\begindot
+\item 《算法竞赛入门经典》\footnote{刘汝佳,算法竞赛入门经典，清华大学出版社，2009} 第111页6.4.4节
+\item  UVa 10054 The Necklace, \myurl{http://t.cn/zRwqcRp}
+\item  UVa 10129 Play on Words, \myurl{http://t.cn/zTInBDX}
+\myenddot
+
+
+\subsection{The Necklace}
 
 \subsubsection{描述}
-本题是 UVA 10054 - The Necklace。
-
 My little sister had a beautiful necklace made of colorful beads. Two successive beads in the 
 necklace shared a common color at their meeting point. The figure below shows a segment of 
 the necklace:
-
+ 
 \centerline{\fbox{\includegraphics[width=240pt]{uva10054.png}}}
-
+ 
 But, alas! One day, the necklace was torn and the beads were all scattered over the floor. 
 My sister did her best to recollect all the beads from the floor, but she is not sure 
 whether she was able to collect all of them. Now, she has come to me for help. She wants
  to know whether it is possible to make a necklace using all the beads she has in the same
  way her original necklace was made and if so in which order the bids must be put.
-
+ 
 Please help me write a program to solve the problem.
-
+ 
 \subsubsection{Input}
 The input contains T test cases. The first line of the input contains the integer T.
-
+ 
 The first line of each test case contains an integer $N(5 \leq N \leq 1000)$ giving the number of beads 
 my sister was able to collect. Each of the next N lines contains two integers describing 
 the colors of a bead. Colors are represented by integers ranging from 1 to 50.
-
+ 
 \subsubsection{Output}
 For each test case in the input first output the test case number as shown in the sample output. Then 
 if you apprehend that some beads may be lost just print the sentence ``some beads may be lost" on a 
@@ -206,9 +393,9 @@ description consists of two integers giving the colors of its two ends. For $1 \
 on line i must be the same as the first integer on line i + 1. Additionally, the second integer 
 on line N must be equal to the first integer on line 1. Since there are many solutions, any one
  of them is acceptable.
-
+ 
 Print a blank line between two successive test cases.
-
+ 
 \subsubsection{Sample Input}
 \begin{Code}
 2
@@ -225,12 +412,12 @@ Print a blank line between two successive test cases.
 3 1
 2 4
 \end{Code}
-
+ 
 \subsubsection{Sample Output}
 \begin{Code}
 Case #1
 some beads may be lost
-
+ 
 Case #2
 2 1
 1 3
@@ -238,35 +425,25 @@ Case #2
 4 2
 2 2
 \end{Code}
-
+ 
 \subsubsection{分析}
-这题就是欧拉回路+打印路径。
+欧拉回路。
+ 
+注意顶点可以有自环。
 
-如果能从图的某一顶点出发，每条边恰好经过一次，这样的路线称为\textbf{欧拉道路}(Eulerian Path)。
-如果每条边恰好经过一次，且能回到起点，这样的路线称为\textbf{欧拉回路}(Eulerian Circuit)。
-
-对于无向图G，当且仅当G是连通的，且最多有两个奇点，则存在欧拉道路。
-如果有两个奇点，则必须从其中一个奇点出发，到另一个奇点终止。
-
-如果没有奇点，则一定存在一条欧拉回路。
-
-对于有向图G，当且仅当G是连通的，且每个点的入度等于出度，则存在欧拉回路。
-
-如果有两个顶点的入度与出度不相等，且一个顶点的入度比出度小1，另一个顶点的入度比出度大1，此时，
-存在一条欧拉道路，以前一个顶点为起点，以后一个顶点为终点
 
 \subsubsection{代码}
 \begin{Codex}[label=eulerian_circuit.c]
 #include <stdio.h>
 #include<string.h>
-
+ 
 #define MAXN 51  // 顶点最大个数
-
+ 
 int G[MAXN][MAXN];
 int visited_vertices[MAXN]; 
 int visited_edges[MAXN][MAXN];
 int count[MAXN]; // 顶点的度
-
+ 
 void dfs(const int u) {  
     int v;
     visited_vertices[u] = 1;
@@ -274,7 +451,7 @@ void dfs(const int u) {
         dfs(v);
     }
 }
-
+ 
 /*
  * @brief 欧拉回路，允许自环和重复边
  * @param[in] u 起点
@@ -289,7 +466,7 @@ void euler(const int u){
         printf("%d %d\n", u, v);
     }
 }
-
+ 
 int main() {
     int T, N, a, b;
     int i;
@@ -301,7 +478,7 @@ int main() {
         
         memset(G, 0, sizeof(G));
         memset(count, 0, sizeof(count));
-
+ 
         scanf("%d",&N);
         for(i = 0; i < N; ++i){
             scanf("%d %d", &a, &b); 
@@ -310,9 +487,9 @@ int main() {
             ++count[a];
             ++count[b];
         }
-
+ 
         printf("Case #%d\n", cases++);
-
+ 
         // 欧拉回路形成的条件之一，判断结点的度是否为偶数
         for(i=0; i<MAXN; ++i) {
             if(count[i] & 1){
@@ -324,7 +501,7 @@ int main() {
         if(flag) {
             memset(visited_vertices, 0, sizeof(visited_vertices));
             memset(visited_edges, 0, sizeof(visited_edges));
-
+ 
             for(i=0; i< MAXN; ++i) 
                 if(count[i]) { 
                     dfs(i);
@@ -345,28 +522,30 @@ int main() {
         } else {
             printf("some beads may be lost\n");
         }
-
+ 
         if(T > 0) printf("\n");
     }
     return 0;
 }
 \end{Codex}
 
+
 \subsubsection{相关的题目}
+
 与本题相同的题目：
 \begindot
-\item 《算法竞赛入门经典》\footnote{刘汝佳,算法竞赛入门经典，清华大学出版社，2009} 第111页6.4.4节
-\item  None
+\item  UVa 10054 The Necklace, \myurl{http://t.cn/zRwqcRp}
 \myenddot
 
 与本题相似的题目：
 \begindot
-\item  UVa 10129 Play on Words, \myurl{http://t.cn/zTInBDX}
+\item 《算法竞赛入门经典》\footnote{刘汝佳,算法竞赛入门经典，清华大学出版社，2009} 第111页6.4.4节
+\item POJ 1041 John's trip, \myurl{http://poj.org/problem?id=1041}
+\item UVa 10129 Play on Words, \myurl{http://t.cn/zTInBDX}
 \myenddot
 
 
-\section{广度优先搜索} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+\section{图的广搜} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 \section{最小生成树} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
