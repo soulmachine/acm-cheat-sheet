@@ -423,9 +423,9 @@ queue_elem_t queue_front(const queue_t *q) {
 }
 
 /**
- * @brief 获取队首元素.
+ * @brief 获取队尾元素.
  * @param[in] q 队列对象的指针
- * @return 队首元素
+ * @return 队尾元素
  */
 queue_elem_t queue_back(const queue_t *q) {
     return q->elems[q->rear - 1];
