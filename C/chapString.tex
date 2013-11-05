@@ -217,13 +217,13 @@ KMP算法是Knuth、Morris和Pratt在1976年发表的。它的基本思想是，
  * @brief 计算部分匹配表，即next数组.
  *
  * @param[in] pattern 模式串
- * @param[in] m 模式串的长度
  * @param[out] next next数组
  * @return 无
  */
-void compute_prefix(const char pattern[], const int m, int next[]) {
+void compute_prefix(const char *pattern, int next[]) {
     int i;
     int j = -1;
+    const int m = strlen(pattern);
 
     next[0] = j;
     for (i = 1; i < m; i++) {
@@ -238,17 +238,19 @@ void compute_prefix(const char pattern[], const int m, int next[]) {
  * @brief KMP算法.
  *
  * @param[in] text 文本
- * @param[in] n 文本的长度
  * @param[in] pattern 模式串
- * @param[in] m 模式串的长度
  * @return 成功则返回第一次匹配的位置，失败则返回-1
  */
-int kmp(const char text[], const int n, const char pattern[], const int m) {
+int kmp(const char *text, const char *pattern) {
     int i;
     int j = -1;
+    const int n = strlen(text);
+    const int m = strlen(pattern);
+    if (n == 0 && m == 0) return 0; /* "","" */
+    if (m == 0) return 0;  /* "a","" */
     int *next = (int*)malloc(sizeof(int) * m);
 
-    compute_prefix(pattern, m, next);
+    compute_prefix(pattern, next);
 
     for (i = 0; i < n; i++) {
         while (j > -1 && pattern[j + 1] != text[i]) j = next[j];
@@ -269,7 +271,7 @@ int main(int argc, char *argv[]) {
     char text[] = "ABC ABCDAB ABCDABCDABDE";
     char pattern[] = "ABCDABD";
     char *ch = text;
-    int i = kmp(text, strlen(text), pattern, strlen(pattern));
+    int i = kmp(text, pattern);
 
     if (i >= 0) printf("matched @: %s\n", ch + i);
     return 0;
@@ -301,20 +303,21 @@ Boyer-Moore算法的C语言实现如下。
  * @brief 预处理，计算每个字母最靠右的位置.
  *
  * @param[in] pattern 模式串
- * @param[in] m 模式串的长度
  * @param[out] right 每个字母最靠右的位置
  * @return 无
  */
-static void pre_right(const char pattern[], const int m, int right[]) {
+static void pre_right(const char *pattern, int right[]) {
     int i;
+    const int m = strlen(pattern);
 
     for (i = 0; i < ASIZE; ++i) right[i] = -1;
-    for (i = 0; i < m; ++i) right[pattern[i]] = i;
+    for (i = 0; i < m; ++i) right[(unsigned char)pattern[i]] = i;
 }
 
 
-static void suffixes(const char pattern[], const int m, int suff[]) {
+static void suffixes(const char *pattern, int suff[]) {
     int f, g, i;
+    const int m = strlen(pattern);
 
     suff[m - 1] = m;
     g = m - 1;
@@ -336,15 +339,15 @@ static void suffixes(const char pattern[], const int m, int suff[]) {
  * @brief 预处理，计算好后缀的后移位置.
  *
  * @param[in] pattern 模式串
- * @param[in] m 模式串的长度
  * @param[out] gs 好后缀的后移位置
  * @return 无
  */
-static void pre_gs(const char pattern[], const int m, int gs[]) {
+static void pre_gs(const char pattern[], int gs[]) {
     int i, j;
+    const int m = strlen(pattern);
     int *suff = (int*)malloc(sizeof(int) * (m + 1));
 
-    suffixes(pattern, m, suff);
+    suffixes(pattern, suff);
 
     for (i = 0; i < m; ++i) gs[i] = m;
 
@@ -352,7 +355,7 @@ static void pre_gs(const char pattern[], const int m, int gs[]) {
     for (i = m - 1; i >= 0; --i) if (suff[i] == i + 1)
         for (; j < m - 1 - i; ++j) if (gs[j] == m)
             gs[j] = m - 1 - i;
-    for (i = 0; i <= m - 2; ++i) 
+    for (i = 0; i <= m - 2; ++i)
         gs[m - 1 - suff[i]] = m - 1 - i;
     free(suff);
 }
@@ -361,20 +364,19 @@ static void pre_gs(const char pattern[], const int m, int gs[]) {
  * @brief Boyer-Moore算法.
  *
  * @param[in] text 文本
- * @param[in] n 文本的长度
  * @param[in] pattern 模式串
- * @param[in] m 模式串的长度
  * @return 成功则返回第一次匹配的位置，失败则返回-1
  */
-int boyer_moore(const char text[], const int n, 
-                const char pattern[], const int m) {
+int boyer_moore(const char *text, const char *pattern) {
     int i, j;
     int right[ASIZE];  /* bad-character shift */
+    const int n = strlen(text);
+    const int m = strlen(pattern);
     int *gs = (int*)malloc(sizeof(int) * (m + 1));  /* good-suffix shift */
 
     /* Preprocessing */
-    pre_right(pattern, m, right);
-    pre_gs(pattern, m, gs);
+    pre_right(pattern, right);
+    pre_gs(pattern, gs);
 
     /* Searching */
     j = 0;
@@ -387,8 +389,8 @@ int boyer_moore(const char text[], const int n,
             free(gs);
             return j;
         } else {
-            const int max = gs[i] > right[text[i + j]] - m + 1 + i ?
-                gs[i] : i - right[text[i + j]];
+            const int max = gs[i] > right[(unsigned char)text[i + j]] -
+                    m + 1 + i ? gs[i] : i - right[(unsigned char)text[i + j]];
             j += max;
         }
     }
@@ -398,9 +400,9 @@ int boyer_moore(const char text[], const int n,
 
 
 int main() {
-    const char text[]="HERE IS A SIMPLE EXAMPLE";
-    const char pattern[] = "EXAMPLE";
-    const int pos = boyer_moore(text, strlen(text), pattern, strlen(pattern));
+    const char *text="HERE IS A SIMPLE EXAMPLE";
+    const char *pattern = "EXAMPLE";
+    const int pos = boyer_moore(text, pattern);
     printf("%d\n", pos); /* 17 */
     return 0;
 }
@@ -442,7 +444,7 @@ static long hash(const char key[], const int M) {
  * @param[int] RM R^(M-1) % Q
  * @return 起始于位置i+1的M个字符的子字符串所对应的哈希值
  */
-static long rehash(const long h, const char first, const char next, 
+static long rehash(const long h, const char first, const char next,
                    const long RM) {
     long newh = (h + Q - RM * first % Q) % Q;
     newh = (newh * R + next) % Q;
@@ -451,13 +453,12 @@ static long rehash(const long h, const char first, const char next,
 
 /*
  * @brief 用蒙特卡洛算法，判断两个字符串是否相等.
- * 
+ *
  * @param[in] pattern 模式串
  * @param[in] substring 原始文本长度为M的子串
- * @param[in] M 模式串的长度，也是substring的长度
  * @return 两个字符串相同，返回1，否则返回0
  */
-static int check(const char pattern[], const char substring[], const int M) {
+static int check(const char *pattern, const char substring[]) {
     return 1;
 }
 
@@ -470,9 +471,10 @@ static int check(const char pattern[], const char substring[], const int M) {
  * @param[in] m 模式串的长度
  * @return 成功则返回第一次匹配的位置，失败则返回-1
  */
-int rabin_karp(const char text[], const int n, 
-               const char pattern[], const int m) {
+int rabin_karp(const char *text, const char *pattern) {
     int i;
+    const int n = strlen(text);
+    const int m = strlen(pattern);
     const long pattern_hash = hash(pattern, m);
     long text_hash = hash(text, m);
     int RM = 1;
@@ -480,7 +482,7 @@ int rabin_karp(const char text[], const int n,
 
     for (i = 0; i <= n - m; ++i) {
         if (text_hash == pattern_hash) {
-            if (check(pattern, &text[i], m)) return i;
+            if (check(pattern, &text[i])) return i;
         }
         text_hash = rehash(text_hash, text[i], text[i + m], RM);
     }
@@ -489,9 +491,9 @@ int rabin_karp(const char text[], const int n,
 
 
 int main() {
-    const char text[]="HERE IS A SIMPLE EXAMPLE";
-    const char pattern[] = "EXAMPLE";
-    const int pos = rabin_karp(text, strlen(text), pattern, strlen(pattern));
+    const char *text = "HERE IS A SIMPLE EXAMPLE";
+    const char *pattern = "EXAMPLE";
+    const int pos = rabin_karp(text, pattern);
     printf("%d\n", pos); /* 17 */
     return 0;
 }
