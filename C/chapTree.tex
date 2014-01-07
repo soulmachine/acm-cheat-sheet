@@ -483,11 +483,11 @@ static void visit_reverse(bt_node_t* from, bt_node_t *to,
  * @return 无
  */
 void post_order_morris(bt_node_t *root, int (*visit)(bt_node_t*)) {
-    bt_node_t dump = { 0, NULL, NULL };
+    bt_node_t dummy = { 0, NULL, NULL };
     bt_node_t *cur, *prev = NULL;
 
-    dump.left = root;
-    cur = &dump;
+    dummy.left = root;
+    cur = &dummy;
     while (cur != NULL ) {
         if (cur->left == NULL ) {
             prev = cur; /* 必须要有 */
