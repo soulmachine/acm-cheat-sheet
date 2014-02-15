@@ -1,9 +1,9 @@
 #ACM Cheat Sheet
 -----------------
 ##PDF下载
-<a href="https://github.com/soulmachine/acm-cheat-sheet/blob/master/C/%E6%89%8B%E5%86%99%E4%BB%A3%E7%A0%81%E5%BF%85%E5%A4%87%E6%89%8B%E5%86%8C(C%E7%89%88).pdf?raw=true">手写代码必备手册(C版).pdf</a>
+<a href="https://github.com/soulmachine/acm-cheat-sheet/blob/master/C/%E6%89%8B%E5%86%99%E4%BB%A3%E7%A0%81%E5%BF%85%E5%A4%87%E6%89%8B%E5%86%8C(C%E7%89%88).pdf?raw=true">ACM Cheat Sheet(C).pdf</a>
 
-<a href="https://github.com/soulmachine/acm-cheat-sheet/blob/master/C++/%E6%89%8B%E5%86%99%E4%BB%A3%E7%A0%81%E5%BF%85%E5%A4%87%E6%89%8B%E5%86%8C(C++%E7%89%88).pdf?raw=true">手写代码必备手册(C++版).pdf</a>
+<a href="https://github.com/soulmachine/acm-cheat-sheet/blob/master/C++/%E6%89%8B%E5%86%99%E4%BB%A3%E7%A0%81%E5%BF%85%E5%A4%87%E6%89%8B%E5%86%8C(C++%E7%89%88).pdf?raw=true">ACM Cheat Sheet(C++).pdf</a>
 
 C 文件夹下是C版，内容一摸一样，代码是用纯C写的，
 
