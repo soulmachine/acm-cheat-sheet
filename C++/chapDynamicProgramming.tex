@@ -719,7 +719,7 @@ This is impossible.
 
 一种好想好写的基本方法是转化为0-1背包问题：把第i种物品换成$W/w[i]$个0-1
 背包问题中的物品，则得到了物品数为$\sum \dfrac{W}{w[i]}$的0-1背包问题。
-时间复杂度是$O(NW\sum \dfrac{W}{w[i]})$。
+时间复杂度是$O(W\sum \dfrac{W}{w[i]})$。
 
 按照该思路，状态转移方程为：
 $$f[i][j]=\max\left\{f[i-1][j-k*w[i]]+k*v[i], 0 \leq k*w[i] \leq j\right\}$$
@@ -925,7 +925,7 @@ void unbounded_knapsack3(int d[], const int w, const int v) {
 
 与完全背包问题类似，也可以用“拆分物品”的思想把本问题转化为0-1背包问题：把
 第i种物品换成$c[i]$个0-1背包问题中的物品，则得到了物品数为$\sum c[i]$的0-1背包问题。
-时间复杂度是$O(NW\sum c[i])$。状态转移方程为：
+时间复杂度是$O(W\sum c[i])$。状态转移方程为：
 $$f[i][j]=\max\left\{f[i-1][j-k*w[i]]+k*v[i], 0 \leq k \leq c[i], 0 \leq k*w[i] \leq j\right\}$$
 
 伪代码如下：
