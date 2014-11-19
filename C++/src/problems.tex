@@ -115,6 +115,73 @@ i=P[i]
 \item We use $O(nlog(n))$ to sort. For each $i$ we need $O(n)$ to scan all the interval list and repeat $n$ times, So the time complexity is $O(n^2)$
 \item source code: max\_selected\_intervals.cpp
 \end{enumerate}
+\begin{question}{2}
+Let $A=a_1a_2...a_m$ and $B=b_1b_2...b_n$ be two strings of characers. we
+want to transform $A$ into $B$ using following operations:
+
+delete a character
+
+add a character
+
+change a character
+
+write a dynamic programming algorithm that finds the minimum number of operations needed to transform $A $into $B$
+\end{question}
+\begin{enumerate}
+\item Let F[i,j] denotes the minimum number of operations needed to transform $a_1a_2...a_i$ to $b_1b_2...b_j$.
+\item Recurrence relation
+
+$
+F[i,j]=or
+\begin{cases}
+F[i-1,j-1]; if a_i=b_j\\
+min
+\begin{cases}
+F[i-1,j-1]+1; change\\
+F[i,j-1]+1; add\\
+F[i-1,j]+1; delete\\
+\end{cases}
+otherwise
+\end{cases}
+$
+
+\item Boundary conditions
+
+$F[0,k]=k$ for k in [0,n]
+
+$F[k,0]=k$ for k in [0,m]
+ 
+ \item implement the non recursive algorithm, see algorithm \ref{algminnum}
+
+\begin{algorithm}[H]
+\caption{function MinNumOper() }
+\label{algminnum}
+\begin{algorithmic}[1]
+\State global $F[1...m;1..n]$, A[1...m], B[1...n]
+\State Initialize $F[0,k]=k$ for k in [0,n] and $F[k,0]=k$ for k in [0,m]
+ \For{i $\leftarrow$ 1 to m}
+        \For {j $\leftarrow$ 1 to n}
+        	\If {A[i]==B[j]} F[i,j]=F[i-1,j-1]
+	\Else
+	
+	$
+F[i,j]=min
+\begin{cases}
+F[i-1,j-1]+1; change\\
+F[i,j-1]+1; add\\
+F[i-1,j]+1; delete\\
+\end{cases}
+$
+	\EndIf		
+       \EndFor
+\EndFor
+ \State return F[m,n]
+\end{algorithmic}
+\end{algorithm} 
+\item in the main function, we can call the function $MinNumOper()$ to to find the minimum number of operations needed to transform A into B
+\item time complexity of this algorithm is $\Theta(mn)$
+\item source code: min\_operation\_dp.cpp
+\end{enumerate}
 %--------------------------------------------------------------
 %     You don't have to mess with anything below this line.
 % --------------------------------------------------------------
