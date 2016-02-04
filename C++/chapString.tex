@@ -452,13 +452,20 @@ static long rehash(const long h, const char first, const char next,
 }
 
 /*
- * @brief 用蒙特卡洛算法，判断两个字符串是否相等.
+ * @brief Las Vegas version，do real comparison.
  *
  * @param[in] pattern 模式串
  * @param[in] substring 原始文本长度为M的子串
  * @return 两个字符串相同，返回1，否则返回0
  */
-static int check(const char *pattern, const char substring[]) {
+static int check(const char *pattern, const char s[]) {
+    return strcmp(pattern, s);
+}
+
+/*
+ * Monte Carlo version, always return true.
+ */
+static int check(const char *pattern, const char s[]) {
     return 1;
 }
 
