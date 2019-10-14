@@ -1,0 +1,843 @@
+// Ordered Set
+
+#include <ext/pb_ds/assoc_container.hpp>
+#include <ext/pb_ds/tree_policy.hpp>
+using namespace __gnu_pbds;
+typedef tree <int, null_type, less <int>, rb_tree_tag, tree_order_statistics_node_update> ordered_set;
+
+//----------------------------------------------------------------
+// 2D - BIT
+const int MAX_X = 1001, MAX_Y = 1001;
+int tree[MAX_X][MAX_Y];
+
+void update(int x, int y, int val)
+{
+	int yy;
+	while (x < MAX_X)
+	{
+		yy = y;
+		while (yy < MAX_Y)
+		{
+			tree[x][yy] += val, yy += (yy & -yy);
+		}
+		x += (x & -x);
+	}
+}
+
+int query(int x, int y)
+{
+	int yy, sum = 0;
+	while (x)
+	{
+		yy = y;
+		while (yy)
+		{
+			sum += tree[x][yy], yy -= (yy & -yy);
+		}
+		x -= (x & -x);
+	}
+	return sum;
+}
+
+//----------------------------------------------------------------
+
+// Sparse Table 
+// O(NlogN) build, O(1) query
+void build()
+{
+	erep(j, 1, 14)
+	for (int i = 1; i <= n - (1 << j) + 1; i++) // law 0 based hateb2a n - (1<<j), law 1 based hazawed + 1
+	{
+		mn[i][j] = min(mn[i][j - 1], mn[i + (1 << (j - 1))][j - 1]);
+		mx[i][j] = max(mx[i][j - 1], mx[i + (1 << (j - 1))][j - 1]);
+	}
+}
+
+int qmin(int l, int r)
+{
+	if (l > r)
+		swap(l, r);
+	int j = lg[r - l + 1];
+
+	if (mn[l][j] <= mn[r - (1 << j) + 1][j])
+		return mn[l][j];
+	return mn[r - (1 << j) + 1][j];
+}
+
+int qmax(int l, int r)
+{
+	if (l > r)
+		swap(l, r);
+	int j = lg[r - l + 1];
+
+	if (mx[l][j] >= mx[r - (1 << j) + 1][j])
+		return mx[l][j];
+	return mx[r - (1 << j) + 1][j];
+}
+
+// inside main
+lg[0] = -1;
+rep(i, 1, N)
+lg[i] = lg[i - 1] + !(i & (i - 1));
+
+//----------------------------------------------------------------
+
+// 2-D Sparse Table
+// O(N^2 log^2(n)) Build, O(1) query
+short get(int x1, int y1, int x2, int y2)
+{
+	int lenx = x2 - x1 + 1;
+	int kx = lg[lenx];
+	int leny = y2 - y1 + 1;
+	int ky = lg[leny];
+	short ret = 0;
+	ret = max(ret, max(tb[kx][x1][ky][y1], tb[kx][x2 - (1 << kx) + 1][ky][y1]));
+	ret = max(ret,
+			max(tb[kx][x1][ky][y2 - (1 << ky) + 1],
+					tb[kx][x2 - (1 << kx) + 1][ky][y2 - (1 << ky) + 1]));
+	return ret;
+}
+void build()
+{
+	for (int i = 1; i <= n; i++)
+		for (int j = 1; j <= m; j++)
+		{
+			tb[0][i][0][j] = a[i][j];
+		}
+	for (int j = 1; (1 << j) <= m; j++)
+		for (int ii = 1; ii <= n; ii++)
+			for (int jj = 1; jj + (1 << (j - 1)) <= m; jj++)
+				tb[0][ii][j][jj] = max(tb[0][ii][j - 1][jj],
+						tb[0][ii][j - 1][jj + (1 << (j - 1))]);
+	for (int i = 1; (1 << i) <= n; i++)
+		for (int j = 0; (1 << j) <= m; j++)
+		{
+
+			for (int ii = 1; ii + (1 << (i - 1)) <= n; ii++)
+				for (int jj = 1; jj + (1 << (j - 1)) <= m; jj++)
+					tb[i][ii][j][jj] = max(tb[i - 1][ii][j][jj],
+							tb[i - 1][ii + (1 << (i - 1))][j][jj]);
+		}
+}
+
+//----------------------------------------------------------------
+
+// Implicit Lazy Segment Tree 
+struct node
+{
+	node *lc, *rc;
+	int sum;
+	bool lazyl, lazyr;
+
+	node()
+	{
+		lc = rc = 0;
+	}
+};
+
+void propagate(node* curr, int st, int en, bool &lazy)
+{
+	if (!lazy)
+		return;
+
+	curr->sum = (en - st + 1);
+	curr->lazyl = curr->lazyr = lazy;
+	lazy = 0;
+}
+
+void update(node *curr, int st, int en, int shemal, int yemeen)
+{
+	// haroo7 lelli ana 3awzo bas 3ashan ma-create-sh node mesh 3awezha
+
+	if (shemal <= st && en <= yemeen)
+	{
+		curr->sum = (en - st + 1);
+
+		curr->lazyl = curr->lazyr = 1;
+
+		return;
+	}
+
+	int mid = (st + en) / 2;
+
+	if (shemal <= mid)
+	{
+		if (!curr->lc)
+			curr->lc = new node();
+		// used 3ashan yeb2a ma3aya el value lel left/right beto3 el created node without creating them
+		propagate(curr->lc, st, mid, curr->lazyl);
+		update(curr->lc, st, mid, shemal, yemeen);
+	}
+
+	if (mid + 1 <= yemeen)
+	{
+		if (!curr->rc)
+			curr->rc = new node();
+		// used 3ashan yeb2a ma3aya el value lel left/right beto3 el created node without creating them
+		propagate(curr->rc, mid + 1, en, curr->lazyr);
+		update(curr->rc, mid + 1, en, shemal, yemeen);
+	}
+
+	curr->sum = 0;
+
+	if (curr->lc)
+	{
+		// momken mayed5olsh fel condition eli foo2 fa lazem ne3melo hena bardo
+		propagate(curr->lc, st, mid, curr->lazyl);
+		curr->sum += curr->lc->sum;
+	}
+	else
+		curr->sum += (mid - st + 1) * curr->lazyl;
+
+	if (curr->rc)
+	{
+		// momken mayed5olsh fel condition eli foo2 fa lazem ne3melo hena bardo
+		propagate(curr->rc, mid + 1, en, curr->lazyr);
+		curr->sum += curr->rc->sum;
+	}
+	else
+		curr->sum += (en - mid) * curr->lazyr;
+}
+
+int get(node *curr, int st, int en, int shemal, int yemeen)
+{
+	if (shemal <= st && en <= yemeen)
+		return curr->sum;
+
+	int mid = (st + en) / 2;
+
+	int ret = 0;
+
+	if (shemal <= mid)
+	{
+		if (!curr->lc)
+			curr->lc = new node();
+		propagate(curr->lc, st, mid, curr->lazyl);
+		ret += get(curr->lc, st, mid, shemal, yemeen);
+	}
+
+	if (mid + 1 <= yemeen)
+	{
+		if (!curr->rc)
+			curr->rc = new node();
+		propagate(curr->rc, mid + 1, en, curr->lazyr);
+		ret += get(curr->rc, mid + 1, en, shemal, yemeen);
+	}
+
+	return ret;
+}
+
+// inside main
+node *root = new node();
+// update(root, 1, 1e9, x, y);
+
+//----------------------------------------------------------------
+
+// Persistent Segment Tree
+const int N = 100000 + 5;
+
+struct node
+{
+	int l, r, cnt;
+
+	node()
+	{
+		l = r = 0;
+		cnt = 0;
+	}
+} tree[20 * N]; // each persistent version holds a range inside this tree, maximum nodes created is NlogN
+
+int arr[N], sz, root[N]; // N persistent versions
+vi vec;
+
+void update(int &curr, int prev, int st, int en, int idx)
+{
+	curr = ++sz;					// gives id to the current node
+	tree[curr] = tree[prev];	// new node has the same values as the old node
+	if (st == en)
+	{
+		tree[curr].cnt++;
+		return;
+	}
+
+	int mid = (st + en) / 2;
+
+	if (idx <= mid)					// move towards the target
+		update(tree[curr].l, tree[prev].l, st, mid, idx);
+	else
+		update(tree[curr].r, tree[curr].r, mid + 1, en, idx);
+
+	tree[curr].cnt = tree[tree[curr].l].cnt + tree[tree[curr].r].cnt;
+}
+
+int query(int curr, int prev, int st, int en, int idx)
+{
+	if (st == en)
+		return st;
+	int cnt = tree[tree[curr].l].cnt - tree[tree[prev].l].cnt;
+	int mid = (st + en) / 2;
+	if (idx <= cnt)
+		return query(tree[curr].l, tree[prev].l, st, mid, idx);
+	return query(tree[curr].r, tree[prev].r, mid + 1, en, idx - cnt);
+}
+
+update(root[1], 0, 1, s, arr[1]);
+erep(i, 2, n)
+update(root[i], root[i - 1], 1, s, arr[i]);
+
+//----------------------------------------------------------------
+
+// Hashing Segment Tree
+/*
+ *  we'll maintain a rolling hash array, so pw[0] = 1, pw[i] = base*pw[i-1]%mod
+ *  we'll also maintain the sum of bases so far, we'll use this to find our hash value when using lazy propagation
+ *  the idea is this: our pw[] array will have the values 1, 10, 100, 1000.. and so on
+ *  therefore, if we want an entire range to have the same lazy value (let's say 9) and our range is 4
+ *  then, the hashed value would be 9999, this is equivalent to 1111*9, we get the 1111 value by accumulation of array pw[]
+ *  when we're merging two ranges, we'll multiply the one on the left by the length of the right range then add them up
+ *  hence, we have tree[node] = left*pw[en-mid] + right
+ *  finally, suppose we are updating a range with length = 2, we should get the sum[en-st] and not en-st+1
+ *  this is because we include the value 1 as our first hash/sum, so we don't have to use the range inclusive
+ */
+
+const int N = 1e5 + 5, mod = 1e9 + 9, base = 10;
+
+ll tree[4 * N], lazy[4 * N], pw[4 * N], sum[4 * N];
+
+void propagate(int node, int st, int en)
+{
+	if (~lazy[node])
+	{
+		tree[node] = (sum[en - st] * 1ll * lazy[node]) % mod;
+		if (st != en)
+			lazy[2 * node] = lazy[2 * node + 1] = lazy[node];
+		lazy[node] = -1;
+	}
+}
+
+void update(int node, int st, int en, int shemal, int yemeen, int val)
+{
+	propagate(node, st, en);
+
+	if (st > en || st > yemeen || en < shemal)
+		return;
+
+	if (shemal <= st && en <= yemeen)
+	{
+		lazy[node] = val;
+		propagate(node, st, en);
+		return;
+	}
+
+	int mid = (st + en) / 2;
+
+	update(2 * node, st, mid, shemal, yemeen, val);
+	update(2 * node + 1, mid + 1, en, shemal, yemeen, val);
+
+	int a = tree[2 * node], b = tree[2 * node + 1];
+
+	tree[node] = ((a * 1ll * pw[en - mid] % mod) + b) % mod;
+}
+
+void query(int node, int st, int en, int shemal, int yemeen, ll &ans)
+{
+	propagate(node, st, en);
+
+	if (st > en || st > yemeen || en < shemal)
+		return;
+
+	if (shemal <= st && en <= yemeen)
+	{
+		ans = ((ans * 1ll * pw[en - st + 1]) % mod + tree[node]) % mod;
+		return;
+	}
+
+	int mid = (st + en) / 2;
+
+	query(2 * node, st, mid, shemal, yemeen, ans);
+	query(2 * node + 1, mid + 1, en, shemal, yemeen, ans);
+}
+
+int main()
+{
+	pw[0] = sum[0] = 1;
+	rep(i, 1, 4 * N)
+	pw[i] = (base * pw[i - 1]) % mod, sum[i] = (sum[i - 1] + pw[i]) % mod;
+
+	reset(lazy, -1);
+
+	int n, m, k;
+	cin >> n >> m >> k;
+	string x;
+	cin >> x;
+	x.insert(x.begin(), '0');
+
+	erep(i, 1, n)
+	update(1, 1, n, i, i, x[i] - '0');
+	int q = m + k;
+	while (q--)
+	{
+		int t, l, r, c;
+		cin >> t >> l >> r >> c;
+		if (t == 1)
+			update(1, 1, n, l, r, c);
+		else
+		{
+			ll a = 0;
+			query(1, 1, n, l, r - c, a);
+			ll b = 0;
+			query(1, 1, n, l + c, r, b);
+
+			if (a == b)
+				cout << "YES\n";
+			else
+				cout << "NO\n";
+		}
+	}
+
+	return 0;
+}
+
+//----------------------------------------------------------------
+
+// Wavelet Tree
+const int N = 1e5;
+int a[N];
+struct wavelet_tree
+{
+	int lo, hi;
+	wavelet_tree *l, *r;
+	vector<int> b;
+
+	//nos are in range [x,y]
+	//array indices are [from, to)
+	wavelet_tree(int *from, int *to, int x, int y)
+	{
+		lo = x, hi = y;
+		if (lo == hi or from >= to)
+			return;
+		int mid = (lo + hi) / 2;
+		auto f = [mid](int x)
+		{
+			return x <= mid;
+		};
+		b.reserve(to - from + 1);
+		b.pb(0);
+		for (auto it = from; it != to; it++)
+			b.pb(b.back() + f(*it));
+		//see how lambda function is used here
+		auto pivot = stable_partition(from, to, f);
+		l = new wavelet_tree(from, pivot, lo, mid);
+		r = new wavelet_tree(pivot, to, mid + 1, hi);
+	}
+
+	//kth smallest element in [l, r]
+	int kth(int l, int r, int k)
+	{
+		if (l > r)
+			return 0;
+		if (lo == hi)
+			return lo;
+		int inLeft = b[r] - b[l - 1];
+		int lb = b[l - 1]; //amt of nos in first (l-1) nos that go in left
+		int rb = b[r]; //amt of nos in first (r) nos that go in left
+		if (k <= inLeft)
+			return this->l->kth(lb + 1, rb, k);
+		return this->r->kth(l - lb, r - rb, k - inLeft);
+	}
+
+	//count of nos in [l, r] Less than or equal to k
+	int LTE(int l, int r, int k)
+	{
+		if (l > r or k < lo)
+			return 0;
+		if (hi <= k)
+			return r - l + 1;
+		int lb = b[l - 1], rb = b[r];
+		return this->l->LTE(lb + 1, rb, k) + this->r->LTE(l - lb, r - rb, k);
+	}
+
+	//count of nos in [l, r] equal to k
+	int count(int l, int r, int k)
+	{
+		if (l > r or k < lo or k > hi)
+			return 0;
+		if (lo == hi)
+			return r - l + 1;
+		int lb = b[l - 1], rb = b[r], mid = (lo + hi) / 2;
+		if (k <= mid)
+			return this->l->count(lb + 1, rb, k);
+		return this->r->count(l - lb, r - rb, k);
+	}
+};
+
+int main()
+{
+	cin >> a[1] >> a[2] >> a[3];
+	wavelet_tree tree(a + 1, a + 3 + 1, 0, 10);
+	cout << tree.LTE(1, 3, 5);
+}
+
+//----------------------------------------------------------------
+
+// Mo algorithm O(Q sqrt N) Hilbert Order 
+const int N = 1e6 + 5;
+int n, q, block;
+vector<ll> res;
+int cnt[N];
+vector<int> vec;
+ll sum;
+
+const int infinity = (int) 1e9 + 42;
+const int64_t llInfinity = (int64_t) 1e18 + 256;
+const int module = (int) 1e9 + 7;
+const long double eps = 1e-8;
+
+inline int64_t gilbertOrder(int x, int y, int pow, int rotate)
+{
+	if (pow == 0)
+	{
+		return 0;
+	}
+	int hpow = 1 << (pow - 1);
+	int seg = (x < hpow) ? ((y < hpow) ? 0 : 3) : ((y < hpow) ? 1 : 2);
+	seg = (seg + rotate) & 3;
+	const int rotateDelta[4] =
+	{ 3, 0, 0, 1 };
+	int nx = x & (x ^ hpow), ny = y & (y ^ hpow);
+	int nrot = (rotate + rotateDelta[seg]) & 3;
+	int64_t subSquareSize = int64_t(1) << (2 * pow - 2);
+	int64_t ans = seg * subSquareSize;
+	int64_t add = gilbertOrder(nx, ny, pow - 1, nrot);
+	ans += (seg == 1 || seg == 2) ? add : (subSquareSize - add - 1);
+	return ans;
+}
+
+struct Query
+{
+	int l, r, idx;
+	int64_t ord;
+
+	inline void calcOrder()
+	{
+		ord = gilbertOrder(l, r, 21, 0);
+	}
+};
+
+inline bool operator<(const Query &a, const Query &b)
+{
+	return a.ord < b.ord;
+}
+
+inline void remove(int idx)
+{
+	sum -= vec[idx] * 1ll * cnt[vec[idx]] * cnt[vec[idx]];
+	cnt[vec[idx]]--;
+	sum += vec[idx] * 1ll * cnt[vec[idx]] * cnt[vec[idx]];
+}
+
+inline void add(int idx)
+{
+	sum -= vec[idx] * 1ll * cnt[vec[idx]] * cnt[vec[idx]];
+	cnt[vec[idx]]++;
+	sum += vec[idx] * 1ll * cnt[vec[idx]] * cnt[vec[idx]];
+}
+
+int main()
+{
+	cin >> n >> q;
+	block = sqrt(n) + 1;
+	vec.resize(n);
+	rep(i, 0, n)
+	cin >> vec[i];
+	res.resize(q);
+	vector<Query> queries(q);
+	rep(i, 0, q)
+	{
+		int l, r;
+		cin >> l >> r;
+		l--, r--;
+		queries[i].l = l;
+		queries[i].r = r;
+		queries[i].idx = i;
+		queries[i].calcOrder();
+	}
+	sort(all(queries));
+	int moL = 0, moR = -1;
+	rep(i, 0, q)
+	{
+		int idx = queries[i].idx;
+		int l = queries[i].l, r = queries[i].r;
+		while (moL < l)
+			remove(moL++);
+		while (moL > l)
+			add(--moL);
+		while (moR < r)
+			add(++moR);
+		while (moR > r)
+			remove(moR--);
+
+		res[idx] = sum;
+	}
+
+	rep(i, 0, q)
+	cout << res[i] << endl;
+
+	return 0;
+}
+
+//----------------------------------------------------------------
+
+// Mo with updates O(N^(5/3))
+const int N = 1e5 + 5;
+const int M = 2 * N;
+const int blk = 2155;
+const int mod = 1e9 + 7;
+struct Query
+{
+	int l, r, t, idx;
+	Query(int a = 0, int b = 0, int c = 0, int d = 0)
+	{
+		l = a, r = b, t = c, idx = d;
+	}
+	bool operator <(Query o)
+	{
+		if (r / blk == o.r / blk && l / blk == o.l / blk)
+			return t < o.t;
+		if (r / blk == o.r / blk)
+			return l < o.l;
+		return r < o.r;
+	}
+} Q[N];
+
+int a[N], b[N];
+int cnt1[M], cnt2[N];
+int L = 0, R = -1, K = -1;
+void add(int x)
+{
+//  cout << x << '\n';
+	cnt2[cnt1[x]]--;
+	cnt1[x]++;
+	cnt2[cnt1[x]]++;
+}
+void del(int x)
+{
+	cnt2[cnt1[x]]--;
+	cnt1[x]--;
+	cnt2[cnt1[x]]++;
+}
+map<int, int> id;
+int cnt;
+int ans[N];
+int p[N], nxt[N];
+int prv[N];
+void upd(int idx)
+{
+	if (p[idx] >= L && p[idx] <= R)
+		del(a[p[idx]]), add(nxt[idx]);
+	a[p[idx]] = nxt[idx];
+}
+void err(int idx)
+{
+	if (p[idx] >= L && p[idx] <= R)
+		del(a[p[idx]]), add(prv[idx]);
+	a[p[idx]] = prv[idx];
+}
+int main()
+{
+	int n, q, l, r, tp;
+	scanf("%d%d", &n, &q);
+
+	for (int i = 0; i < n; i++)
+	{
+		scanf("%d", a + i);
+		if (id.count(a[i]) == 0)
+			id[a[i]] = cnt++;
+		a[i] = id[a[i]];
+		b[i] = a[i];
+	}
+	int qIdx = 0;
+	int ord = 0;
+	while (q--)
+	{
+		scanf("%d", &tp);
+		if (tp == 1)
+		{
+			/// ADD Query
+			scanf("%d%d", &l, &r);
+			--l, --r;
+			Q[qIdx] = Query(l, r, ord - 1, qIdx);
+			qIdx++;
+		}
+		else
+		{
+			/// ADD Update
+			scanf("%d%d", p + ord, nxt + ord);
+			--p[ord];
+			if (id.count(nxt[ord]) == 0)
+				id[nxt[ord]] = cnt++;
+			nxt[ord] = id[nxt[ord]];
+			prv[ord] = b[p[ord]];
+			b[p[ord]] = nxt[ord];
+			++ord;
+		}
+	}
+	sort(Q, Q + qIdx);
+	for (int i = 0; i < qIdx; i++)
+	{
+		while (L < Q[i].l)
+			del(a[L++]);
+		while (L > Q[i].l)
+			add(a[--L]);
+		while (R < Q[i].r)
+			add(a[++R]);
+		while (R > Q[i].r)
+			del(a[R--]);
+		while (K < Q[i].t)
+			upd(++K);
+		while (K > Q[i].t)
+			err(K--);
+		///Solve Query I
+	}
+	for (int i = 0; i < qIdx; i++)
+		printf("%d\n", ans[i]);
+
+//----------------------------------------------------------------
+
+// Monotonic Queue O(N)
+	int a[500];
+	int ans[500];
+
+	int main()
+	{
+		int n;
+		cin>>n;
+		for(int i=0;i<n;i++) cin>>a[i];
+		stack<int>st;
+		memset(ans,-1,sizeof ans);
+		for(int i=0;i<n;i++)
+		{
+			while(!st.empty()&&a[i]>a[st.top()])
+			{
+				ans[st.top()]=a[i]; // or ans[st.top()] = i if solution require index not value
+				st.pop();
+			}
+			st.push(i);
+		}
+		for(int i=0;i<n;i++) cout<<ans[i]<<" ";
+	}
+
+//----------------------------------------------------------------
+
+// Treap	?
+/*
+ steps to use treap :
+ the treap is 0-based by spaces and 1-based by letters meaning
+ you if you want to take the first letter on the left and the
+ rest on the right
+ then split(root, a, b, 1)
+ where root is your treap a and b are spare treaps and 1 is the index
+ the whole process is done in O ( log ( n ) )
+ you can also reverse a substring of a treap using reverse ( root, L, R )
+ but this is 0 - based meaning to reverse substring bc in abcd
+ send 1 and 2
+ */
+typedef struct item * pitem;
+struct item
+{
+	int prior, value, cnt;
+	bool rev;
+	pitem l, r;
+	item(int x, int y, int z)
+	{
+		value = x;
+		prior = y;
+		cnt = z;
+		rev = 0;
+		l = r = NULL;
+	}
+};
+?
+int cnt (pitem it)
+{
+	return it ? it->cnt : 0;
+}
+?
+void upd_cnt (pitem it)
+{
+	if (it)
+	it->cnt = cnt(it->l) + cnt(it->r) + 1;
+}
+?
+void push (pitem it)
+{
+	if (it && it->rev)
+	{
+		it->rev = false;
+		swap (it->l, it->r);
+		if (it->l) it->l->rev ^= true;
+		if (it->r) it->r->rev ^= true;
+	}
+}
+?
+void merge (pitem & t, pitem l, pitem r)
+{
+	push (l);
+	push (r);
+	if (!l || !r)
+	t = l ? l : r;
+	else if (l->prior > r->prior)
+	merge (l->r, l->r, r), t = l;
+	else
+	merge (r->l, l, r->l), t = r;
+	upd_cnt (t);
+}
+?
+void split (pitem t, pitem & l, pitem & r, int key, int add = 0)
+{
+	if (!t)
+	return void( l = r = 0 );
+	push (t);
+	int cur_key = add + cnt(t->l);
+	if (key <= cur_key)
+	split (t->l, l, t->l, key, add), r = t;
+	else
+	split (t->r, t->r, r, key, add + 1 + cnt(t->l)), l = t;
+	upd_cnt (t);
+}
+?
+void reverse (pitem t, int l, int r)
+{
+	pitem t1, t2, t3;
+	split (t, t1, t2, l);
+	split (t2, t2, t3, r-l+1);
+	t2->rev ^= true;
+	merge (t, t1, t2);
+	merge (t, t, t3);
+}
+?
+void output (pitem t)
+{
+	if (!t) return;
+	push (t);
+	output (t->l);
+	printf ("%c", char(t->value));
+	output (t->r);
+}
+	?
+pitem gettreap(string s)
+{
+	pitem ret=NULL;
+	int i;
+	for(i=0;i<s.size();i++)merge(ret,ret,new item(s[i],(rand()<<15)+rand(), 1));
+	return ret;
+}
+?
+int main()
+{	?
+	string s;
+	cin >> s;?
+	pitem root = gettreap(s);?
+	reverse(root, 1,2);?
+	output(root);
+}
