@@ -1,0 +1,189 @@
+% --------------------------------------------------------------
+% This is all preamble stuff that you don't have to worry about.
+% Head down to where it says "Start here"
+% --------------------------------------------------------------
+ 
+\documentclass[12pt]{article}
+ 
+\usepackage[margin=1in]{geometry} 
+\usepackage{amsmath,amsthm,amssymb}
+\usepackage{mathtools}
+\usepackage{upgreek}
+\usepackage{algorithm}
+\usepackage{comment}
+\usepackage[noend]{algpseudocode}
+ \usepackage{algpseudocode}
+ \usepackage{pgffor}
+ \DeclarePairedDelimiter\ceil{\lceil}{\rceil}
+\DeclarePairedDelimiter\floor{\lfloor}{\rfloor}\newcommand{\N}{\mathbb{N}}
+\newcommand{\Z}{\mathbb{Z}}
+ 
+\newenvironment{theorem}[2][Theorem]{\begin{trivlist}
+\item[\hskip \labelsep {\bfseries #1}\hskip \labelsep {\bfseries #2.}]}{\end{trivlist}}
+\newenvironment{lemma}[2][Lemma]{\begin{trivlist}
+\item[\hskip \labelsep {\bfseries #1}\hskip \labelsep {\bfseries #2.}]}{\end{trivlist}}
+\newenvironment{exercise}[2][Exercise]{\begin{trivlist}
+\item[\hskip \labelsep {\bfseries #1}\hskip \labelsep {\bfseries #2.}]}{\end{trivlist}}
+\newenvironment{problem}[2][Problem]{\begin{trivlist}
+\item[\hskip \labelsep {\bfseries #1}\hskip \labelsep {\bfseries #2.}]}{\end{trivlist}}
+\newenvironment{question}[2][Question]{\begin{trivlist}
+\item[\hskip \labelsep {\bfseries #1}\hskip \labelsep {\bfseries #2.}]}{\end{trivlist}}
+\newenvironment{corollary}[2][Corollary]{\begin{trivlist}
+\item[\hskip \labelsep {\bfseries #1}\hskip \labelsep {\bfseries #2.}]}{\end{trivlist}}
+ 
+\begin{document}
+ 
+% --------------------------------------------------------------
+%                         Start here
+% --------------------------------------------------------------
+ 
+\title{Problems}%replace X with the appropriate number
+\author{Jiankai Sun\\ %replace with your name
+} %if necessary, replace with your course titles
+ 
+\maketitle
+
+
+\begin{question}{1}
+Given $n$ intervals $(s_i,f_i)$ where $1 \leq i \leq n$, $s_i$ and $f_i$ is $i-th$ interval's start and finish time, its duration time is $f_i-s_i$. Use any algorithm to get the maximize the total sum of mutually disjoint intervals.
+\end{question}
+\begin{enumerate}
+\item  we can use dynamic programming to solve this problem
+\item for $n$ intervals $(s_i,f_i)$, it's sorted so that $f_1 \leq f_2 \leq ... \leq f_n$
+\item We use $T(i)$ to represent the maximize total sum of intervals of $((s_1,f_1),(s_2,f_2),...(s_i,f_i))$. 
+each interval has two choices: added to the select set or not.
+
+ Define $p(i)$=the largest$ j<i$ that interval i doesn't overlap with $j$.
+
+ So the recurrence function is:
+$T(i)=max
+\begin{cases}
+T(p(i))+f_i-s_i \\
+T(i-1); otherwise
+\end{cases}
+$
+\item boundary condition $T(0)=0$
+\item Implement the algorithm
+\begin{algorithm}[H]
+\caption{function maxSumInterval($i$) }
+
+Sort the interval according to $f_i$, so that $f_1 \leq f_2 \leq ... \leq f_n$.
+
+Start time array S=$(0,s_1,s_2,...,s_n)$, finish time array F=$(0,f_1,f_2,...,f_n)$.
+\begin{algorithmic}[1]
+\State global $T[0,1,2,...,n]$, T[0]=0; $P[1,...,n]$
+\State 
+\For	 {i $\leftarrow$ 1 to n}
+\If{T(p(i))+$f_i$-$s_i$>T(i-1)}
+
+T[i]=T(p(i))+$f_i$-$s_i$
+
+P[i]=p(i)
+\Else
+
+T[i]=T[i-1]
+
+P[i]=-1
+
+\EndIf
+\EndFor
+\State Return T[n]
+\end{algorithmic}
+\end{algorithm}
+\item we use $P[1,2,...,n]$ to print selected intervals
+
+\begin{algorithm}[H]
+\caption{function printInterval() }
+\begin{algorithmic}[1]
+\State global $P[1,...,n]$
+\State i=n
+\While{P[i] $\neq$ 0}
+\If{P[i] $>$ 0}
+
+print i
+
+
+i=P[i]
+
+\EndIf
+\EndWhile
+
+\State print i
+
+\end{algorithmic}
+\end{algorithm}
+\item We use $O(nlog(n))$ to sort. For each $i$ we need $O(n)$ to scan all the interval list and repeat $n$ times, So the time complexity is $O(n^2)$
+\item source code: max\_selected\_intervals.cpp
+\end{enumerate}
+\begin{question}{2}
+Let $A=a_1a_2...a_m$ and $B=b_1b_2...b_n$ be two strings of characers. we
+want to transform $A$ into $B$ using following operations:
+
+delete a character
+
+add a character
+
+change a character
+
+write a dynamic programming algorithm that finds the minimum number of operations needed to transform $A $into $B$
+\end{question}
+\begin{enumerate}
+\item Let F[i,j] denotes the minimum number of operations needed to transform $a_1a_2...a_i$ to $b_1b_2...b_j$.
+\item Recurrence relation
+
+$
+F[i,j]=or
+\begin{cases}
+F[i-1,j-1]; if a_i=b_j\\
+min
+\begin{cases}
+F[i-1,j-1]+1; change\\
+F[i,j-1]+1; add\\
+F[i-1,j]+1; delete\\
+\end{cases}
+otherwise
+\end{cases}
+$
+
+\item Boundary conditions
+
+$F[0,k]=k$ for k in [0,n]
+
+$F[k,0]=k$ for k in [0,m]
+ 
+ \item implement the non recursive algorithm, see algorithm \ref{algminnum}
+
+\begin{algorithm}[H]
+\caption{function MinNumOper() }
+\label{algminnum}
+\begin{algorithmic}[1]
+\State global $F[1...m;1..n]$, A[1...m], B[1...n]
+\State Initialize $F[0,k]=k$ for k in [0,n] and $F[k,0]=k$ for k in [0,m]
+ \For{i $\leftarrow$ 1 to m}
+        \For {j $\leftarrow$ 1 to n}
+        	\If {A[i]==B[j]} F[i,j]=F[i-1,j-1]
+	\Else
+	
+	$
+F[i,j]=min
+\begin{cases}
+F[i-1,j-1]+1; change\\
+F[i,j-1]+1; add\\
+F[i-1,j]+1; delete\\
+\end{cases}
+$
+	\EndIf		
+       \EndFor
+\EndFor
+ \State return F[m,n]
+\end{algorithmic}
+\end{algorithm} 
+\item in the main function, we can call the function $MinNumOper()$ to to find the minimum number of operations needed to transform A into B
+\item time complexity of this algorithm is $\Theta(mn)$
+\item source code: min\_operation\_dp.cpp
+\end{enumerate}
+%--------------------------------------------------------------
+%     You don't have to mess with anything below this line.
+% --------------------------------------------------------------
+ 
+\end{document}
